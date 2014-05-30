@@ -1,0 +1,4 @@
+*.o
+*.swp
+input_files
+docs
