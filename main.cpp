@@ -13,6 +13,9 @@ using namespace std;
  * Program takes input filename as first (and only) argument
  */
 int main(int argc, char *argv[]){
+	// Set various parameters and variables
+	const double threshold_level = 0.12;
+	vector<Point> allPoints; ///< A vector of all points in simulation
 
 	// Check #args
 	if (argc!=2){
@@ -28,12 +31,15 @@ int main(int argc, char *argv[]){
 	}
 	read_xyzclcpcs(infile,allPoints);
 
-	// Set various parameters and variables
-	const double threshold_level = 0.12;
-	vector<Point> allPoints; ///< A vector of all points in simulation
 
 	// Put all points with cl>threshold in a sausage
 	threshold(allPoints,threshold_level);
+
+	// Count the sausages
+	vector<int> sausage_count=count_sausages(allPoints);
+	for (vector<int>::const_iterator it=sausage_count.begin();it!=sausage_count.end(); ++it){
+		cout << *it << endl;
+	}
 
 	cout << "Exiting successfully" << endl;
 }
