@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <vector>
 #include "main.h"
 #include "io.h"
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	Point* allPoints; ///< A an array of all points in simulation
+	vector<Point> allPoints; ///< A vector of all points in simulation
 
 	read_xyzclcpcs(infile,&allPoints);
 

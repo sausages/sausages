@@ -3,8 +3,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include "main.h"
 
-void read_xyzclcpcs(std::ifstream& inputFile, Point** ptr_to_allPointsArray);
+void read_xyzclcpcs(std::ifstream& inputFile, std::vector<Point>* ptr_to_allPointsVector);
 
 #endif // IO_H
