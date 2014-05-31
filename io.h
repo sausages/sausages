@@ -6,6 +6,6 @@
 #include <vector>
 #include "main.h"
 
-void read_xyzclcpcs(std::ifstream& inputFile, std::vector<Point>* ptr_to_allPointsVector);
+void read_xyzclcpcs(std::ifstream& inputFile, std::vector<Point> &allPointsVector);
 
 #endif // IO_H

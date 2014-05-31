@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
 
 	vector<Point> allPoints; ///< A vector of all points in simulation
 
-	read_xyzclcpcs(infile,&allPoints);
+	read_xyzclcpcs(infile,allPoints);
 
 	cout << allPoints[1].z << endl;
 

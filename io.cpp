@@ -22,15 +22,13 @@ using namespace std;
  * Each point is appended to PointsVector, which is passed in by reference.
  * Each point's sausageID is returned undefined.
  */
-void read_xyzclcpcs(std::ifstream& inputFile, vector<Point>* ptr_to_allPointsVector){
-	vector<Point> workingVector;
+void read_xyzclcpcs(std::ifstream& inputFile, vector<Point> &allPointsVector){
 	string line;
 	Point p;
 	while ( getline (inputFile, line) ){
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
 		cout << p.z << endl ;
-		workingVector.push_back(p);
+		allPointsVector.push_back(p);
 	}
-	*ptr_to_allPointsVector=workingVector;
 }
