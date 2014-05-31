@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "main.h"
+#include "point.h"
 
 void read_xyzclcpcs(std::ifstream& inputFile, std::vector<Point> &allPointsVector);
 

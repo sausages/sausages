@@ -1,6 +1,6 @@
 #include <vector>
 #include <stdexcept>
-#include "main.h"
+#include "point.h"
 #include "find_sausages.h"
 
 using namespace std;

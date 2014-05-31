@@ -1,6 +1,6 @@
 CXXFLAGS = -g -O0 -Wall -Wextra
 
-HEADERS = main.h io.h find_sausages.h
+HEADERS = point.h io.h find_sausages.h
 OBJS    = main.o io.o find_sausages.o
 
 sausages: $(HEADERS) $(OBJS)
