@@ -39,7 +39,14 @@ int main(int argc, char *argv[]){
 	vector<int> sausage_count=count_sausages(allPoints);
 	for (vector<int>::const_iterator it=sausage_count.begin();it!=sausage_count.end(); ++it){
 		cout << *it << endl;
+		cout << endl;
 	}
+
+	// Link the points to their neighbours
+	neighLink_xyzclcpcs(allPoints);
+
+	// Check the neighbours
+	//printAllNeighs(allPoints);
 
 	cout << "Exiting successfully" << endl;
 }

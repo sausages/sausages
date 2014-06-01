@@ -24,8 +24,8 @@ using namespace std;
  */
 void read_xyzclcpcs(std::ifstream& inputFile, vector<Point> &allPointsVector){
 	string line;
-	Point p;
 	while ( getline (inputFile, line) ){
+		Point p={}; // Initialise all members to 0 (important for neighLinks)
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
 		allPointsVector.push_back(p);
