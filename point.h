@@ -28,6 +28,9 @@ struct Point
 	Point* down;
 	Point* forward;
 	Point* back;
+	// Pointer to self, pretty sure this is irrelevant, but
+	// I currently need it for the flood-fill (iterators are copies)
+	Point* self;
 };
 
 void neighLink_xyzclcpcs(std::vector<Point> &allPoints);

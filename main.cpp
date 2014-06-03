@@ -37,8 +37,8 @@ int main(int argc, char *argv[]){
 
 	// Count the sausages
 	vector<int> sausage_count=count_sausages(allPoints);
-	for (vector<int>::const_iterator it=sausage_count.begin();it!=sausage_count.end(); ++it){
-		cout << *it << endl;
+	for (size_t i=0; i<sausage_count.size(); i++){
+		cout << i << " " << sausage_count[i] << endl;
 		cout << endl;
 	}
 
@@ -47,6 +47,16 @@ int main(int argc, char *argv[]){
 
 	// Check the neighbours
 	//printAllNeighs(allPoints);
+
+	// Separate the points into separate, contiguous sausages
+	flood_fill(allPoints);
+
+	// Count the sausages
+	sausage_count=count_sausages(allPoints);
+	for (size_t i=0; i<sausage_count.size(); i++){
+		cout << i << " " << sausage_count[i] << endl;
+		cout << endl;
+	}
 
 	cout << "Exiting successfully" << endl;
 }

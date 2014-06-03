@@ -14,6 +14,9 @@ void neighLink_xyzclcpcs(vector<Point> &allPoints){
 	unsigned int N = pow(allPoints.size(),1.0/3.0);	///< side-length of cube
 	// Don't use iterators, indices are important here
 	for (size_t i=0; i<allPoints.size(); i++){
+		// Pointer to self, pretty sure this is irrelevant, but
+		// I currently need it for the flood-fill (iterators are copies)
+		allPoints[i].self = &(allPoints[i]);
 		// If not right-most
 		if (((i/(N*N))+1)%N != 0){
 			allPoints[i].right  = &(allPoints[i+N*N]);
