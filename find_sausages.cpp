@@ -64,12 +64,12 @@ void flood_fill(vector<Point> &allPoints){
 				//curr.sausageID=newSausage;
 				curr.self->sausageID=newSausage;
 				// There's got to be a nice way of doing this
-				if (curr.left->sausageID==1)    {stack.push_back(*(curr.left)) ; cout << "left" << endl;}
-				if (curr.right->sausageID==1)   {stack.push_back(*(curr.right)) ; cout << "right" << endl;}
-				if (curr.up->sausageID==1)      {stack.push_back(*(curr.up)) ; cout << "up" << endl;}
-				if (curr.down->sausageID==1)    {stack.push_back(*(curr.down)) ; cout << "down" << endl;}
-				if (curr.forward->sausageID==1) {stack.push_back(*(curr.forward)) ; cout << "forward" << endl;}
-				if (curr.back->sausageID==1)    {stack.push_back(*(curr.back)) ; cout << "back" << endl;}
+				if (curr.left    && curr.left->sausageID==1)    {stack.push_back(*(curr.left)) ; cout << "left" << endl;}
+				if (curr.right   && curr.right->sausageID==1)   {stack.push_back(*(curr.right)) ; cout << "right" << endl;}
+				if (curr.up      && curr.up->sausageID==1)      {stack.push_back(*(curr.up)) ; cout << "up" << endl;}
+				if (curr.down    && curr.down->sausageID==1)    {stack.push_back(*(curr.down)) ; cout << "down" << endl;}
+				if (curr.forward && curr.forward->sausageID==1) {stack.push_back(*(curr.forward)) ; cout << "forward" << endl;}
+				if (curr.back    && curr.back->sausageID==1)    {stack.push_back(*(curr.back)) ; cout << "back" << endl;}
 				cout << "post-pushes stack size is " << stack.size() << endl;
 			}
 			newSausage++;
