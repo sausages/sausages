@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "point.h"
 #include "find_sausages.h"
+#include "main.h"
 
 using namespace std;
 
@@ -46,31 +47,25 @@ vector<int> count_sausages(const vector<Point> &allPoints){
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
 void flood_fill(vector<Point> &allPoints){
-	cout << "begin flood-fill" << endl;
 	int newSausage=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
-	cout << "newSausage is " << newSausage << endl;
 	vector<Point> stack; // Empty FILO stack, filled with points to be coloured
 
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){ 
-			cout << "Starting sort of sausage #" << newSausage << endl;
+			if (params::verbosity>=VERBOSE) cout << "Starting sort of sausage #" << newSausage << endl;
 			stack.push_back(allPoints[firstPoint]);
 			while (stack.size()>0){
-				cout << "stack size is " << stack.size() << endl;
 				Point curr = stack.back();
 				stack.pop_back();
-				cout << "post-pop stack size is " << stack.size() << endl;
-				//curr.sausageID=newSausage;
-				curr.self->sausageID=newSausage;
 				// There's got to be a nice way of doing this
-				if (curr.left    && curr.left->sausageID==1)    {stack.push_back(*(curr.left)) ; cout << "left" << endl;}
-				if (curr.right   && curr.right->sausageID==1)   {stack.push_back(*(curr.right)) ; cout << "right" << endl;}
-				if (curr.up      && curr.up->sausageID==1)      {stack.push_back(*(curr.up)) ; cout << "up" << endl;}
-				if (curr.down    && curr.down->sausageID==1)    {stack.push_back(*(curr.down)) ; cout << "down" << endl;}
-				if (curr.forward && curr.forward->sausageID==1) {stack.push_back(*(curr.forward)) ; cout << "forward" << endl;}
-				if (curr.back    && curr.back->sausageID==1)    {stack.push_back(*(curr.back)) ; cout << "back" << endl;}
-				cout << "post-pushes stack size is " << stack.size() << endl;
+				curr.self->sausageID=newSausage;
+				if (curr.left    && curr.left->sausageID==1)    stack.push_back(*(curr.left)) ;
+				if (curr.right   && curr.right->sausageID==1)   stack.push_back(*(curr.right)) ;
+				if (curr.up      && curr.up->sausageID==1)      stack.push_back(*(curr.up)) ;
+				if (curr.down    && curr.down->sausageID==1)    stack.push_back(*(curr.down)) ;
+				if (curr.forward && curr.forward->sausageID==1) stack.push_back(*(curr.forward)) ;
+				if (curr.back    && curr.back->sausageID==1)    stack.push_back(*(curr.back)) ;
 			}
 			newSausage++;
 		}
