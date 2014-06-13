@@ -5,8 +5,10 @@
 enum verbosityLevel {ERROR, WARNING, NORMAL, VERBOSE, DEBUG};
 
 namespace params{
-	extern verbosityLevel verbosity;
+	extern const verbosityLevel verbosity;
 	extern const double threshold_level;
+	extern const double silent_ignore_size;
+	extern const double min_sausage_size;
 }
 
 
