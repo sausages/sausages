@@ -40,13 +40,15 @@ int main(int argc, char *argv[]){
 
 	// Put all points with cl<threshold in a sausage
 	if (verbosity>=NORMAL) cout << "Thresholding, sausages have cl<" << params::threshold_level << endl;
-	threshold(allPoints);
+	int num_below_threshold = threshold(allPoints);
+	if (verbosity>=NORMAL) cout << "  " << num_below_threshold << " out of "
+		<< allPoints.size() << " points were below the theshold." << endl;
 
 	// Count the sausages
 	if (verbosity>=NORMAL) cout << "Pixel counts in (0) or not in (1) a sausage:" << endl;
 	vector<int> sausage_count=count_sausages(allPoints);
 	for (size_t i=0; i<sausage_count.size(); i++){
-		cout << i << " " << sausage_count[i] << endl;
+		cout << "  " << i << " " << sausage_count[i] << endl;
 	}
 
 	// Link the points to their neighbours
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]){
 	if (verbosity>=NORMAL){
 		cout << "Sausage sizes:" << endl;
 		for (size_t i=0; i<sausage_count.size(); i++){
-			cout << i << " " << sausage_count[i] << endl;
+			cout << "  " << i << " " << sausage_count[i] << endl;
 		}
 	}
 

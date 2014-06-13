@@ -7,19 +7,22 @@
 
 using namespace std;
 
-/** Sets the sausageID of each point.
+/** Sets the sausageID of each point, returning how many were below threshold
  * Set to 1 if the cl value is below the threshold (in a sausage),
  * 0 otherwise (not in a sausage)
  */
-void threshold(vector<Point> &allPoints){
+int threshold(vector<Point> &allPoints){
+	int num_below_threshold=0;
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
 		if (it->cl < params::threshold_level){
 			it->sausageID=1;
+			num_below_threshold++;
 		} else {
 			it->sausageID=0;
 		}
 	}
+	return num_below_threshold;
 }
 
 /** Returns a vector where the nth element contains

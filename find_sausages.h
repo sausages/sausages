@@ -4,7 +4,7 @@
 #include <vector>
 #include "point.h"
 
-void threshold(std::vector<Point> &allPoints);
+int threshold(std::vector<Point> &allPoints);
 std::vector<int> count_sausages(const std::vector<Point> &allPoints);
 void flood_fill(std::vector<Point> &allPoints);
 
