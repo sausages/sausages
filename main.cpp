@@ -5,8 +5,12 @@
 #include "point.h"
 #include "io.h"
 #include "find_sausages.h"
+#include "main.h"
 
 using namespace std;
+using namespace params;
+
+verbosityLevel params::verbosity=NORMAL;
 
 /**
  * Main function
@@ -29,25 +33,42 @@ int main(int argc, char *argv[]){
 		cerr<<"Error opening file "<<argv[1]<<endl;
 		exit(EXIT_FAILURE);
 	}
+
+	if (verbosity>=NORMAL) cout << "Reading file " << argv[1] << endl;
 	read_xyzclcpcs(infile,allPoints);
 
 
-	// Put all points with cl>threshold in a sausage
+	// Put all points with cl<threshold in a sausage
+	if (verbosity>=NORMAL) cout << "Thresholding, sausages have cl<" << threshold_level << endl;
 	threshold(allPoints,threshold_level);
 
 	// Count the sausages
+	if (verbosity>=NORMAL) cout << "Pixel counts in (0) or not in (1) a sausage:" << endl;
 	vector<int> sausage_count=count_sausages(allPoints);
-	for (vector<int>::const_iterator it=sausage_count.begin();it!=sausage_count.end(); ++it){
-		cout << *it << endl;
-		cout << endl;
+	for (size_t i=0; i<sausage_count.size(); i++){
+		cout << i << " " << sausage_count[i] << endl;
 	}
 
 	// Link the points to their neighbours
+	if (verbosity>=NORMAL) cout << "Linking pixels..." << endl;
 	neighLink_xyzclcpcs(allPoints);
 
 	// Check the neighbours
-	//printAllNeighs(allPoints);
+	if (verbosity>=DEBUG) printAllNeighs(allPoints);
 
-	cout << "Exiting successfully" << endl;
+	// Separate the points into separate, contiguous sausages
+	if (verbosity>=NORMAL) cout << "Distinguishing sausages..." << endl;
+	flood_fill(allPoints);
+
+	// Count the sausages
+	sausage_count=count_sausages(allPoints);
+	if (verbosity>=NORMAL){
+		cout << "Sausage sizes:" << endl;
+		for (size_t i=0; i<sausage_count.size(); i++){
+			cout << i << " " << sausage_count[i] << endl;
+		}
+	}
+
+	if (verbosity>=NORMAL) cout << "Exiting successfully" << endl;
 }
 
