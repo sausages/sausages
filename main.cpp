@@ -11,6 +11,7 @@ using namespace std;
 using namespace params;
 
 verbosityLevel params::verbosity=NORMAL;
+const double params::threshold_level = 0.12;
 
 /**
  * Main function
@@ -18,7 +19,6 @@ verbosityLevel params::verbosity=NORMAL;
  */
 int main(int argc, char *argv[]){
 	// Set various parameters and variables
-	const double threshold_level = 0.12;
 	vector<Point> allPoints; ///< A vector of all points in simulation
 
 	// Check #args
@@ -39,8 +39,8 @@ int main(int argc, char *argv[]){
 
 
 	// Put all points with cl<threshold in a sausage
-	if (verbosity>=NORMAL) cout << "Thresholding, sausages have cl<" << threshold_level << endl;
-	threshold(allPoints,threshold_level);
+	if (verbosity>=NORMAL) cout << "Thresholding, sausages have cl<" << params::threshold_level << endl;
+	threshold(allPoints);
 
 	// Count the sausages
 	if (verbosity>=NORMAL) cout << "Pixel counts in (0) or not in (1) a sausage:" << endl;

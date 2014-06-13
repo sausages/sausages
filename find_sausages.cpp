@@ -11,10 +11,10 @@ using namespace std;
  * Set to 1 if the cl value is below the threshold (in a sausage),
  * 0 otherwise (not in a sausage)
  */
-void threshold(vector<Point> &allPoints, double threshold_level){
+void threshold(vector<Point> &allPoints){
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		if (it->cl < threshold_level){
+		if (it->cl < params::threshold_level){
 			it->sausageID=1;
 		} else {
 			it->sausageID=0;

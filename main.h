@@ -6,6 +6,7 @@ enum verbosityLevel {ERROR, WARNING, NORMAL, VERBOSE, DEBUG};
 
 namespace params{
 	extern verbosityLevel verbosity;
+	extern const double threshold_level;
 }
 
 
