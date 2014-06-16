@@ -2,7 +2,7 @@
 #define MAIN_H
 
 // enums are implicitly assigned to 0,1,2.. so e.g. DEBUG > WARNING
-enum verbosityLevel {ERROR, WARNING, NORMAL, VERBOSE, DEBUG};
+enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
 
 namespace params{
 	extern const verbosityLevel verbosity;

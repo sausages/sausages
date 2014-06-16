@@ -12,9 +12,34 @@
 #include <vector>
 #include "point.h"
 #include "io.h"
+#include "main.h"
 
 using namespace std;
 
+/** A null buffer and stream, analogous to /dev/null */
+NullBuffer nullBuffer;
+std::ostream nullStream(&nullBuffer);
+
+/** Functions returning std::cout only at certain verbosity levels, else nullStream */
+std::ostream &error(void) {
+	if (params::verbosity > ERROR){ return std::cout; } else{ return nullStream; }
+}
+
+std::ostream &warning(void) {
+	if (params::verbosity > WARNING){ return std::cout; } else{ return nullStream; }
+}
+
+std::ostream &info(void) {
+	if (params::verbosity > INFO){ return std::cout; } else{ return nullStream; }
+}
+
+std::ostream &verbose(void) {
+	if (params::verbosity > VERBOSE){ return std::cout; } else{ return nullStream; }
+}
+
+std::ostream &debug(void) {
+	if (params::verbosity > DEBUG){ return std::cout; } else{ return nullStream; }
+}
 
 /**
  * Reads in data from inputFile with the format:
@@ -31,3 +56,4 @@ void read_xyzclcpcs(std::ifstream& inputFile, vector<Point> &allPointsVector){
 		allPointsVector.push_back(p);
 	}
 }
+

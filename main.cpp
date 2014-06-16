@@ -8,10 +8,10 @@
 #include "main.h"
 
 using namespace std;
-using namespace params;
 
 namespace params{
-	const verbosityLevel verbosity = NORMAL;
+	const verbosityLevel verbosity = INFO;
+	//const verbosityLevel verbosity = DEBUG;
 	const double threshold_level = 0.12;
 	const double silent_ignore_size = 0.01;
 	const double min_sausage_size = 0.1;
@@ -40,53 +40,50 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	if (verbosity>=NORMAL) cout << "Reading file " << argv[1] << endl;
+	info() << "Reading file " << argv[1] << endl;
 	read_xyzclcpcs(infile,allPoints);
-	if (verbosity>=NORMAL) cout << "  found " << allPoints.size() << " points." << endl;
+	info() << "  found " << allPoints.size() << " points." << endl;
 
 	// Put all points with cl<threshold in a sausage
-	if (verbosity>=NORMAL) cout << "Thresholding, sausages have cl<" << params::threshold_level << endl;
+	info() << "Thresholding, sausages have cl<" << params::threshold_level << endl;
 	int num_below_threshold = threshold(allPoints);
-	if (verbosity>=NORMAL) cout << "  " << num_below_threshold << " out of "
+	info() << "  " << num_below_threshold << " out of "
 		<< allPoints.size() << " points were below the theshold." << endl;
 
 	// Link the points to their neighbours
-	if (verbosity>=NORMAL) cout << "Linking pixels..." << endl;
+	info() << "Linking pixels..." << endl;
 	neighLink_xyzclcpcs(allPoints);
 
 	// Check the neighbours
-	if (verbosity>=DEBUG) printAllNeighs(allPoints);
+	if (params::verbosity >= DEBUG) printAllNeighs(allPoints);
 
 	// Separate the points into separate, contiguous sausages
-	if (verbosity>=NORMAL) cout << "Distinguishing sausages..." << endl;
+	info() << "Distinguishing sausages..." << endl;
 	flood_fill(allPoints);
 
 	// Count the sausages
 	sausage_count=count_sausages(allPoints);
-	if (verbosity>=NORMAL){
-		cout << "Sausage sizes:" << endl;
-		for (size_t i=0; i<sausage_count.size(); i++){
-			cout << "  " << i << " " << sausage_count[i] << endl;
+	info() << "Sausage sizes:" << endl;
+	for (size_t i=0; i<sausage_count.size(); i++){
+		info() << "  " << i << " " << sausage_count[i] << endl;
 		}
-	}
 
 	// Measure the sausages' sizes. If they are 'too small', ignore them.
 	for (size_t i=2; i<sausage_count.size(); i++){
-		if (sausage_count[i] < params::silent_ignore_size*num_below_threshold &&
-			verbosity >= VERBOSE ){
-			cout << "Ignoring sausage #" << i << endl;
+		if (sausage_count[i] < params::silent_ignore_size*num_below_threshold ){
+			verbose() << "Ignoring sausage #" << i << endl;
 		} else if (sausage_count[i] > params::silent_ignore_size*num_below_threshold &&
 			sausage_count[i] < params::min_sausage_size*num_below_threshold   ){
-			if (verbosity>=WARNING) cout << "Sausage #" << i << " of size "  <<
+			warning() << "Sausage #" << i << " of size "  <<
 				sausage_count[i] << " is not tiny, but is being ignored." << endl;
 		} else if (sausage_count[i] > params::min_sausage_size*num_below_threshold){
 			relevant_sausages.push_back(i);
 		}
 	}
-	if (verbosity>=NORMAL)
-		cout << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
+	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
 	// Wrap up and exit
-	if (verbosity>=NORMAL) cout << "Exiting successfully" << endl;
+	info() << "Exiting successfully" << endl;
 }
+
 
