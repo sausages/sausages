@@ -2,7 +2,7 @@
 #include <vector>
 #include <stdexcept>
 #include "point.h"
-#include "find_sausages.h"
+#include "sausages.h"
 #include "main.h"
 
 using namespace std;

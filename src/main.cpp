@@ -4,7 +4,7 @@
 #include <vector>
 #include "point.h"
 #include "io.h"
-#include "find_sausages.h"
+#include "sausages.h"
 #include "main.h"
 
 using namespace std;
