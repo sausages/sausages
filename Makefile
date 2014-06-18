@@ -3,12 +3,21 @@
 # Make sure not to include any -O, even -O0, as even this can hide loop counter
 CXXFLAGS = -g -Wall -Wextra -Wno-missing-field-initializers
 
-HEADERS = point.h io.h find_sausages.h
-OBJS    = main.o io.o find_sausages.o point.o
+SRCDIR   = src
+BUILDDIR = build
+
+FILES   = find_sausages.cpp io.cpp main.cpp point.cpp
+SRC     = $(patsubst %, $(SRCDIR)/%, $(FILES))
+HEADERS = $(patsubst %.cpp, $(SRCDIR)/%.h, $(FILES))
+OBJS    = $(patsubst %.cpp, $(BUILDDIR)/%.o, $(FILES))
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(SRCDIR)/%.h
+	@mkdir -p build
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 sausages: $(HEADERS) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 .PHONY:
 clean:
-	rm -f *.o sausages
+	rm -f build/* sausages
