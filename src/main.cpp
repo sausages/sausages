@@ -71,10 +71,12 @@ int main(int argc, char *argv[]){
 		int sausageSize=allSausages[i].points.size();
 		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
 			verbose() << "Ignoring sausage #" << i+2 << endl;
+			allSausages[i].is_significant=false;
 		} else if (sausageSize > params::silent_ignore_size*num_below_threshold &&
 			sausageSize < params::min_sausage_size*num_below_threshold   ){
 			warning() << "Sausage #" << i+2 << " of size "  <<
 				sausageSize << " is not tiny, but is being ignored." << endl;
+			allSausages[i].is_significant=false;
 		} else if (sausageSize > params::min_sausage_size*num_below_threshold){
 			allSausages[i].is_significant=true;
 			relevant_sausages.push_back(i);
