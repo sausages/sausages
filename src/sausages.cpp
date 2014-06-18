@@ -1,11 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include "Eigen/Dense"
+#include "io.h"
 #include "point.h"
 #include "sausages.h"
 #include "main.h"
 
 using namespace std;
+
+Sausage::Sausage(int ID){
+	sausageID=ID;
+}
 
 /** Sets the sausageID of each point, returning how many were below threshold
  * Set to 1 if the cl value is below the threshold (in a sausage),
@@ -25,23 +31,6 @@ int threshold(vector<Point> &allPoints){
 	return num_below_threshold;
 }
 
-/** Returns a vector where the nth element contains
- * the number of points where sausageID==n
- */
-vector<int> count_sausages(const vector<Point> &allPoints){
-	vector<Point>::const_iterator it;
-	vector<int> sausage_count;
-	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		try{
-			sausage_count.at(it->sausageID)++;
-		}catch(out_of_range o){
-			sausage_count.resize(it->sausageID+1);
-			sausage_count.at(it->sausageID)++;
-		}
-	}
-	return sausage_count;
-}
-
 /** Ordinary Flood-fill algorithm
  * 1) Find the first point in an unnumbered sausage
  * 2) Add it to a numbered sausage, and add all its unsorted neighbours to a stack
@@ -49,20 +38,22 @@ vector<int> count_sausages(const vector<Point> &allPoints){
  *     the sausage and its unsorted neighbours to the stack
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
-void flood_fill(vector<Point> &allPoints){
-	int newSausage=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
+void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
+	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
 	vector<Point> stack; // Empty FILO stack, filled with points to be coloured
 
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){ 
-			if (params::verbosity>=VERBOSE) cout << "Starting sort of sausage #" << newSausage << endl;
+			verbose() << "Starting sort of sausage #" << newSausageID << endl;
+			allSausages.push_back(Sausage(newSausageID));
 			stack.push_back(allPoints[firstPoint]);
 			while (stack.size()>0){
 				Point curr = stack.back();
 				stack.pop_back();
 				// There's got to be a nice way of doing this
-				curr.self->sausageID=newSausage;
+				curr.self->sausageID=newSausageID;
+				allSausages.back().points.push_back(curr);
 				if (curr.left    && curr.left->sausageID==1)    stack.push_back(*(curr.left)) ;
 				if (curr.right   && curr.right->sausageID==1)   stack.push_back(*(curr.right)) ;
 				if (curr.up      && curr.up->sausageID==1)      stack.push_back(*(curr.up)) ;
@@ -70,7 +61,56 @@ void flood_fill(vector<Point> &allPoints){
 				if (curr.forward && curr.forward->sausageID==1) stack.push_back(*(curr.forward)) ;
 				if (curr.back    && curr.back->sausageID==1)    stack.push_back(*(curr.back)) ;
 			}
-			newSausage++;
+			newSausageID++;
 		}
 	}
+}
+
+void Sausage::find_com(){
+	double x=0,y=0,z=0;
+	vector<Point>::iterator it;
+	for (it=points.begin(); it!=points.end(); ++it){
+		x+=it->x;
+		y+=it->y;
+		z+=it->z;
+	}
+	centre_of_mass[0] = x/points.size();
+	centre_of_mass[1] = y/points.size();
+	centre_of_mass[2] = z/points.size();
+}
+
+
+
+void Sausage::find_pobf(){
+	/**
+	 * If we treat x,y,z as the distance of a point from the centre-of-mass of its sausage, then:
+	 *
+	 * \vec{x_i} \dot \vec{\beta} = z_i
+	 * \bf{X} \dot \vec{\beta} = \vec{z}
+	 *
+	 * The optimal fit \vec{\hat{\beta}} is:
+	 * \vec{\hat{\beta}} = (\bf{X}^T \bf{X} )^{-1} \bf{X}^T \vec{z}
+	 */
+
+	using namespace Eigen;
+	MatrixXd X(points.size(), 2);  ///< {x,y}-values of sausage's points, relative to sausage's CoM
+	VectorXd z(points.size());      ///< z-values of sausage's points, relative to sausage's CoM
+	Vector2d beta;                 ///< plane parameters
+
+	// Centre the points around (0,0,0) (the vector normal to the plane is unaffected)
+	for (size_t iPoint=0; iPoint<points.size(); iPoint++){
+		X(iPoint,0) = points[iPoint].x - centre_of_mass[0];
+		X(iPoint,1) = points[iPoint].y - centre_of_mass[1];
+		z(iPoint) = points[iPoint].z - centre_of_mass[2];
+	}
+
+	//plane_of_best_fit
+
+	debug() << "Least-squares plane is " << X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) << endl;
+
+
+
+
+
+
 }

@@ -24,7 +24,7 @@ namespace params{
 int main(int argc, char *argv[]){
 	// Set various parameters and variables
 	vector<Point> allPoints; ///< A vector of all points in simulation
-	vector<int> sausage_count; ///< A vector of the size of all sausages
+	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
 
 	// Check #args
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	// Open and read input data file
+	// Open, read and close input data file
 	ifstream infile (argv[1]);
 	if (!infile.is_open()){
 		cerr<<"Error opening file "<<argv[1]<<endl;
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]){
 	info() << "Reading file " << argv[1] << endl;
 	read_xyzclcpcs(infile,allPoints);
 	info() << "  found " << allPoints.size() << " points." << endl;
+	infile.close();
 
 	// Put all points with cl<threshold in a sausage
 	info() << "Thresholding, sausages have cl<" << params::threshold_level << endl;
@@ -59,24 +60,23 @@ int main(int argc, char *argv[]){
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
-	flood_fill(allPoints);
-
-	// Count the sausages
-	sausage_count=count_sausages(allPoints);
+	flood_fill_separate(allPoints,allSausages);
 	info() << "Sausage sizes:" << endl;
-	for (size_t i=0; i<sausage_count.size(); i++){
-		info() << "  " << i << " " << sausage_count[i] << endl;
+	for (size_t i=0; i<allSausages.size(); i++){
+		info() << "  " << i+2 << " " << allSausages[i].points.size() << endl;
 		}
 
-	// Measure the sausages' sizes. If they are 'too small', ignore them.
-	for (size_t i=2; i<sausage_count.size(); i++){
-		if (sausage_count[i] < params::silent_ignore_size*num_below_threshold ){
-			verbose() << "Ignoring sausage #" << i << endl;
-		} else if (sausage_count[i] > params::silent_ignore_size*num_below_threshold &&
-			sausage_count[i] < params::min_sausage_size*num_below_threshold   ){
-			warning() << "Sausage #" << i << " of size "  <<
-				sausage_count[i] << " is not tiny, but is being ignored." << endl;
-		} else if (sausage_count[i] > params::min_sausage_size*num_below_threshold){
+	// If the sausages are 'too small', ignore them.
+	for (size_t i=0; i<allSausages.size(); i++){
+		int sausageSize=allSausages[i].points.size();
+		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
+			verbose() << "Ignoring sausage #" << i+2 << endl;
+		} else if (sausageSize > params::silent_ignore_size*num_below_threshold &&
+			sausageSize < params::min_sausage_size*num_below_threshold   ){
+			warning() << "Sausage #" << i+2 << " of size "  <<
+				sausageSize << " is not tiny, but is being ignored." << endl;
+		} else if (sausageSize > params::min_sausage_size*num_below_threshold){
+			allSausages[i].is_significant=true;
 			relevant_sausages.push_back(i);
 		}
 	}
