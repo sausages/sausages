@@ -6,7 +6,7 @@ CXXFLAGS = -g -Wall -Wextra -Wno-missing-field-initializers
 SRCDIR   = src
 BUILDDIR = build
 
-FILES   = find_sausages.cpp io.cpp main.cpp point.cpp
+FILES   = sausages.cpp io.cpp main.cpp point.cpp
 SRC     = $(patsubst %, $(SRCDIR)/%, $(FILES))
 HEADERS = $(patsubst %.cpp, $(SRCDIR)/%.h, $(FILES))
 OBJS    = $(patsubst %.cpp, $(BUILDDIR)/%.o, $(FILES))
