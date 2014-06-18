@@ -22,23 +22,23 @@ std::ostream nullStream(&nullBuffer);
 
 /** Functions returning std::cout only at certain verbosity levels, else nullStream */
 std::ostream &error(void) {
-	if (params::verbosity > ERROR){ return std::cout; } else{ return nullStream; }
+	if (params::verbosity >= ERROR){ return std::cout; } else{ return nullStream; }
 }
 
 std::ostream &warning(void) {
-	if (params::verbosity > WARNING){ return std::cout; } else{ return nullStream; }
+	if (params::verbosity >= WARNING){ return std::cout; } else{ return nullStream; }
 }
 
 std::ostream &info(void) {
-	if (params::verbosity > INFO){ return std::cout; } else{ return nullStream; }
+	if (params::verbosity >= INFO){ return std::cout; } else{ return nullStream; }
 }
 
 std::ostream &verbose(void) {
-	if (params::verbosity > VERBOSE){ return std::cout; } else{ return nullStream; }
+	if (params::verbosity >= VERBOSE){ return std::cout; } else{ return nullStream; }
 }
 
 std::ostream &debug(void) {
-	if (params::verbosity > DEBUG){ return std::cout; } else{ return nullStream; }
+	if (params::verbosity >= DEBUG){ return std::cout; } else{ return nullStream; }
 }
 
 /**
