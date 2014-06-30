@@ -10,8 +10,8 @@
 using namespace std;
 
 namespace params{
-	const verbosityLevel verbosity = INFO;
-	//const verbosityLevel verbosity = DEBUG;
+	//const verbosityLevel verbosity = INFO;
+	const verbosityLevel verbosity = DEBUG;
 	const double threshold_level = 0.12;
 	const double silent_ignore_size = 0.01;
 	const double min_sausage_size = 0.1;
@@ -83,6 +83,13 @@ int main(int argc, char *argv[]){
 		}
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
+
+	// Calculate properties of relevant sausages
+	for (size_t i=0; i<relevant_sausages.size(); i++){
+		Sausage thisSausage=allSausages[relevant_sausages[i]];
+		thisSausage.find_com();
+		thisSausage.find_pobf();
+	}
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;
