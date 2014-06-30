@@ -38,7 +38,9 @@ void neighLink_xyzclcpcs(vector<Point> &allPoints){
 
 void printAllNeighs(const vector<Point> &allPoints){
 	Point p;
-	for (size_t i = 0; i<allPoints.size() ; i++){
+	const size_t max_PointsToPrint=100;
+	size_t num_PointsToPrint=min(allPoints.size(),max_PointsToPrint);
+	for (size_t i = 0; i<num_PointsToPrint ; i++){
 		p=allPoints[i];
 		cout << i << endl;
 		cout << "I am " << &allPoints[i] << endl; // Don't print &p
