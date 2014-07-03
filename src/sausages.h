@@ -16,6 +16,7 @@ class Sausage {
 	bool is_significant; ///< Whether the sausage is larger than some minimum size
 	void find_com(); ///< Find and set centre_of_mass
 	void find_pobf(); ///< Find and set plane_of_best_fit
+	void estimate_sausage_length(); ///<Approximate length of sausage
 };
 
 int threshold(std::vector<Point> &allPoints);

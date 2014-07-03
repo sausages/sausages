@@ -109,3 +109,10 @@ void Sausage::find_pobf(){
 	debug() << "Least-squares plane is " << X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) << endl;
 
 }
+
+void Sausage::estimate_sausage_length(){
+	//find_sausage_pos_dir();
+	return;
+}
+
+

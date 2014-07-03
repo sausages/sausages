@@ -11,7 +11,7 @@ using namespace std;
 
 namespace params{
 	//const verbosityLevel verbosity = INFO;
-	const verbosityLevel verbosity = DEBUG;
+	const verbosityLevel verbosity = INFO;
 	const double threshold_level = 0.12;
 	const double silent_ignore_size = 0.01;
 	const double min_sausage_size = 0.1;
@@ -90,6 +90,13 @@ int main(int argc, char *argv[]){
 		thisSausage.find_com();
 		thisSausage.find_pobf();
 	}
+
+	// Find centre of masses and orientation vectors following sausage
+	for (size_t i=0; i<allSausages.size(); i++){
+		if ( allSausages[i].is_significant==true ){
+		allSausages[i].estimate_sausage_length();}
+	}
+
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;
