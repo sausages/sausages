@@ -77,6 +77,7 @@ void Sausage::find_com(){
 	centre_of_mass[0] = x/points.size();
 	centre_of_mass[1] = y/points.size();
 	centre_of_mass[2] = z/points.size();
+	info() <<  "Centre of mass " << centre_of_mass[0] << " " << centre_of_mass[1] << " " << centre_of_mass[2] << endl;
 }
 
 
@@ -110,8 +111,30 @@ void Sausage::find_pobf(){
 
 }
 
+void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector<double>& zz){
+
+	int l=0;
+	vector<Point>::iterator it;
+	for (it=points.begin(); it!=points.end(); ++it){
+		xx[l] = it->x - centre_of_mass[0]; 
+		yy[l] = it->y - centre_of_mass[1]; 
+		zz[l] = it->z - centre_of_mass[2]; 
+		l++;
+	}
+	return;
+}
+
 void Sausage::estimate_sausage_length(){
-	//find_sausage_pos_dir();
+
+	info() << "Estimating sausage length... " << endl;
+ 	int nop = points.size(); // number of points in sausage
+	std::vector<double>xx(nop); // arrays for temporary coordinates
+	std::vector<double>yy(nop);
+	std::vector<double>zz(nop);
+	// find centre of mass
+	find_com();
+	// shift coordinates so that COM is in origin
+	shift_com_to_origin(xx,yy,zz);
 	return;
 }
 

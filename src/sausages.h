@@ -17,6 +17,7 @@ class Sausage {
 	void find_com(); ///< Find and set centre_of_mass
 	void find_pobf(); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(); ///<Approximate length of sausage
+	void shift_com_to_origin(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Shift coordinates so that COM goes to origin
 };
 
 int threshold(std::vector<Point> &allPoints);
