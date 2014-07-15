@@ -107,7 +107,7 @@ void Sausage::find_pobf(){
 
 	//plane_of_best_fit
 
-	debug() << "Least-squares plane is " << X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) << endl;
+	info() << "Least-squares plane is " << X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) << endl;
 
 }
 
@@ -124,9 +124,18 @@ void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector
 	return;
 }
 
+void Sausage::rotate_coord(vector<double>& xx, vector<double>& yy, vector<double>& zz){
+
+	// loop over all coordinate points and rotate
+	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+	   // 	xx[i] = ...; plane_of_best_fit[3]
+	    }
+	return;
+}
+
 void Sausage::estimate_sausage_length(){
 
-	info() << "Estimating sausage length... " << endl;
+	info() << "--------> Estimating sausage length... " << endl;
  	int nop = points.size(); // number of points in sausage
 	std::vector<double>xx(nop); // arrays for temporary coordinates
 	std::vector<double>yy(nop);
@@ -135,6 +144,15 @@ void Sausage::estimate_sausage_length(){
 	find_com();
 	// shift coordinates so that COM is in origin
 	shift_com_to_origin(xx,yy,zz);
+	// find plane of best fit
+	find_pobf();
+	// rotate coordinate system so that plane of best fit projects onto xy-plane
+	rotate_coord(xx,yy,zz);
+	// Find number of slices
+	int nos = (int)points.size()/100;
+	info() << "Sausage was divided in " << nos << " slices." << endl;
+	// find which slice we are in
+	// work out centre of mass for each slice
 	return;
 }
 

@@ -7,7 +7,10 @@
 class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
-
+	std::vector<double> slice_x; ///< x coord of centre of masses for slices along the sausage
+	std::vector<double> slice_y; ///< y coord of centre of masses for slices along the sausage
+	std::vector<double> slice_z; ///< z coord of centre of masses for slices along the sausage
+	
 	public:
 
 	Sausage(int sausageID);
@@ -18,6 +21,7 @@ class Sausage {
 	void find_pobf(); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(); ///<Approximate length of sausage
 	void shift_com_to_origin(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Shift coordinates so that COM goes to origin
+	void rotate_coord(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Rotate coords to align z along direction of pobf
 };
 
 int threshold(std::vector<Point> &allPoints);
