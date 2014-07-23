@@ -10,7 +10,8 @@ class Sausage {
 	std::vector<double> slice_x; ///< x coord of centre of masses for slices along the sausage
 	std::vector<double> slice_y; ///< y coord of centre of masses for slices along the sausage
 	std::vector<double> slice_z; ///< z coord of centre of masses for slices along the sausage
-	
+	std::vector<int>slice_counter; ///< Holds # of points in slice
+
 	public:
 
 	Sausage(int sausageID);

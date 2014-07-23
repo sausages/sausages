@@ -151,9 +151,36 @@ void Sausage::estimate_sausage_length(){
 	// Find number of slices
 	int nos = (int)points.size()/100;
 	info() << "Sausage was divided in " << nos << " slices." << endl;
-	// find which slice we are in
-	// work out centre of mass for each slice
+	slice_counter.resize(nos);
+	slice_x.resize(nos);slice_y.resize(nos);slice_z.resize(nos);
+	// find what slice we are in (loop over all points)
+	double theta; 
+	int sliceId;
+	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+		// Is there fn for pi or does it have to be defined as a constant?
+		theta=atan2(yy[i],xx[i])+3.14159265358;
+		sliceId = (int) (double)nos*theta/(2.0*3.14159265358);
+		if (sliceId < 0 || sliceId >= nos ) {
+			cerr << "SliceId is out of bound" << endl;
+			exit(EXIT_FAILURE);}
+		//add x,y,z coordinates to that slice
+		slice_x[sliceId]+=xx[i]; 
+		slice_y[sliceId]+=yy[i];
+		slice_z[sliceId]+=zz[i];
+		slice_counter[sliceId]++;
+	}
+	// work out centre of mass for each slice	
+	for(std::vector<int>::size_type k = 0; k != slice_x.size(); k++) {
+	if (slice_counter[k] == 0) {
+		cerr << "Slice is empty!!" << endl;
+		exit(EXIT_FAILURE);}
+	else{
+		slice_x[k] = slice_x[k]/slice_counter[k];
+		slice_y[k] = slice_y[k]/slice_counter[k];
+		slice_z[k] = slice_z[k]/slice_counter[k];
+		// print centre of mass for all slices
+		debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
+	}
 	return;
 }
-
 
