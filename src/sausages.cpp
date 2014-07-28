@@ -104,8 +104,16 @@ void Sausage::find_pobf(){
 		z(iPoint) = points[iPoint].z - centre_of_mass[2];
 	}
 
-	//plane_of_best_fit
+	// Eigen can give us a Jacobi SVD, and then use that SVD to give a (guaranteed least-squares) solution of Ax=b
+	beta = X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) ;
+	debug() << "Least-squares plane is " << endl << beta << endl;
 
-	debug() << "Least-squares plane is " << X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) << endl;
+	// Points O=(0,0,0) a=(1,0,alpha) b=(0,1,beta) are in the plane
+	// Therefore (1,0,alpha) x (0,1,beta) = (-alpha, -beta, 1) is prependicular to the plane
+	plane_of_best_fit[0]=-beta[0];
+	plane_of_best_fit[1]=-beta[1];
+	plane_of_best_fit[2]=1;
+	debug() << "Vector perpendicular to the plane is (" << -beta[0] << "," << -beta[1] << ",1)" << endl;
+
 
 }
