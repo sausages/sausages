@@ -12,4 +12,6 @@ namespace params{
 	extern const int pointsPerSlice;
 }
 
+void set_params(char *paramFile);
+
 #endif // PARAMS_H

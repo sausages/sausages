@@ -9,30 +9,23 @@
 
 using namespace std;
 
-namespace params{
-	//const verbosityLevel verbosity = INFO;
-	const verbosityLevel verbosity = INFO;
-	const double threshold_level = 0.12;
-	const double silent_ignore_size = 0.01;
-	const double min_sausage_size = 0.1;
-	const int pointsPerSlice = 100;
-}
-
 /**
  * Main function
- * Program takes input filename as first (and only) argument
+ * Program takes input filename as first argument
+ * Optional second argument is a JSON param file
  */
 int main(int argc, char *argv[]){
-	// Set various parameters and variables
-	vector<Point> allPoints; ///< A vector of all points in simulation
-	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
-	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
 
+	cout << params::threshold_level << endl;
 	// Check #args
-	if (argc!=2){
-		cerr<<"Usage: "<<argv[0]<<" inputFile"<<endl;
+	if (argc!=2 && argc!=3){
+		cerr<<"Usage: "<<argv[0]<<" inputFile [paramFile]"<<endl;
 		exit(EXIT_FAILURE);
 	}
+
+	// Set various parameters and variables
+	if (3==argc) set_params(argv[2]);
+	cout << params::threshold_level << endl;
 
 	// Open, read and close input data file
 	ifstream infile (argv[1]);
@@ -40,8 +33,8 @@ int main(int argc, char *argv[]){
 		cerr<<"Error opening file "<<argv[1]<<endl;
 		exit(EXIT_FAILURE);
 	}
-
 	info() << "Reading file " << argv[1] << endl;
+	vector<Point> allPoints; ///< A vector of all points in simulation
 	read_xyzclcpcs(infile,allPoints);
 	info() << "  found " << allPoints.size() << " points." << endl;
 	infile.close();
@@ -61,6 +54,7 @@ int main(int argc, char *argv[]){
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
+	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
 	flood_fill_separate(allPoints,allSausages);
 	info() << "Sausage sizes:" << endl;
 	for (size_t i=0; i<allSausages.size(); i++){
@@ -68,6 +62,7 @@ int main(int argc, char *argv[]){
 		}
 
 	// If the sausages are 'too small', ignore them.
+	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
 	for (size_t i=0; i<allSausages.size(); i++){
 		int sausageSize=allSausages[i].points.size();
 		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
