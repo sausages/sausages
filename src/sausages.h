@@ -13,6 +13,7 @@ class Sausage {
 	std::vector<int>slice_counter; ///< Holds # of points in slice
 	double alpha; //only for testing purposes, remove later
 	double beta; 
+	double length;
 	double rotation_matrix[9]; //rotation matrix from initial to new frame
 	double inv_rotation_matrix[9]; //inverse of above rotation matrix 
 
@@ -28,6 +29,7 @@ class Sausage {
 	void shift_com_to_origin(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Shift coordinates so that COM goes to origin
 	void rotate_coord(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz,double A[9]); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(double alpha, double beta); ///<Calculates rotation matrix and its inverse
+	void calculate_sausage_length(std::vector<double>& slice_x, std::vector<double>& slice_y, std::vector<double>& slice_z); ///<Calculate the length using COMs of slices
 };
 
 int threshold(std::vector<Point> &allPoints);

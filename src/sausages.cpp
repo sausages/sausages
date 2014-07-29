@@ -121,15 +121,16 @@ void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector
 		zz[l] = it->z - centre_of_mass[2]; 
 		l++;
 	}
+	info() << xx[3] << " " << yy[3] << " " << zz[3] << endl;
 	return;
 }
-void Sausage::rotate_coord(vector<double>& xx, vector<double>& yy, vector<double>& zz, double A[9]){
+void Sausage::rotate_coord(vector<double>& xxx, vector<double>& yyy, vector<double>& zzz, double A[9]){
 
 	// loop over all coordinate points and rotate
-	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
-	   	xx[i] = A[0]*xx[i] + A[1]*yy[i] + A[2]*zz[i];
-	   	yy[i] = A[3]*xx[i] + A[4]*yy[i] + A[5]*zz[i];
-	   	zz[i] = A[6]*xx[i] + A[7]*yy[i] + A[8]*zz[i];
+	for(std::vector<int>::size_type i = 0; i != xxx.size(); i++) {
+	   	xxx[i] = A[0]*xxx[i] + A[1]*yyy[i] + A[2]*zzz[i];
+	   	yyy[i] = A[3]*xxx[i] + A[4]*yyy[i] + A[5]*zzz[i];
+	   	zzz[i] = A[6]*xxx[i] + A[7]*yyy[i] + A[8]*zzz[i];
 	    }
 	return;
 }
@@ -154,6 +155,18 @@ void Sausage::calculate_rotation_matrix(double alpha, double beta){
 	return;
 }
 
+void Sausage::calculate_sausage_length(vector<double>& x, vector<double>& y, vector<double>& z){
+
+	// loop over all COM of slices and calculate length
+	length = 0;
+	for(std::vector<int>::size_type i = 0; i != x.size()-1; i++) {
+		length += sqrt(pow(x[i]-x[i+1],2)+pow(y[i]-y[i+1],2)+pow(z[i]-z[i+1],2));
+	}
+	length += sqrt(pow(x[x.size()-1]-x[0],2)+pow(y[x.size()-1]-y[0],2)+pow(z[x.size()-1]-z[0],2));
+	info() << "The estimated length of the sausage is " << length << endl;	
+	return;
+}
+
 void Sausage::estimate_sausage_length(){
 
 	info() << "--------> Estimating sausage length... " << endl;
@@ -165,11 +178,6 @@ void Sausage::estimate_sausage_length(){
 	find_com();
 	// shift coordinates so that COM is in origin
 	shift_com_to_origin(xx,yy,zz);
-	
-	/*for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
-		info() << xx[i] << " " << yy[i] << " " << zz[i] << endl;
-	}*/
-	
 	// find plane of best fit
 	find_pobf();
 	alpha =	0.124972; 
@@ -211,7 +219,15 @@ void Sausage::estimate_sausage_length(){
 			debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
 	}
 	// convert COM's of slice back to initial frame
-	rotate_coord(xx,yy,zz,inv_rotation_matrix);
+	rotate_coord(slice_x,slice_y,slice_z,inv_rotation_matrix);
+	// calculate length
+	calculate_sausage_length(slice_x,slice_y,slice_z);
+/*	for(std::vector<int>::size_type i = 0; i != slice_x.size(); i++) {
+		info() << slice_x[i] << " " << slice_y[i] << " " << slice_z[i] << endl;
+	}*/
+
 	return;
 }
+
+
 
