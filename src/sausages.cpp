@@ -5,7 +5,7 @@
 #include "io.h"
 #include "point.h"
 #include "sausages.h"
-#include "main.h"
+#include "params.h"
 
 using namespace std;
 
