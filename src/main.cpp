@@ -89,14 +89,8 @@ int main(int argc, char *argv[]){
 		Sausage thisSausage=allSausages[relevant_sausages[i]];
 		thisSausage.find_com();
 		thisSausage.find_pobf();
+		thisSausage.estimate_sausage_length();
 	}
-
-	// Find centre of masses and orientation vectors following sausage
-	for (size_t i=0; i<allSausages.size(); i++){
-		if ( allSausages[i].is_significant==true ){
-		allSausages[i].estimate_sausage_length();}
-	}
-
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;
