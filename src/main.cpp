@@ -15,6 +15,7 @@ namespace params{
 	const double threshold_level = 0.12;
 	const double silent_ignore_size = 0.01;
 	const double min_sausage_size = 0.1;
+	const int pointsPerSlice = 100;
 }
 
 /**

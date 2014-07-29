@@ -118,31 +118,18 @@ void Sausage::find_pobf(){
 
 }
 
-void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector<double>& zz){
-
-	int l=0;
-	vector<Point>::iterator it;
-	for (it=points.begin(); it!=points.end(); ++it){
-		xx[l] = it->x - centre_of_mass[0];
-		yy[l] = it->y - centre_of_mass[1];
-		zz[l] = it->z - centre_of_mass[2];
-		l++;
-	}
-	info() << xx[3] << " " << yy[3] << " " << zz[3] << endl;
-	return;
-}
-void Sausage::rotate_coord(vector<double>& xxx, vector<double>& yyy, vector<double>& zzz, double A[9]){
+void Sausage::rotate_to_xy_plane(double** pointsArray){
 
 	// loop over all coordinate points and rotate
-	for(std::vector<int>::size_type i = 0; i != xxx.size(); i++) {
-		xxx[i] = A[0]*xxx[i] + A[1]*yyy[i] + A[2]*zzz[i];
-		yyy[i] = A[3]*xxx[i] + A[4]*yyy[i] + A[5]*zzz[i];
-		zzz[i] = A[6]*xxx[i] + A[7]*yyy[i] + A[8]*zzz[i];
+	for(size_t i = 0; i != points.size(); i++) {
+		pointsArray[i][0] = rotation_matrix[0]*pointsArray[i][0] + rotation_matrix[1]*pointsArray[i][1] + rotation_matrix[2]*pointsArray[i][2];
+		pointsArray[i][1] = rotation_matrix[3]*pointsArray[i][0] + rotation_matrix[4]*pointsArray[i][1] + rotation_matrix[5]*pointsArray[i][2];
+		pointsArray[i][1] = rotation_matrix[6]*pointsArray[i][0] + rotation_matrix[7]*pointsArray[i][1] + rotation_matrix[8]*pointsArray[i][2];
 	}
 	return;
 }
 
-void Sausage::calculate_rotation_matrix(double alpha, double beta){
+void Sausage::calculate_rotation_matrix(void){
 
 	// loop over all coordinate points and rotate
 /*	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
@@ -162,14 +149,19 @@ void Sausage::calculate_rotation_matrix(double alpha, double beta){
 	return;
 }
 
-void Sausage::calculate_sausage_length(vector<double>& x, vector<double>& y, vector<double>& z){
+void Sausage::calculate_sausage_length(double **slice_positions){
 
 	// loop over all COM of slices and calculate length
 	length = 0;
-	for(std::vector<int>::size_type i = 0; i != x.size()-1; i++) {
-		length += sqrt(pow(x[i]-x[i+1],2)+pow(y[i]-y[i+1],2)+pow(z[i]-z[i+1],2));
+	for(int i = 0; i != nSlices-1; i++) {
+		length += sqrt( pow(slice_positions[i][0]-slice_positions[i+1][0],2)+
+				pow(slice_positions[i][1]-slice_positions[i+1][1],2)+
+				pow(slice_positions[i][2]-slice_positions[i+1][2],2));
 	}
-	length += sqrt(pow(x[x.size()-1]-x[0],2)+pow(y[x.size()-1]-y[0],2)+pow(z[x.size()-1]-z[0],2));
+	length += sqrt( pow(slice_positions[nSlices-1][0]-slice_positions[0][0],2)+
+			pow(slice_positions[nSlices-1][1]-slice_positions[0][1],2)+
+			pow(slice_positions[nSlices-1][2]-slice_positions[0][2],2));
+
 	info() << "The estimated length of the sausage is " << length << endl;
 	return;
 }
@@ -177,63 +169,68 @@ void Sausage::calculate_sausage_length(vector<double>& x, vector<double>& y, vec
 void Sausage::estimate_sausage_length(){
 
 	info() << "--------> Estimating sausage length... " << endl;
-	int nop = points.size(); // number of points in sausage
-	std::vector<double>xx(nop); // arrays for temporary coordinates
-	std::vector<double>yy(nop);
-	std::vector<double>zz(nop);
 
-	// shift coordinates so that COM is in origin
-	shift_com_to_origin(xx,yy,zz);
+	// Make array of points, shifted so that COM is in origin
+	double **rotatedPoints = new double*[points.size()];
+	for (size_t i=0; i<points.size(); i++){
+		rotatedPoints[i] = new double[3];
+		rotatedPoints[i][0]=points[i].x - centre_of_mass[0];
+		rotatedPoints[i][1]=points[i].y - centre_of_mass[1];
+		rotatedPoints[i][2]=points[i].z - centre_of_mass[2];
+	}
 
-	// calculate rotation matrix and it's inverse, so that plane of best fit projects onto xy-plane
-	calculate_rotation_matrix(alpha,beta);
-	rotate_coord(xx,yy,zz,rotation_matrix);
+	// calculate rotation matrix and its inverse, so that plane of best fit projects onto xy-plane
+	calculate_rotation_matrix();
+	rotate_to_xy_plane(rotatedPoints);
 
 	// Find number of slices
-	int nos = (int)points.size()/100;
-	info() << "Sausage was divided in " << nos << " slices." << endl;
-	slice_counter.resize(nos);
-	slice_x.resize(nos);slice_y.resize(nos);slice_z.resize(nos);
+	nSlices = points.size()/params::pointsPerSlice;
+	info() << "Sausage was divided in " << nSlices << " slices." << endl;
+
+	double **slice_positions = new double*[nSlices];
+	for (int i=0; i<nSlices; i++){
+		slice_positions[i] = new double[3];
+	}
+	double *slice_counter = new double[nSlices];
+
 
 	// find what slice we are in (loop over all points)
 	double theta;
 	int sliceId;
-	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+	for(size_t i = 0; i != points.size(); i++) {
 
-		// Is there fn for pi or does it have to be defined as a constant?
-		theta=atan2(yy[i],xx[i])+3.14159265358;
-		sliceId = (int) (double)nos*theta/(2.0*3.14159265358);
-		if (sliceId < 0 || sliceId >= nos ) {
+		theta=atan2(rotatedPoints[i][1],rotatedPoints[i][0])+M_PI;
+		sliceId = (int) nSlices*theta/(2.0*M_PI);
+		if (sliceId < 0 || sliceId >= nSlices ) {
 			cerr << "SliceId is out of bound" << endl;
-			exit(EXIT_FAILURE);}
+			exit(EXIT_FAILURE);
+		}
+
 		//add x,y,z coordinates to that slice
-		slice_x[sliceId]+=xx[i];
-		slice_y[sliceId]+=yy[i];
-		slice_z[sliceId]+=zz[i];
+		slice_positions[sliceId][0]+=rotatedPoints[i][0];
+		slice_positions[sliceId][1]+=rotatedPoints[i][1];
+		slice_positions[sliceId][2]+=rotatedPoints[i][2];
 		slice_counter[sliceId]++;
 	}
 
 	// work out centre of mass for each slice
-	for(std::vector<int>::size_type k = 0; k != slice_x.size(); k++) {
+	for(int k = 0; k != nSlices; k++) {
 		if (slice_counter[k] == 0) {
 			cerr << "Slice is empty!!" << endl;
 			exit(EXIT_FAILURE);}
 		else{
-			slice_x[k] = slice_x[k]/slice_counter[k];
-			slice_y[k] = slice_y[k]/slice_counter[k];
-			slice_z[k] = slice_z[k]/slice_counter[k];
-			// print centre of mass for all slices
-			debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
+			slice_positions[k][0] = slice_positions[k][0]/slice_counter[k];
+			slice_positions[k][1] = slice_positions[k][1]/slice_counter[k];
+			slice_positions[k][2] = slice_positions[k][2]/slice_counter[k];
+
+			debug() << slice_counter[k] << " COM " << slice_positions[k][0] << " " << slice_positions[k][1] << " " << slice_positions[k][2] << endl;}
 	}
 
 	// convert COM's of slice back to initial frame
-	rotate_coord(slice_x,slice_y,slice_z,inv_rotation_matrix);
+	//rotate_from_xy_plane(slice_positions);
 
 	// calculate length
-	calculate_sausage_length(slice_x,slice_y,slice_z);
-/*	for(std::vector<int>::size_type i = 0; i != slice_x.size(); i++) {
-		info() << slice_x[i] << " " << slice_y[i] << " " << slice_z[i] << endl;
-	}*/
+	calculate_sausage_length(slice_positions);
 
 	return;
 }

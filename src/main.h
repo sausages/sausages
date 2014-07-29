@@ -9,6 +9,7 @@ namespace params{
 	extern const double threshold_level;
 	extern const double silent_ignore_size;
 	extern const double min_sausage_size;
+	extern const int pointsPerSlice;
 }
 
 
