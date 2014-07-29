@@ -123,13 +123,34 @@ void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector
 	}
 	return;
 }
-
-void Sausage::rotate_coord(vector<double>& xx, vector<double>& yy, vector<double>& zz){
+void Sausage::rotate_coord(vector<double>& xx, vector<double>& yy, vector<double>& zz, double A[9]){
 
 	// loop over all coordinate points and rotate
 	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
-	   // 	xx[i] = ...; plane_of_best_fit[3]
+	   	xx[i] = A[0]*xx[i] + A[1]*yy[i] + A[2]*zz[i];
+	   	yy[i] = A[3]*xx[i] + A[4]*yy[i] + A[5]*zz[i];
+	   	zz[i] = A[6]*xx[i] + A[7]*yy[i] + A[8]*zz[i];
 	    }
+	return;
+}
+
+void Sausage::calculate_rotation_matrix(double alpha, double beta){
+
+	// loop over all coordinate points and rotate
+/*	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+	   	xx[i] = plane_of_best_fit[0]*zz[i];
+	   	yy[i] = plane_of_best_fit[1]*zz[i];
+	   	zz[i] = plane_of_best_fit[2]*zz[i];
+	    }*/
+	//dummy matrix
+	rotation_matrix[0] = 1.0; rotation_matrix[1] = 0.0; rotation_matrix[2] = 0.0; 
+	rotation_matrix[3] = 0.0; rotation_matrix[4] = 1.0; rotation_matrix[5] = 0.0; 
+	rotation_matrix[6] = 0.0; rotation_matrix[7] = 0.0; rotation_matrix[8] = 1.0; 
+
+	inv_rotation_matrix[0] = 1.0; inv_rotation_matrix[1] = 0.0; inv_rotation_matrix[2] = 0.0; 
+	inv_rotation_matrix[3] = 0.0; inv_rotation_matrix[4] = 1.0; inv_rotation_matrix[5] = 0.0; 
+	inv_rotation_matrix[6] = 0.0; inv_rotation_matrix[7] = 0.0; inv_rotation_matrix[8] = 1.0; 
+		
 	return;
 }
 
@@ -144,10 +165,18 @@ void Sausage::estimate_sausage_length(){
 	find_com();
 	// shift coordinates so that COM is in origin
 	shift_com_to_origin(xx,yy,zz);
+	
+	/*for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+		info() << xx[i] << " " << yy[i] << " " << zz[i] << endl;
+	}*/
+	
 	// find plane of best fit
 	find_pobf();
-	// rotate coordinate system so that plane of best fit projects onto xy-plane
-	rotate_coord(xx,yy,zz);
+	alpha =	0.124972; 
+	beta = 0.133109;
+	// calculate rotation matrix and it's inverse, so that plane of best fit projects onto xy-plane
+	calculate_rotation_matrix(alpha,beta);
+	rotate_coord(xx,yy,zz,rotation_matrix);
 	// Find number of slices
 	int nos = (int)points.size()/100;
 	info() << "Sausage was divided in " << nos << " slices." << endl;
@@ -171,16 +200,18 @@ void Sausage::estimate_sausage_length(){
 	}
 	// work out centre of mass for each slice	
 	for(std::vector<int>::size_type k = 0; k != slice_x.size(); k++) {
-	if (slice_counter[k] == 0) {
-		cerr << "Slice is empty!!" << endl;
-		exit(EXIT_FAILURE);}
-	else{
-		slice_x[k] = slice_x[k]/slice_counter[k];
-		slice_y[k] = slice_y[k]/slice_counter[k];
-		slice_z[k] = slice_z[k]/slice_counter[k];
-		// print centre of mass for all slices
-		debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
+		if (slice_counter[k] == 0) {
+			cerr << "Slice is empty!!" << endl;
+			exit(EXIT_FAILURE);}
+		else{
+			slice_x[k] = slice_x[k]/slice_counter[k];
+			slice_y[k] = slice_y[k]/slice_counter[k];
+			slice_z[k] = slice_z[k]/slice_counter[k];
+			// print centre of mass for all slices
+			debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
 	}
+	// convert COM's of slice back to initial frame
+	rotate_coord(xx,yy,zz,inv_rotation_matrix);
 	return;
 }
 

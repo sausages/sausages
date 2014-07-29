@@ -11,6 +11,10 @@ class Sausage {
 	std::vector<double> slice_y; ///< y coord of centre of masses for slices along the sausage
 	std::vector<double> slice_z; ///< z coord of centre of masses for slices along the sausage
 	std::vector<int>slice_counter; ///< Holds # of points in slice
+	double alpha; //only for testing purposes, remove later
+	double beta; 
+	double rotation_matrix[9]; //rotation matrix from initial to new frame
+	double inv_rotation_matrix[9]; //inverse of above rotation matrix 
 
 	public:
 
@@ -22,7 +26,8 @@ class Sausage {
 	void find_pobf(); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(); ///<Approximate length of sausage
 	void shift_com_to_origin(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Shift coordinates so that COM goes to origin
-	void rotate_coord(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz); ///<Rotate coords to align z along direction of pobf
+	void rotate_coord(std::vector<double>& xx,std::vector<double>& yy,std::vector<double>& zz,double A[9]); ///<Rotate coords (rotation matrix*coord)
+	void calculate_rotation_matrix(double alpha, double beta); ///<Calculates rotation matrix and its inverse
 };
 
 int threshold(std::vector<Point> &allPoints);
