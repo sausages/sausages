@@ -44,7 +44,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
-		if (allPoints[firstPoint].sausageID==1){ 
+		if (allPoints[firstPoint].sausageID==1){
 			verbose() << "Starting sort of sausage #" << newSausageID << endl;
 			allSausages.push_back(Sausage(newSausageID));
 			stack.push_back(allPoints[firstPoint]);
@@ -123,9 +123,9 @@ void Sausage::shift_com_to_origin(vector<double>& xx, vector<double>& yy, vector
 	int l=0;
 	vector<Point>::iterator it;
 	for (it=points.begin(); it!=points.end(); ++it){
-		xx[l] = it->x - centre_of_mass[0]; 
-		yy[l] = it->y - centre_of_mass[1]; 
-		zz[l] = it->z - centre_of_mass[2]; 
+		xx[l] = it->x - centre_of_mass[0];
+		yy[l] = it->y - centre_of_mass[1];
+		zz[l] = it->z - centre_of_mass[2];
 		l++;
 	}
 	info() << xx[3] << " " << yy[3] << " " << zz[3] << endl;
@@ -135,10 +135,10 @@ void Sausage::rotate_coord(vector<double>& xxx, vector<double>& yyy, vector<doub
 
 	// loop over all coordinate points and rotate
 	for(std::vector<int>::size_type i = 0; i != xxx.size(); i++) {
-	   	xxx[i] = A[0]*xxx[i] + A[1]*yyy[i] + A[2]*zzz[i];
-	   	yyy[i] = A[3]*xxx[i] + A[4]*yyy[i] + A[5]*zzz[i];
-	   	zzz[i] = A[6]*xxx[i] + A[7]*yyy[i] + A[8]*zzz[i];
-	    }
+		xxx[i] = A[0]*xxx[i] + A[1]*yyy[i] + A[2]*zzz[i];
+		yyy[i] = A[3]*xxx[i] + A[4]*yyy[i] + A[5]*zzz[i];
+		zzz[i] = A[6]*xxx[i] + A[7]*yyy[i] + A[8]*zzz[i];
+	}
 	return;
 }
 
@@ -146,19 +146,19 @@ void Sausage::calculate_rotation_matrix(double alpha, double beta){
 
 	// loop over all coordinate points and rotate
 /*	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
-	   	xx[i] = plane_of_best_fit[0]*zz[i];
-	   	yy[i] = plane_of_best_fit[1]*zz[i];
-	   	zz[i] = plane_of_best_fit[2]*zz[i];
-	    }*/
+		xx[i] = plane_of_best_fit[0]*zz[i];
+		yy[i] = plane_of_best_fit[1]*zz[i];
+		zz[i] = plane_of_best_fit[2]*zz[i];
+	}*/
 	//dummy matrix
-	rotation_matrix[0] = 1.0; rotation_matrix[1] = 0.0; rotation_matrix[2] = 0.0; 
-	rotation_matrix[3] = 0.0; rotation_matrix[4] = 1.0; rotation_matrix[5] = 0.0; 
-	rotation_matrix[6] = 0.0; rotation_matrix[7] = 0.0; rotation_matrix[8] = 1.0; 
+	rotation_matrix[0] = 1.0; rotation_matrix[1] = 0.0; rotation_matrix[2] = 0.0;
+	rotation_matrix[3] = 0.0; rotation_matrix[4] = 1.0; rotation_matrix[5] = 0.0;
+	rotation_matrix[6] = 0.0; rotation_matrix[7] = 0.0; rotation_matrix[8] = 1.0;
 
-	inv_rotation_matrix[0] = 1.0; inv_rotation_matrix[1] = 0.0; inv_rotation_matrix[2] = 0.0; 
-	inv_rotation_matrix[3] = 0.0; inv_rotation_matrix[4] = 1.0; inv_rotation_matrix[5] = 0.0; 
-	inv_rotation_matrix[6] = 0.0; inv_rotation_matrix[7] = 0.0; inv_rotation_matrix[8] = 1.0; 
-		
+	inv_rotation_matrix[0] = 1.0; inv_rotation_matrix[1] = 0.0; inv_rotation_matrix[2] = 0.0;
+	inv_rotation_matrix[3] = 0.0; inv_rotation_matrix[4] = 1.0; inv_rotation_matrix[5] = 0.0;
+	inv_rotation_matrix[6] = 0.0; inv_rotation_matrix[7] = 0.0; inv_rotation_matrix[8] = 1.0;
+
 	return;
 }
 
@@ -170,37 +170,36 @@ void Sausage::calculate_sausage_length(vector<double>& x, vector<double>& y, vec
 		length += sqrt(pow(x[i]-x[i+1],2)+pow(y[i]-y[i+1],2)+pow(z[i]-z[i+1],2));
 	}
 	length += sqrt(pow(x[x.size()-1]-x[0],2)+pow(y[x.size()-1]-y[0],2)+pow(z[x.size()-1]-z[0],2));
-	info() << "The estimated length of the sausage is " << length << endl;	
+	info() << "The estimated length of the sausage is " << length << endl;
 	return;
 }
 
 void Sausage::estimate_sausage_length(){
 
 	info() << "--------> Estimating sausage length... " << endl;
- 	int nop = points.size(); // number of points in sausage
+	int nop = points.size(); // number of points in sausage
 	std::vector<double>xx(nop); // arrays for temporary coordinates
 	std::vector<double>yy(nop);
 	std::vector<double>zz(nop);
-	// find centre of mass
-	find_com();
+
 	// shift coordinates so that COM is in origin
 	shift_com_to_origin(xx,yy,zz);
-	// find plane of best fit
-	find_pobf();
-	alpha =	0.124972; 
-	beta = 0.133109;
+
 	// calculate rotation matrix and it's inverse, so that plane of best fit projects onto xy-plane
 	calculate_rotation_matrix(alpha,beta);
 	rotate_coord(xx,yy,zz,rotation_matrix);
+
 	// Find number of slices
 	int nos = (int)points.size()/100;
 	info() << "Sausage was divided in " << nos << " slices." << endl;
 	slice_counter.resize(nos);
 	slice_x.resize(nos);slice_y.resize(nos);slice_z.resize(nos);
+
 	// find what slice we are in (loop over all points)
-	double theta; 
+	double theta;
 	int sliceId;
 	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
+
 		// Is there fn for pi or does it have to be defined as a constant?
 		theta=atan2(yy[i],xx[i])+3.14159265358;
 		sliceId = (int) (double)nos*theta/(2.0*3.14159265358);
@@ -208,12 +207,13 @@ void Sausage::estimate_sausage_length(){
 			cerr << "SliceId is out of bound" << endl;
 			exit(EXIT_FAILURE);}
 		//add x,y,z coordinates to that slice
-		slice_x[sliceId]+=xx[i]; 
+		slice_x[sliceId]+=xx[i];
 		slice_y[sliceId]+=yy[i];
 		slice_z[sliceId]+=zz[i];
 		slice_counter[sliceId]++;
 	}
-	// work out centre of mass for each slice	
+
+	// work out centre of mass for each slice
 	for(std::vector<int>::size_type k = 0; k != slice_x.size(); k++) {
 		if (slice_counter[k] == 0) {
 			cerr << "Slice is empty!!" << endl;
@@ -225,8 +225,10 @@ void Sausage::estimate_sausage_length(){
 			// print centre of mass for all slices
 			debug() << slice_counter[k] << " COM " << slice_x[k] << " " << slice_y[k] << " " << slice_z[k] << endl;}
 	}
+
 	// convert COM's of slice back to initial frame
 	rotate_coord(slice_x,slice_y,slice_z,inv_rotation_matrix);
+
 	// calculate length
 	calculate_sausage_length(slice_x,slice_y,slice_z);
 /*	for(std::vector<int>::size_type i = 0; i != slice_x.size(); i++) {
@@ -235,6 +237,3 @@ void Sausage::estimate_sausage_length(){
 
 	return;
 }
-
-
-

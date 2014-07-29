@@ -12,10 +12,10 @@ class Sausage {
 	std::vector<double> slice_z; ///< z coord of centre of masses for slices along the sausage
 	std::vector<int>slice_counter; ///< Holds # of points in slice
 	double alpha; //only for testing purposes, remove later
-	double beta; 
+	double beta;
 	double length;
 	double rotation_matrix[9]; //rotation matrix from initial to new frame
-	double inv_rotation_matrix[9]; //inverse of above rotation matrix 
+	double inv_rotation_matrix[9]; //inverse of above rotation matrix
 
 	public:
 
