@@ -86,11 +86,15 @@ void Sausage::find_pobf(){
 	/**
 	 * If we treat x,y,z as the distance of a point from the centre-of-mass of its sausage, then:
 	 *
-	 * \vec{x_i} \dot \vec{\beta} = z_i
-	 * \bf{X} \dot \vec{\beta} = \vec{z}
+	 * \f[
+	 * \vec{x_i} \cdot \vec{\beta} = z_i
+	 * \bf{X} \cdot \vec{\beta} = \vec{z}
+	 * \f]
 	 *
-	 * The optimal fit \vec{\hat{\beta}} is:
+	 * The optimal fit \f$\vec{\hat{\beta}}\f$ is:
+	 * \f[
 	 * \vec{\hat{\beta}} = (\bf{X}^T \bf{X} )^{-1} \bf{X}^T \vec{z}
+	 * \f]
 	 */
 
 	using namespace Eigen;
@@ -129,6 +133,27 @@ void Sausage::rotate_to_xy_plane(double** pointsArray){
 	return;
 }
 
+/**
+ * We want a rotation matrix which will rotate the sausage, once translated to the origin,
+ * so that its PoBF is the xy-plane.
+ * To do this, find the matrix which rotates the vector normal to the plane to lie along the z-axis.
+ * Using the Rodrigues' Rotation Formula, the matrix which rotates \f$\hat{a}\f$ onto \f$\hat{b}\f$ is:
+ * \f[
+ * R = I + s [v]_\times + (1-c) [v]_\times \cdot [v]_\times
+ * \f]
+ * where \f$v=\hat{a}\times \hat{b}\f$ , \f$s=sin(\theta)=|\hat{a}\times\hat{b}|\f$ and \f$c=cos{\theta}=\hat{a}\cdot\hat{b}\f$
+ * and
+ * \f[
+ * [v]_times =
+ * \begin{pmatrix}
+ *  0   & -v_3 &  v_2 \\
+ *  v_3 &  0   & -v_2 \\
+ * -v_2 &  v_2 &  0
+ *  \end{pmatrix}
+ * \f]
+ * is the cross-product matrix of \f$v\f$
+ *
+ */
 void Sausage::calculate_rotation_matrix(void){
 
 	// loop over all coordinate points and rotate
