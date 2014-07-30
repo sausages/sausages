@@ -2,6 +2,7 @@
 #define FIND_SAUSAGES_H
 
 #include <vector>
+#include "Eigen/Dense"
 #include "point.h"
 
 class Sausage {
@@ -13,8 +14,7 @@ class Sausage {
 	int nSlices; ///< # slices
 	double length; ///< Estimated length of sausage
 
-	double rotation_matrix[9]; //rotation matrix from initial to new frame
-	double inv_rotation_matrix[9]; //inverse of above rotation matrix
+	Eigen::Matrix3d rotation_matrix; //rotation matrix from initial to new frame
 
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)

@@ -10,8 +10,7 @@
 using namespace std;
 
 namespace params{
-	//const verbosityLevel verbosity = INFO;
-	const verbosityLevel verbosity = INFO;
+	const verbosityLevel verbosity = DEBUG;
 	const double threshold_level = 0.12;
 	const double silent_ignore_size = 0.01;
 	const double min_sausage_size = 0.1;
@@ -95,6 +94,7 @@ int main(int argc, char *argv[]){
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;
+	exit(EXIT_SUCCESS);
 }
 
 

@@ -111,7 +111,7 @@ void Sausage::find_pobf(){
 
 	// Eigen can give us a Jacobi SVD, and then use that SVD to give a (guaranteed least-squares) solution of Ax=b
 	beta = X.jacobiSvd(ComputeThinU | ComputeThinV).solve(z) ;
-	debug() << "Least-squares plane is " << endl << beta << endl;
+	debug() << "Least-squares plane is: " << beta(0) << "x + " << beta(1) << "y = z" << endl;
 
 	// Points O=(0,0,0) a=(1,0,alpha) b=(0,1,beta) are in the plane
 	// Therefore (1,0,alpha) x (0,1,beta) = (-alpha, -beta, 1) is prependicular to the plane
@@ -124,11 +124,13 @@ void Sausage::find_pobf(){
 
 void Sausage::rotate_to_xy_plane(double** pointsArray){
 
+	debug() << "Rotating to xy-plane" << endl;
+
 	// loop over all coordinate points and rotate
 	for(size_t i = 0; i != points.size(); i++) {
-		pointsArray[i][0] = rotation_matrix[0]*pointsArray[i][0] + rotation_matrix[1]*pointsArray[i][1] + rotation_matrix[2]*pointsArray[i][2];
-		pointsArray[i][1] = rotation_matrix[3]*pointsArray[i][0] + rotation_matrix[4]*pointsArray[i][1] + rotation_matrix[5]*pointsArray[i][2];
-		pointsArray[i][1] = rotation_matrix[6]*pointsArray[i][0] + rotation_matrix[7]*pointsArray[i][1] + rotation_matrix[8]*pointsArray[i][2];
+		pointsArray[i][0] = rotation_matrix(0)*pointsArray[i][0] + rotation_matrix(1)*pointsArray[i][1] + rotation_matrix(2)*pointsArray[i][2];
+		pointsArray[i][1] = rotation_matrix(3)*pointsArray[i][0] + rotation_matrix(4)*pointsArray[i][1] + rotation_matrix(5)*pointsArray[i][2];
+		pointsArray[i][2] = rotation_matrix(6)*pointsArray[i][0] + rotation_matrix(7)*pointsArray[i][1] + rotation_matrix(8)*pointsArray[i][2];
 	}
 	return;
 }
@@ -139,7 +141,7 @@ void Sausage::rotate_to_xy_plane(double** pointsArray){
  * To do this, find the matrix which rotates the vector normal to the plane to lie along the z-axis.
  * Using the Rodrigues' Rotation Formula, the matrix which rotates \f$\hat{a}\f$ onto \f$\hat{b}\f$ is:
  * \f[
- * R = I + s [v]_\times + (1-c) [v]_\times \cdot [v]_\times
+ * R = I + s [v]_\times + (1-c) [v]_\times^2
  * \f]
  * where \f$v=\hat{a}\times \hat{b}\f$ , \f$s=sin(\theta)=|\hat{a}\times\hat{b}|\f$ and \f$c=cos{\theta}=\hat{a}\cdot\hat{b}\f$
  * and
@@ -156,20 +158,23 @@ void Sausage::rotate_to_xy_plane(double** pointsArray){
  */
 void Sausage::calculate_rotation_matrix(void){
 
-	// loop over all coordinate points and rotate
-/*	for(std::vector<int>::size_type i = 0; i != xx.size(); i++) {
-		xx[i] = plane_of_best_fit[0]*zz[i];
-		yy[i] = plane_of_best_fit[1]*zz[i];
-		zz[i] = plane_of_best_fit[2]*zz[i];
-	}*/
-	//dummy matrix
-	rotation_matrix[0] = 1.0; rotation_matrix[1] = 0.0; rotation_matrix[2] = 0.0;
-	rotation_matrix[3] = 0.0; rotation_matrix[4] = 1.0; rotation_matrix[5] = 0.0;
-	rotation_matrix[6] = 0.0; rotation_matrix[7] = 0.0; rotation_matrix[8] = 1.0;
+	Eigen::Vector3d a(plane_of_best_fit[0],plane_of_best_fit[1],plane_of_best_fit[2]);
+	Eigen::Vector3d z(0,0,1);
+	a.normalize();
 
-	inv_rotation_matrix[0] = 1.0; inv_rotation_matrix[1] = 0.0; inv_rotation_matrix[2] = 0.0;
-	inv_rotation_matrix[3] = 0.0; inv_rotation_matrix[4] = 1.0; inv_rotation_matrix[5] = 0.0;
-	inv_rotation_matrix[6] = 0.0; inv_rotation_matrix[7] = 0.0; inv_rotation_matrix[8] = 1.0;
+	Eigen::Vector3d v=a.cross(z);
+
+	double s=v.norm();
+	double c=a.dot(z);
+
+	Eigen::Matrix3d v_cross_mat;
+	v_cross_mat << 0   , -v(2),  v(1),
+	        v(2),  0   , -v(0),
+	       -v(1),  v(0),  0   ;
+
+	rotation_matrix = Eigen::Matrix3d::Identity() + s*v_cross_mat + (1.0-c)*v_cross_mat*v_cross_mat;
+
+	debug() << "Rotation matrix is:" << endl << rotation_matrix << endl << endl;
 
 	return;
 }
@@ -256,6 +261,19 @@ void Sausage::estimate_sausage_length(){
 
 	// calculate length
 	calculate_sausage_length(slice_positions);
+
+	// clean up
+	debug() << "deleting rotated_points" << endl;
+	for (size_t i=0; i<points.size(); i++){
+		delete rotatedPoints[i];
+	}
+	delete rotatedPoints;
+
+	debug() << "deleting slice_positions" << endl;
+	for (int i=0; i<nSlices; i++){
+		delete slice_positions[i];
+	}
+	delete slice_positions;
 
 	return;
 }
