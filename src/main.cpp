@@ -16,7 +16,7 @@ using namespace std;
  */
 int main(int argc, char *argv[]){
 
-	cout << params::threshold_level << endl;
+	cout << params::threshold_high << endl;
 	// Check #args
 	if (argc!=2 && argc!=3){
 		cerr<<"Usage: "<<argv[0]<<" inputFile [paramFile]"<<endl;
@@ -24,8 +24,8 @@ int main(int argc, char *argv[]){
 	}
 
 	// Set various parameters and variables
-	if (3==argc) set_params(argv[2]);
-	cout << params::threshold_level << endl;
+	set_params(argv[2]);
+	cout << params::threshold_high << endl;
 
 	// Open, read and close input data file
 	ifstream infile (argv[1]);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
 	infile.close();
 
 	// Put all points with cl<threshold in a sausage
-	info() << "Thresholding, sausages have cl<" << params::threshold_level << endl;
+	info() << "Thresholding, sausages have cl<" << params::threshold_high << endl;
 	int num_below_threshold = threshold(allPoints);
 	info() << "  " << num_below_threshold << " out of "
 		<< allPoints.size() << " points were below the theshold." << endl;

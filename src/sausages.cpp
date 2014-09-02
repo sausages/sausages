@@ -21,7 +21,7 @@ int threshold(vector<Point> &allPoints){
 	int num_below_threshold=0;
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		if (it->cl < params::threshold_level){
+		if (it->cl < params::threshold_high){
 			it->sausageID=1;
 			num_below_threshold++;
 		} else {
@@ -184,7 +184,7 @@ void Sausage::estimate_sausage_length(){
 	rotate_to_xy_plane(rotatedPoints);
 
 	// Find number of slices
-	nSlices = points.size()/params::pointsPerSlice;
+	nSlices = points.size()/params::points_per_slice;
 	info() << "Sausage was divided in " << nSlices << " slices." << endl;
 
 	double **slice_positions = new double*[nSlices];
