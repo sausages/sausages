@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <cstring>
 #include "cJSON/cJSON.h"
 #include "io.h"
 #include "params.h"
@@ -34,7 +35,13 @@ void set_params(char *filename){
 
 	std::stringstream buffer;
 	buffer << paramfile.rdbuf();
-	cJSON *root=cJSON_Parse(buffer.str().c_str());
+	// Need silly c_str shenanigans to work with cJSON_Minify, which works at char* level
+	char* c_str = new char[buffer.str().size()+1];
+	std::strcpy(c_str,buffer.str().c_str());
+	cJSON_Minify(c_str);
+	cJSON *root=cJSON_Parse(c_str);
+	delete [] c_str;
+
 
 	if (!root){
 		error()<<"Error reading param file before:" << std::endl << cJSON_GetErrorPtr() << std::endl;
