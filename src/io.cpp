@@ -12,7 +12,7 @@
 #include <vector>
 #include "point.h"
 #include "io.h"
-#include "main.h"
+#include "params.h"
 
 using namespace std;
 

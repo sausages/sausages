@@ -6,17 +6,21 @@ CXXFLAGS = -g -Wall -Wextra -Wno-missing-field-initializers
 SRCDIR   = src
 BUILDDIR = build
 
-FILES   = sausages.cpp io.cpp main.cpp point.cpp
-SRC     = $(patsubst %, $(SRCDIR)/%, $(FILES))
-HEADERS = $(patsubst %.cpp, $(SRCDIR)/%.h, $(FILES))
-OBJS    = $(patsubst %.cpp, $(BUILDDIR)/%.o, $(FILES))
+FILES    = io main params point sausages
+SRC      = $(patsubst %, $(SRCDIR)/%.cpp, $(FILES))
+HEADERS  = $(patsubst %, $(SRCDIR)/%.h, $(FILES))
+OBJS     = $(patsubst %, $(BUILDDIR)/%.o, $(FILES))
+
+sausages: $(HEADERS) $(OBJS) $(BUILDDIR)/cJSON.o
+	$(CXX) $(CXXFLAGS) $(OBJS) $(BUILDDIR)/cJSON.o -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(SRCDIR)/%.h
 	@mkdir -p build
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-sausages: $(HEADERS) $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
+$(BUILDDIR)/cJSON.o : $(SRCDIR)/cJSON/cJSON.c
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
 
 .PHONY:
 clean:
