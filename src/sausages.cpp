@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <numeric>
 #include <stdexcept>
 #include "Eigen/Dense"
 #include "io.h"
@@ -107,6 +108,27 @@ int flood_fill_classify(Sausage sausage){
 	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
 	v[2]=alpha*v[0] + beta*v[1];
 
+	// For each point in the sausage, is it close to the line extended by v from the colloid?
+	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
+	for (vector<Point>::iterator it=sausage.points.begin(); it!=sausage.points.end(); it++){
+		double u[3];
+		u[0]=it->x - params::colloids[1][0];
+		u[1]=it->y - params::colloids[1][1];
+		u[2]=it->z - params::colloids[1][2];
+		double norm_u=inner_product(u,u+3,u,0); // u.u
+
+		double projection = inner_product(u,u+3,v,0); // u.v
+
+		double distance = sqrt(norm_u*norm_u - projection*projection);
+
+		if (distance<params::flood_fill_classify_slice_size/2){
+			if (projection>0){
+				// add to P1
+			} else {
+				// add to P2
+			}
+		}
+	}
 }
 
 void Sausage::find_com(){
