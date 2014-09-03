@@ -13,6 +13,7 @@ namespace params{
 	extern double pixel_size; ///< Distance between nearest-neighbour points
 	extern int points_per_slice; ///< How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	extern double colloids[2][3]; ///< xyz positions of the two colloids
+	extern double flood_fill_classify_slice_size; ///< How many pixels wide should the regions in flood_fill_classify be?
 }
 
 
