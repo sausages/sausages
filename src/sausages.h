@@ -7,7 +7,6 @@
 
 class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
-	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 
 	double **slice_positions; ///< xyz positions of COM of points within a slice
 	int *slice_counter; ///< Holds # of points in slice
@@ -32,6 +31,7 @@ class Sausage {
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(void); ///<Approximate length of sausage
+	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 };
 
 

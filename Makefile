@@ -19,7 +19,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(SRCDIR)/%.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(BUILDDIR)/cJSON.o : $(SRCDIR)/cJSON/cJSON.c
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(CXXFLAGS) -c -o $@ $<
 
 
 .PHONY:

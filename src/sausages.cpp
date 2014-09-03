@@ -92,13 +92,13 @@ int flood_fill_classify(Sausage sausage){
 	double alpha,beta;
 
 	// AB is vector joining colloids
-	AB[0]=params::colloids[1][0]-colloids[2][0];
-	AB[1]=params::colloids[1][1]-colloids[2][1];
-	AB[2]=params::colloids[1][2]-colloids[2][2];
+	AB[0]=params::colloids[1][0]-params::colloids[2][0];
+	AB[1]=params::colloids[1][1]-params::colloids[2][1];
+	AB[2]=params::colloids[1][2]-params::colloids[2][2];
 
 	// Plane of best fit is of form alpha*x+beta*y=z
-	alpha=-plane_of_best_fit[0];
-	beta=-plane_of_best_fit[1];
+	alpha=-sausage.plane_of_best_fit[0];
+	beta=-sausage.plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB and unit-vector, we can determine:
 	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2);
