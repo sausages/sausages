@@ -66,6 +66,49 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 	}
 }
 
+/** Classifies a given sausage
+ * Four points on the sausage are found, two on either side of each colloid.
+ * From each point we flood-fill towards the centre, and see which of the other points we reach
+ *
+ * Class 1: If we reach only the other colloid's point of the same side (i.e. above-1 -> above-2) then we
+ *  have a simple ring with no twists, such as a theta configuration.
+ *  Also classified as class-1 will be 2nd-loop systems where the 2nd loop is touching the 1st on only one side.
+ *
+ * Class 2: If we end up only on the other side of the opposite colloid (above-1 -> below-2)
+ *  then we have a figure-of-eight system.
+ *
+ * Class 3: If we reach more than one other point we have junctions on both sides of the sausage, and are
+ *  insufficiently resolved.
+ *
+ */
+int flood_fill_classify(Sausage sausage){
+	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
+	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
+	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
+	 */
+	double v[3];
+	double tmp;
+	double AB[3];
+	double alpha,beta;
+
+	// AB is vector joining colloids
+	AB[0]=params::colloids[1][0]-colloids[2][0];
+	AB[1]=params::colloids[1][1]-colloids[2][1];
+	AB[2]=params::colloids[1][2]-colloids[2][2];
+
+	// Plane of best fit is of form alpha*x+beta*y=z
+	alpha=-plane_of_best_fit[0];
+	beta=-plane_of_best_fit[1];
+
+	// From being parallel to PoBF, perpendicular to AB and unit-vector, we can determine:
+	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2);
+	tmp *= (1+alpha)/(1+beta);
+	v[0]=tmp/(1+tmp);
+	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
+	v[2]=alpha*v[0] + beta*v[1];
+
+}
+
 void Sausage::find_com(){
 	double x=0,y=0,z=0;
 	vector<Point>::iterator it;
