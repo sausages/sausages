@@ -9,15 +9,16 @@
 
 using namespace params;
 
-// Set defaults (see params.h for descriptions)
+// Set defaults
 namespace params{
 	verbosityLevel verbosity = INFO;
-	double threshold_high = 0.12; ///< Sausages should be without gaps at this level
-	double threshold_low = 0.04; ///< All different defect structures should be distinguishable (i.e. no ambigious blobs)
-	double silent_ignore_size = 0.01;
-	double min_sausage_size = 0.1;
-	int points_per_slice = 100;
-	double colloids[2][3];
+	double threshold_high = 0.12; // Sausages should be without gaps at this level
+	double threshold_low = 0.04; // All different defect structures should be distinguishable (i.e. no ambigious blobs)
+	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
+	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
+	double pixel_size = 0.5; // Distance between nearest-neighbour points
+	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
+	double colloids[2][3]; // xyz positions of the two colloids
 }
 
 void invalid_colloid_info(void){
