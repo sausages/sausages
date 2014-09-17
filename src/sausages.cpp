@@ -82,7 +82,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
  *  insufficiently resolved.
  *
  */
-int flood_fill_classify(Sausage sausage){
+void Sausage::flood_fill_classify(void){
 	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
@@ -96,10 +96,11 @@ int flood_fill_classify(Sausage sausage){
 	AB[0]=params::colloids[1][0]-params::colloids[2][0];
 	AB[1]=params::colloids[1][1]-params::colloids[2][1];
 	AB[2]=params::colloids[1][2]-params::colloids[2][2];
+	double norm_AB=inner_product(AB,AB+3,AB,0);
 
 	// Plane of best fit is of form alpha*x+beta*y=z
-	alpha=-sausage.plane_of_best_fit[0];
-	beta=-sausage.plane_of_best_fit[1];
+	alpha=-plane_of_best_fit[0];
+	beta=-plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB and unit-vector, we can determine:
 	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2);
@@ -108,27 +109,65 @@ int flood_fill_classify(Sausage sausage){
 	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
 	v[2]=alpha*v[0] + beta*v[1];
 
-	// For each point in the sausage, is it close to the line extended by v from the colloid?
+	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
 	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
-	for (vector<Point>::iterator it=sausage.points.begin(); it!=sausage.points.end(); it++){
-		double u[3];
-		u[0]=it->x - params::colloids[1][0];
-		u[1]=it->y - params::colloids[1][1];
-		u[2]=it->z - params::colloids[1][2];
-		double norm_u=inner_product(u,u+3,u,0); // u.u
+	vector<Point> above[2], below[2];
+	for (vector<Point>::iterator it=points.begin(); it!=points.end(); it++){
+		for (int iColl=0; iColl<2; iColl++){
+			double p[3]; // xyz of this point
+			p[0]=it->x; p[1]=it->y; p[2]=it->z;
 
-		double projection = inner_product(u,u+3,v,0); // u.v
+			double u[3]; // Vector from point to colloid
+			u[0]=it->x - params::colloids[iColl][0];
+			u[1]=it->y - params::colloids[iColl][1];
+			u[2]=it->z - params::colloids[iColl][2];
+			//double norm_u=inner_product(u,u+3,u,0); // u.u
 
-		double distance = sqrt(norm_u*norm_u - projection*projection);
+			double projection = inner_product(u,u+3,v,0); // u.v
 
-		if (distance<params::flood_fill_classify_slice_size/2){
-			if (projection>0){
-				// add to P1
-			} else {
-				// add to P2
+			/* ***********************
+			 * This sweeps out a cylinder surrounding the line perpendicular to AB in the PoBF, and adds points in the cylinder to the regions.
+			 * However, this may miss parts (or all) of the sausage if there are significant kinks. Better to select all points between two planes
+
+			double distance = sqrt(norm_u*norm_u - projection*projection);
+			if (distance<params::flood_fill_classify_slice_size/2){
+				if (projection>0){
+					// add to P1
+				} else {
+					// add to P2
+				}
+			}
+			************************/
+
+			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
+			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
+			double first_plane[3], second_plane[3];
+			for (int i=0; i<3; i++){
+				first_plane[i]  = params::colloids[iColl][i] + 0.5*params::flood_fill_classify_slice_size*AB[i];
+				second_plane[i] = params::colloids[iColl][i] - 0.5*params::flood_fill_classify_slice_size*AB[i];
+			}
+			double first_distance  = abs( inner_product(AB, AB+3, p, 0) - inner_product(first_plane,first_plane+3,AB,0) ) / norm_AB;
+			double second_distance = abs( inner_product(AB, AB+3, p, 0) - inner_product(second_plane,second_plane+3,AB,0) ) / norm_AB;
+
+			// Is it between the two planes? If so, it is <= flood_fill_classify_slice_size from each plane
+			if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
+			   second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
+				if (projection>0){
+					above[iColl].push_back(*(it->self));
+					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
+				} else {
+					below[iColl].push_back(*(it->self));
+					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region below colloid "<<iColl<<endl;
+				}
 			}
 		}
 	}
+
+	verbose()<<above[0].size()<<" pixels in region above first colloid"<<endl;
+	verbose()<<above[1].size()<<" pixels in region above second colloid"<<endl;
+	verbose()<<below[0].size()<<" pixels in region below first colloid"<<endl;
+	verbose()<<below[0].size()<<" pixels in region below second colloid"<<endl;
+
 }
 
 void Sausage::find_com(){

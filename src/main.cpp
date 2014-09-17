@@ -84,6 +84,7 @@ int main(int argc, char *argv[]){
 		thisSausage.find_com();
 		thisSausage.find_pobf();
 		thisSausage.estimate_sausage_length();
+		thisSausage.flood_fill_classify();
 	}
 
 	// Wrap up and exit
