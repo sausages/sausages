@@ -97,6 +97,7 @@ void Sausage::flood_fill_classify(void){
 	AB[1]=params::colloids[1][1]-params::colloids[2][1];
 	AB[2]=params::colloids[1][2]-params::colloids[2][2];
 	double norm_AB=inner_product(AB,AB+3,AB,0);
+	debug()<<"Vector AB is {"<<AB[0]<<","<<AB[1]<<","<<AB[2]<<"} of length "<<norm_AB<<endl;
 
 	// Plane of best fit is of form alpha*x+beta*y=z
 	alpha=-plane_of_best_fit[0];
@@ -108,6 +109,7 @@ void Sausage::flood_fill_classify(void){
 	v[0]=tmp/(1+tmp);
 	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
 	v[2]=alpha*v[0] + beta*v[1];
+	debug()<<"Vector v (perp. AB & || PoBF & unit) is {"<<v[0]<<","<<v[0]<<","<<v[0]<<"}"<<endl;
 
 	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
 	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
