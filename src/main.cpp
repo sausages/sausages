@@ -78,6 +78,16 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
+	// Exit program is number of sausages found is not equal 2 or 1.
+	if ( relevant_sausages.size() > 2 ) {
+		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
+		exit(EXIT_FAILURE);
+		}
+	
+	if ( relevant_sausages.size() == 1) {
+		info() << "One relevant sausage found." << endl;
+	}
+
 	// Calculate properties of relevant sausages
 	for (size_t i=0; i<relevant_sausages.size(); i++){
 		Sausage thisSausage=allSausages[relevant_sausages[i]];
