@@ -20,6 +20,8 @@ namespace params{
 	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	double colloids[2][3]; // xyz positions of the two colloids
 	double flood_fill_classify_slice_size=4; ///< How many pixels wide should the regions in flood_fill_classify be?
+	double ratio_two_rings = 0.1; ///< Threshold ratio for which two relevant sausages are identified as two_rings
+	double ratio_2nd_loop = 0.5; ///< Threshold ratio for which two relevant sausages are identified as 2nd_loop
 }
 
 void invalid_colloid_info(void){
@@ -139,12 +141,23 @@ void set_params(char *filename){
 			info()<<"flood_fill_classify_slice_size "<<flood_fill_classify_slice_size<<std::endl;
 	}
 
-
 	/* Integers */
 	// points_per_slice
 	if (cJSON_GetObjectItem(root,"points_per_slice")){
 			points_per_slice = cJSON_GetObjectItem(root,"points_per_slice")->valuedouble;
 			info()<<"points_per_slice "<<points_per_slice<<std::endl;
+	}
+	
+	// ratio_two_rings
+	if (cJSON_GetObjectItem(root,"ratio_two_rings")){
+			ratio_two_rings = cJSON_GetObjectItem(root,"ratio_two_rings")->valuedouble;
+			info()<<"ratio_two_rings "<<ratio_two_rings<<std::endl;
+	}
+
+	// ratio_2nd_loop
+	if (cJSON_GetObjectItem(root,"ratio_2nd_loop")){
+			ratio_2nd_loop = cJSON_GetObjectItem(root,"ratio_2nd_loop")->valuedouble;
+			info()<<"ratio_2nd_loop "<<ratio_2nd_loop<<std::endl;
 	}
 
 }

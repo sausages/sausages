@@ -83,18 +83,37 @@ int main(int argc, char *argv[]){
 		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
 		exit(EXIT_FAILURE);
 		}
-	
-	if ( relevant_sausages.size() == 1) {
-		info() << "One relevant sausage found." << endl;
+
+	// Analysis for two relevant sausages found for high threshold
+	double size [2];
+	double ratio;
+	if ( relevant_sausages.size() == 2) {
+		info() << "Two relevant sausage found with # of points:." << endl;
+		for (size_t i=0; i<relevant_sausages.size(); i++){
+			size[i] = allSausages[relevant_sausages[i]].points.size();
+			info() << "Length of i th sausage: " << i << " " << size[i] << endl;
+		}
+		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
+		if (ratio < params::ratio_two_rings ){
+			info() << "The sausages have very similar length. Hence it is the Two-ring structure." << endl;
+			exit(EXIT_SUCCESS);}
+		else if (ratio > params::ratio_2nd_loop ) {
+			info() << "The sausages have very different lengths. Hence it is the 2nd_loop structure." << endl;
+			exit(EXIT_SUCCESS);}
+		else {
+			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
+			Maybe change input parameters." << endl;
+			exit(EXIT_FAILURE);
+			}
 	}
 
 	// Calculate properties of relevant sausages
-	for (size_t i=0; i<relevant_sausages.size(); i++){
+/*	for (size_t i=0; i<relevant_sausages.size(); i++){
 		Sausage thisSausage=allSausages[relevant_sausages[i]];
 		thisSausage.find_com();
 		thisSausage.find_pobf();
 		thisSausage.estimate_sausage_length();
-	}
+	}*/
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;
