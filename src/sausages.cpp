@@ -93,10 +93,10 @@ void Sausage::flood_fill_classify(void){
 	double alpha,beta;
 
 	// AB is vector joining colloids
-	AB[0]=params::colloids[1][0]-params::colloids[2][0];
-	AB[1]=params::colloids[1][1]-params::colloids[2][1];
-	AB[2]=params::colloids[1][2]-params::colloids[2][2];
-	double norm_AB=inner_product(AB,AB+3,AB,0);
+	AB[0]=params::colloids[0][0]-params::colloids[1][0];
+	AB[1]=params::colloids[0][1]-params::colloids[1][1];
+	AB[2]=params::colloids[0][2]-params::colloids[1][2];
+	double norm_AB=sqrt(inner_product(AB,AB+3,AB,0.0));
 	debug()<<"Vector AB is {"<<AB[0]<<","<<AB[1]<<","<<AB[2]<<"} of length "<<norm_AB<<endl;
 
 	// Plane of best fit is of form alpha*x+beta*y=z
@@ -109,7 +109,8 @@ void Sausage::flood_fill_classify(void){
 	v[0]=tmp/(1+tmp);
 	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
 	v[2]=alpha*v[0] + beta*v[1];
-	debug()<<"Vector v (perp. AB & || PoBF & unit) is {"<<v[0]<<","<<v[0]<<","<<v[0]<<"}"<<endl;
+	double norm_v=sqrt(inner_product(v,v+3,v,0.0));
+	debug()<<"Vector v (perp. AB & || PoBF & unit) is {"<<v[0]<<","<<v[1]<<","<<v[2]<<"} of length "<<norm_v<<endl;
 
 	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
 	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
@@ -123,9 +124,9 @@ void Sausage::flood_fill_classify(void){
 			u[0]=it->x - params::colloids[iColl][0];
 			u[1]=it->y - params::colloids[iColl][1];
 			u[2]=it->z - params::colloids[iColl][2];
-			//double norm_u=inner_product(u,u+3,u,0); // u.u
+			//double norm_u=inner_product(u,u+3,u,0.0); // u.u
 
-			double projection = inner_product(u,u+3,v,0); // u.v
+			double projection = inner_product(u,u+3,v,0.0); // u.v
 
 			/* ***********************
 			 * This sweeps out a cylinder surrounding the line perpendicular to AB in the PoBF, and adds points in the cylinder to the regions.
@@ -148,8 +149,8 @@ void Sausage::flood_fill_classify(void){
 				first_plane[i]  = params::colloids[iColl][i] + 0.5*params::flood_fill_classify_slice_size*AB[i];
 				second_plane[i] = params::colloids[iColl][i] - 0.5*params::flood_fill_classify_slice_size*AB[i];
 			}
-			double first_distance  = abs( inner_product(AB, AB+3, p, 0) - inner_product(first_plane,first_plane+3,AB,0) ) / norm_AB;
-			double second_distance = abs( inner_product(AB, AB+3, p, 0) - inner_product(second_plane,second_plane+3,AB,0) ) / norm_AB;
+			double first_distance  = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(first_plane,first_plane+3,AB,0.0) ) / norm_AB;
+			double second_distance = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(second_plane,second_plane+3,AB,0.0) ) / norm_AB;
 
 			// Is it between the two planes? If so, it is <= flood_fill_classify_slice_size from each plane
 			if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
