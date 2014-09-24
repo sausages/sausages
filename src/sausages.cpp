@@ -88,7 +88,6 @@ void Sausage::flood_fill_classify(void){
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
 	 */
 	double v[3];
-	double tmp;
 	double AB[3];
 	double alpha,beta;
 
@@ -104,11 +103,29 @@ void Sausage::flood_fill_classify(void){
 	beta=-plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB and unit-vector, we can determine:
-	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2);
+	/*
+	double tmp;
+	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2); // NB possible div0
 	tmp *= (1+alpha)/(1+beta);
 	v[0]=tmp/(1+tmp);
 	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
 	v[2]=alpha*v[0] + beta*v[1];
+	tmp=(1+beta*beta)*( (AB[0]+alpha*AB[1])/(AB[1]+beta*AB[2]) )-alpha*beta;
+	v[0]=sqrt( ( tmp*(1-beta*beta) ) / (tmp*tmp - (1+alpha*alpha+beta*beta)) );
+	tmp=sqrt(v[0]*v[0]*(1+alpha*alpha+beta*beta) - beta*beta - 1 );
+	v[1]= (tmp - alpha*beta*v[0]) / (1+beta*beta);
+	v[2]=alpha*v[0] + beta*v[1];
+	*/
+	// But it's much easier to not bother normalising...
+	if (abs(AB[1]+beta*AB[2]) > params::epsilon){
+		v[0]=1;
+		v[1]=(-alpha-AB[0])/(AB[1]+beta*AB[2]);
+	}else{
+		v[0]=(-AB[1]-beta*AB[2])/(AB[0]+alpha); // = 0, more or less
+		v[1]=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
+	}
+	v[2]=alpha*v[0]+beta*v[1];
+
 	double norm_v=sqrt(inner_product(v,v+3,v,0.0));
 	debug()<<"Vector v (perp. AB & || PoBF & unit) is {"<<v[0]<<","<<v[1]<<","<<v[2]<<"} of length "<<norm_v<<endl;
 
@@ -124,9 +141,9 @@ void Sausage::flood_fill_classify(void){
 			u[0]=it->x - params::colloids[iColl][0];
 			u[1]=it->y - params::colloids[iColl][1];
 			u[2]=it->z - params::colloids[iColl][2];
-			//double norm_u=inner_product(u,u+3,u,0.0); // u.u
 
-			double projection = inner_product(u,u+3,v,0.0); // u.v
+			//debug()<<"Vector u is {"<<u[0]<<","<<u[1]<<","<<u[2]<<"} of length "<<norm_u<<endl;
+			//debug() << "projection: "<<projection << endl;
 
 			/* ***********************
 			 * This sweeps out a cylinder surrounding the line perpendicular to AB in the PoBF, and adds points in the cylinder to the regions.
@@ -146,15 +163,17 @@ void Sausage::flood_fill_classify(void){
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
 			double first_plane[3], second_plane[3];
 			for (int i=0; i<3; i++){
-				first_plane[i]  = params::colloids[iColl][i] + 0.5*params::flood_fill_classify_slice_size*AB[i];
-				second_plane[i] = params::colloids[iColl][i] - 0.5*params::flood_fill_classify_slice_size*AB[i];
+				first_plane[i]  = params::colloids[iColl][i] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB[i]/norm_AB);
+				second_plane[i] = params::colloids[iColl][i] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB[i]/norm_AB);
 			}
 			double first_distance  = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(first_plane,first_plane+3,AB,0.0) ) / norm_AB;
 			double second_distance = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(second_plane,second_plane+3,AB,0.0) ) / norm_AB;
+			//debug()<<"distances: "<<first_distance<<","<<second_distance<<endl;
 
 			// Is it between the two planes? If so, it is <= flood_fill_classify_slice_size from each plane
 			if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
 			   second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
+				double projection = inner_product(u,u+3,v,0.0);
 				if (projection>0){
 					above[iColl].push_back(*(it->self));
 					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
@@ -169,7 +188,19 @@ void Sausage::flood_fill_classify(void){
 	verbose()<<above[0].size()<<" pixels in region above first colloid"<<endl;
 	verbose()<<above[1].size()<<" pixels in region above second colloid"<<endl;
 	verbose()<<below[0].size()<<" pixels in region below first colloid"<<endl;
-	verbose()<<below[0].size()<<" pixels in region below second colloid"<<endl;
+	verbose()<<below[1].size()<<" pixels in region below second colloid"<<endl;
+
+	/* Debug: print out all points in sausage, and points in regions */
+	/*
+	cout << "XXXX" << endl;
+	for (vector<Point>::iterator it=points.begin(); it!=points.end(); it++){ cout << 0 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
+	for (vector<Point>::iterator it=above[0].begin(); it!=above[0].end(); it++){ cout << 1 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
+	for (vector<Point>::iterator it=below[0].begin(); it!=below[0].end(); it++){ cout << 2 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
+	for (vector<Point>::iterator it=above[1].begin(); it!=above[1].end(); it++){ cout << 3 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
+	for (vector<Point>::iterator it=below[1].begin(); it!=below[1].end(); it++){ cout << 4 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
+	cout << "XXXX" << endl;
+	*/
+
 
 }
 
