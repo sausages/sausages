@@ -102,23 +102,9 @@ void Sausage::flood_fill_classify(void){
 	alpha=-plane_of_best_fit[0];
 	beta=-plane_of_best_fit[1];
 
-	// From being parallel to PoBF, perpendicular to AB and unit-vector, we can determine:
-	/*
-	double tmp;
-	tmp  = pow(AB[1]+beta*AB[2],2) / pow(AB[0]+alpha*AB[2],2); // NB possible div0
-	tmp *= (1+alpha)/(1+beta);
-	v[0]=tmp/(1+tmp);
-	v[1]=sqrt( (1-v[0]*v[0]*(1+alpha)) / (1+beta) );
-	v[2]=alpha*v[0] + beta*v[1];
-	tmp=(1+beta*beta)*( (AB[0]+alpha*AB[1])/(AB[1]+beta*AB[2]) )-alpha*beta;
-	v[0]=sqrt( ( tmp*(1-beta*beta) ) / (tmp*tmp - (1+alpha*alpha+beta*beta)) );
-	tmp=sqrt(v[0]*v[0]*(1+alpha*alpha+beta*beta) - beta*beta - 1 );
-	v[1]= (tmp - alpha*beta*v[0]) / (1+beta*beta);
-	v[2]=alpha*v[0] + beta*v[1];
-	*/
-	// But it's much easier to not bother normalising...
+	// From being parallel to PoBF, perpendicular to AB, we can determine:
 	if (abs(AB[1]+beta*AB[2]) > params::epsilon){
-		v[0]=1;
+		v[0]=1; // No need to normalise
 		v[1]=(-alpha-AB[0])/(AB[1]+beta*AB[2]);
 	}else{
 		v[0]=(-AB[1]-beta*AB[2])/(AB[0]+alpha); // = 0, more or less
@@ -141,23 +127,7 @@ void Sausage::flood_fill_classify(void){
 			u[0]=it->x - params::colloids[iColl][0];
 			u[1]=it->y - params::colloids[iColl][1];
 			u[2]=it->z - params::colloids[iColl][2];
-
 			//debug()<<"Vector u is {"<<u[0]<<","<<u[1]<<","<<u[2]<<"} of length "<<norm_u<<endl;
-			//debug() << "projection: "<<projection << endl;
-
-			/* ***********************
-			 * This sweeps out a cylinder surrounding the line perpendicular to AB in the PoBF, and adds points in the cylinder to the regions.
-			 * However, this may miss parts (or all) of the sausage if there are significant kinks. Better to select all points between two planes
-
-			double distance = sqrt(norm_u*norm_u - projection*projection);
-			if (distance<params::flood_fill_classify_slice_size/2){
-				if (projection>0){
-					// add to P1
-				} else {
-					// add to P2
-				}
-			}
-			************************/
 
 			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
