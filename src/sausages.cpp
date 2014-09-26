@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 #include <stdexcept>
 #include "Eigen/Dense"
 #include "io.h"
@@ -170,6 +171,34 @@ void Sausage::flood_fill_classify(void){
 	for (vector<Point>::iterator it=below[1].begin(); it!=below[1].end(); it++){ cout << 4 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
 	cout << "XXXX" << endl;
 	*/
+
+	// For each region
+	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
+		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
+		vector<Point> region = aboveOrBelow ? above[iColl] : below[iColl];
+
+	//  	find all neighbours of the region, and pick the one closest to the /other/ colloid
+		vector<Point> neighbours;
+		for (vector<Point>::iterator it=region.begin(); it!=region.end(); it++){
+			debug()<<"testing it"<<endl<<flush;
+			debug()<<it->self<<","<<it->x<<","<<it->y<<","<<it->z<<endl;
+			debug()<<it->left<<endl<<flush;
+			find(region.begin(),region.end(),(Point)*(it->left));
+			debug()<<"post-find"<<endl<<flush;
+			//if (it->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->left))!=region.end()){
+				debug()<<"pushing"<<endl<<flush;
+				neighbours.push_back(*(it->left));
+				region.push_back(*(it->left));
+				debug() << "pushed"<<endl<<flush;
+			//}
+
+		}
+		debug()<<"end of region"<<endl<<flush;
+
+	//
+	// 	flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
+
+	}} // end of 'for each region'
 
 
 }

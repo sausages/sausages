@@ -28,9 +28,16 @@ struct Point
 	Point* down;
 	Point* forward;
 	Point* back;
-	// Pointer to self, pretty sure this is irrelevant, but
-	// I currently need it for the flood-fill (iterators are copies)
+	// Pointer to self, pretty sure this is irrelevant, but...
+	// I currently need it for the flood-fill (iterators are copies) and == operator
 	Point* self;
+
+	// Assume if our self-pointer is the same then we are the same
+	// Currently needed for the find algorithm in flood-fill
+	bool operator == (const Point &Ref) const {
+		return(this->self == Ref.self);
+	}
+
 };
 
 void neighLink_xyzclcpcs(std::vector<Point> &allPoints);
