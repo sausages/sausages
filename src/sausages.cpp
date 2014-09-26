@@ -177,23 +177,38 @@ void Sausage::flood_fill_classify(void){
 		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
 		vector<Point> region = aboveOrBelow ? above[iColl] : below[iColl];
 
-	//  	find all neighbours of the region, and pick the one closest to the /other/ colloid
+		// find all neighbours of the region which are inside this sausage, and pick the one closest to the /other/ colloid
+		// TODO: this is a really inefficient implementation
 		vector<Point> neighbours;
 		for (vector<Point>::iterator it=region.begin(); it!=region.end(); it++){
-			debug()<<"testing it"<<endl<<flush;
-			debug()<<it->self<<","<<it->x<<","<<it->y<<","<<it->z<<endl;
-			debug()<<it->left<<endl<<flush;
-			find(region.begin(),region.end(),(Point)*(it->left));
-			debug()<<"post-find"<<endl<<flush;
-			//if (it->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->left))!=region.end()){
-				debug()<<"pushing"<<endl<<flush;
-				neighbours.push_back(*(it->left));
-				region.push_back(*(it->left));
-				debug() << "pushed"<<endl<<flush;
-			//}
-
+			if (it->left->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->left))!=region.end())    neighbours.push_back(*(it->left));
+			if (it->right->sausageID>0   && find(region.begin(),region.end(),(Point)*(it->right))!=region.end())   neighbours.push_back(*(it->right));
+			if (it->up->sausageID>0      && find(region.begin(),region.end(),(Point)*(it->up))!=region.end())      neighbours.push_back(*(it->up));
+			if (it->down->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->down))!=region.end())    neighbours.push_back(*(it->down));
+			if (it->forward->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->forward))!=region.end()) neighbours.push_back(*(it->forward));
+			if (it->back->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->back))!=region.end())    neighbours.push_back(*(it->back));
 		}
 		debug()<<"end of region"<<endl<<flush;
+		debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
+
+		int otherColl=(iColl+1)%2;
+		double minSqDistance = pow(neighbours[1].x - params::colloids[otherColl][0],2) +
+				pow(neighbours[1].y - params::colloids[otherColl][1],2) +
+				pow(neighbours[1].z - params::colloids[otherColl][2],2) ;
+		debug()<<"First point has distance-from-colloid "<<minSqDistance<<endl;
+		Point startPoint;
+		for (vector<Point>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
+			double thisSqDistance = pow(it->x - params::colloids[otherColl][0],2) +
+						pow(it->y - params::colloids[otherColl][1],2) +
+						pow(it->z - params::colloids[otherColl][2],2) ;
+
+			if (thisSqDistance<minSqDistance){
+				startPoint=*(it->self);
+				minSqDistance=thisSqDistance;
+				debug()<<"This point has distance-from-colloid "<<thisSqDistance<<endl;
+			}
+		}
+		debug()<<"Closest point is at "<<startPoint.x<<","<<startPoint.y<<","<<startPoint.z<<endl;
 
 	//
 	// 	flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
