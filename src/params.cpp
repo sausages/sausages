@@ -19,9 +19,10 @@ namespace params{
 	double pixel_size = 0.5; // Distance between nearest-neighbour points
 	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	double colloids[2][3]; // xyz positions of the two colloids
-	double flood_fill_classify_slice_size=4; ///< How many pixels wide should the regions in flood_fill_classify be?
-	double ratio_two_rings = 0.1; ///< Threshold ratio for which two relevant sausages are identified as two_rings
-	double ratio_2nd_loop = 0.5; ///< Threshold ratio for which two relevant sausages are identified as 2nd_loop
+	double ratio_two_rings = 0.1; // Threshold ratio for which two relevant sausages are identified as two_rings
+	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
+	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
+	double epsilon=1.0e-10; // Some small number for comparison to zero
 }
 
 void invalid_colloid_info(void){
@@ -140,6 +141,13 @@ void set_params(char *filename){
 			flood_fill_classify_slice_size = cJSON_GetObjectItem(root,"flood_fill_classify_slice_size")->valuedouble;
 			info()<<"flood_fill_classify_slice_size "<<flood_fill_classify_slice_size<<std::endl;
 	}
+
+	// flood_fill_classify_slice_size
+	if (cJSON_GetObjectItem(root,"epsilon")){
+			epsilon = cJSON_GetObjectItem(root,"epsilon")->valuedouble;
+			info()<<"epsilon "<<epsilon<<std::endl;
+	}
+
 
 	/* Integers */
 	// points_per_slice

@@ -31,6 +31,7 @@ class Sausage {
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(void); ///<Approximate length of sausage
+	void flood_fill_classify(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 };
 
