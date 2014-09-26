@@ -33,6 +33,16 @@ void neighLink_xyzclcpcs(vector<Point> &allPoints){
 			allPoints[i+1].back   = &(allPoints[i]);
 		}
 	}
+
+	// Update neighbours array
+	for (size_t i=0; i<allPoints.size(); i++){
+		allPoints[i].neighbours[0]=allPoints[i].left;
+		allPoints[i].neighbours[1]=allPoints[i].right;
+		allPoints[i].neighbours[2]=allPoints[i].up;
+		allPoints[i].neighbours[3]=allPoints[i].down;
+		allPoints[i].neighbours[4]=allPoints[i].forward;
+		allPoints[i].neighbours[5]=allPoints[i].back;
+	}
 }
 
 

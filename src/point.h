@@ -21,6 +21,8 @@ struct Point
 	/** Pointers to neighbours in 3D grid
 	 * x:+right/-left ; y:+up/-down ; z:+forward/-back
 	 * Don't need up-left etc. as can do up->left
+	 * These should be referenced only during setup, in general
+	 * loop over the neighbours array.
 	 */
 	Point* left; 
 	Point* right;
@@ -28,6 +30,14 @@ struct Point
 	Point* down;
 	Point* forward;
 	Point* back;
+
+	/** Array of {l,r,u,d,f,b}
+	 * In practice we should use this, not explicit left/right etc
+	 * The exception is when reading input/setting up
+	 * Advantage of array is possibility of looping over it
+	 */
+	Point* neighbours[6];
+
 	// Pointer to self, pretty sure this is irrelevant, but...
 	// I currently need it for the flood-fill (iterators are copies) and == operator
 	Point* self;

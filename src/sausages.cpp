@@ -56,12 +56,9 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				// There's got to be a nice way of doing this
 				curr.self->sausageID=newSausageID;
 				allSausages.back().points.push_back(curr);
-				if (curr.left    && curr.left->sausageID==1)    stack.push_back(*(curr.left)) ;
-				if (curr.right   && curr.right->sausageID==1)   stack.push_back(*(curr.right)) ;
-				if (curr.up      && curr.up->sausageID==1)      stack.push_back(*(curr.up)) ;
-				if (curr.down    && curr.down->sausageID==1)    stack.push_back(*(curr.down)) ;
-				if (curr.forward && curr.forward->sausageID==1) stack.push_back(*(curr.forward)) ;
-				if (curr.back    && curr.back->sausageID==1)    stack.push_back(*(curr.back)) ;
+				for (int iNeigh=0;iNeigh<6;iNeigh++){
+					if (curr.neighbours[iNeigh]  && curr.neighbours[iNeigh]->sausageID==1) stack.push_back(*(curr.neighbours[iNeigh])) ;
+				}
 			}
 			newSausageID++;
 		}
@@ -181,12 +178,10 @@ void Sausage::flood_fill_classify(void){
 		// TODO: this is a really inefficient implementation
 		vector<Point> neighbours;
 		for (vector<Point>::iterator it=region.begin(); it!=region.end(); it++){
-			if (it->left->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->left))!=region.end())    neighbours.push_back(*(it->left));
-			if (it->right->sausageID>0   && find(region.begin(),region.end(),(Point)*(it->right))!=region.end())   neighbours.push_back(*(it->right));
-			if (it->up->sausageID>0      && find(region.begin(),region.end(),(Point)*(it->up))!=region.end())      neighbours.push_back(*(it->up));
-			if (it->down->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->down))!=region.end())    neighbours.push_back(*(it->down));
-			if (it->forward->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->forward))!=region.end()) neighbours.push_back(*(it->forward));
-			if (it->back->sausageID>0    && find(region.begin(),region.end(),(Point)*(it->back))!=region.end())    neighbours.push_back(*(it->back));
+			for (int iNeigh=0;iNeigh<6;iNeigh++){
+				if (it->neighbours[iNeigh]->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->neighbours[iNeigh]))!=region.end())
+					neighbours.push_back(*(it->neighbours[iNeigh]));
+			}
 		}
 		debug()<<"end of region"<<endl<<flush;
 		debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
@@ -210,12 +205,36 @@ void Sausage::flood_fill_classify(void){
 		}
 		debug()<<"Closest point is at "<<startPoint.x<<","<<startPoint.y<<","<<startPoint.z<<endl;
 
-	//
-	// 	flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
+
+		// flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
+		int reached[2][2] = {{0,0},{0,0}}; // format: reached[iColl][aboveOrBelow], if reached[1][0]==1 that means that we have reached region below colloid 2
+		vector<Point> stack; // FILO stack, to be filled with contiguous points
+		stack.push_back(startPoint);
+		while (stack.size()>0){
+			Point curr = stack.back();
+			stack.pop_back();
+
+			for (int iNeigh=0;iNeigh<6;iNeigh++){
+				if (curr.neighbours[iNeigh]    && curr.neighbours[iNeigh]->sausageID>1) {
+					bool in_a_region=false;
+					// For all of regions...
+					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
+						vector<Point> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
+						// If the neighbour is in the region, make a note but don't add to stack
+						if (find(inner_region.begin(),inner_region.end(),(Point)*(curr.back))!=inner_region.end()){
+							in_a_region=true;
+							reached[jColl][inner_aboveOrBelow]=1;
+						}
+					}}
+					if (!in_a_region) stack.push_back(*curr.neighbours[iNeigh]);
+				}
+			}
+
+
+		}
+		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
 
 	}} // end of 'for each region'
-
-
 }
 
 void Sausage::find_com(){
