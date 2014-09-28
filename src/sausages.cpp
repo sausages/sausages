@@ -169,6 +169,12 @@ void Sausage::flood_fill_classify(void){
 	cout << "XXXX" << endl;
 	*/
 
+	/** Adjacency matrix of region
+	 * 4-by-4 adjacency matrix. Each region is adjacent to itself.
+	 * Regions are numbered:  0) below-0  1) above-0  2) below-1  3) above-1
+	 * i.e. region is number 2*iColl+aboveOrBelow
+	 */
+	int adjacency[4][4] = {}; // initalise to all zero
 	// For each region
 	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
 		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
@@ -207,7 +213,6 @@ void Sausage::flood_fill_classify(void){
 
 
 		// flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
-		int reached[2][2] = {{0,0},{0,0}}; // format: reached[iColl][aboveOrBelow], if reached[1][0]==1 that means that we have reached region below colloid 2
 		vector<Point> stack; // FILO stack, to be filled with contiguous points
 		stack.push_back(startPoint);
 		while (stack.size()>0){
@@ -223,7 +228,7 @@ void Sausage::flood_fill_classify(void){
 						// If the neighbour is in the region, make a note but don't add to stack
 						if (find(inner_region.begin(),inner_region.end(),(Point)*(curr.back))!=inner_region.end()){
 							in_a_region=true;
-							reached[jColl][inner_aboveOrBelow]=1;
+							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
 						}
 					}}
 					if (!in_a_region) stack.push_back(*curr.neighbours[iNeigh]);
@@ -235,6 +240,9 @@ void Sausage::flood_fill_classify(void){
 		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
 
 	}} // end of 'for each region'
+	for (int i=0;i<4;i++){ for (int j=0;j<4;j++){
+		debug()<<"Adjacency["<<i<<"]["<<j<<"] = "<<adjacency[i][j]<<endl;
+	}}
 }
 
 void Sausage::find_com(){
