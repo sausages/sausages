@@ -216,19 +216,23 @@ void Sausage::flood_fill_classify(void){
 		vector<Point> stack; // FILO stack, to be filled with contiguous points
 		stack.push_back(startPoint);
 		while (stack.size()>0){
+			debug()<<"Another pixel on the stack"<<endl;
 			Point curr = stack.back();
 			stack.pop_back();
 
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
-				if (curr.neighbours[iNeigh]    && curr.neighbours[iNeigh]->sausageID>1) {
+				debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
+				if (curr.neighbours[iNeigh] && curr.neighbours[iNeigh]->sausageID>1) {
 					bool in_a_region=false;
 					// For all of regions...
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
 						vector<Point> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
-						if (find(inner_region.begin(),inner_region.end(),(Point)*(curr.back))!=inner_region.end()){
+						if (find(inner_region.begin(),inner_region.end(),(Point)*(curr.neighbours[iNeigh]))!=inner_region.end()){
 							in_a_region=true;
 							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
+							debug()<<"I'm in a region"<<endl;
+							debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
 						}
 					}}
 					if (!in_a_region) stack.push_back(*curr.neighbours[iNeigh]);
