@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cmath>
 #include "point.h"
+#include "params.h"
+#include "io.h"
 
 using namespace std;
 
@@ -42,6 +44,14 @@ void neighLink_xyzclcpcs(vector<Point> &allPoints){
 		allPoints[i].neighbours[3]=allPoints[i].down;
 		allPoints[i].neighbours[4]=allPoints[i].forward;
 		allPoints[i].neighbours[5]=allPoints[i].back;
+	}
+
+	// Check Pixel size
+	if (abs(abs(allPoints[0].z-allPoints[1].z)-params::pixel_size)>params::epsilon){
+		warning()<<"WARNING: Pixel size appears to be "<<abs(allPoints[0].z-allPoints[1].z)<<
+			" but params file (or default) is set to "<<params::pixel_size<<"."<<endl<<
+			"Overwriting with new pixel size."<<endl;
+		params::pixel_size=abs(abs(allPoints[0].z-allPoints[1].z)-params::pixel_size);
 	}
 }
 
