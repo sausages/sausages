@@ -47,6 +47,10 @@ struct Point
 	bool operator == (const Point &Ref) const {
 		return(this->self == Ref.self);
 	}
+	// Sort points (for uniqueness) by value of pointer
+	bool operator < (const Point &Ref) const {
+		return(this->self < Ref.self);
+	}
 
 };
 

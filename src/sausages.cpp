@@ -179,74 +179,105 @@ void Sausage::flood_fill_classify(void){
 	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
 		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
 		vector<Point> region = aboveOrBelow ? above[iColl] : below[iColl];
+		int otherColl=(iColl+1)%2;
 
-		// find all neighbours of the region which are inside this sausage, and pick the one closest to the /other/ colloid
-		// TODO: this is a really inefficient implementation
+		// find all neighbours of the region which are inside this sausage and closer to the /other/ colloid
 		vector<Point> neighbours;
 		for (vector<Point>::iterator it=region.begin(); it!=region.end(); it++){
+			double distanceToOtherColl = pow(it->x - params::colloids[otherColl][0],2) +
+							pow(it->y - params::colloids[otherColl][1],2) +
+							pow(it->z - params::colloids[otherColl][2],2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
-				if (it->neighbours[iNeigh]->sausageID>0 && find(region.begin(),region.end(),(Point)*(it->neighbours[iNeigh]))!=region.end())
-					neighbours.push_back(*(it->neighbours[iNeigh]));
+				Point neigh = *(it->neighbours[iNeigh]);
+				if (neigh.sausageID>0 && find(region.begin(),region.end(),neigh)==region.end()){
+					double neighDistanceToOtherColl = pow(neigh.x - params::colloids[otherColl][0],2) +
+									pow(neigh.y - params::colloids[otherColl][1],2) +
+									pow(neigh.z - params::colloids[otherColl][2],2) ;
+					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(*(it->neighbours[iNeigh]));
+				}
 			}
 		}
 		debug()<<"end of region"<<endl<<flush;
+
+		// Get rid of duplicate neighbours
 		debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
-
-		int otherColl=(iColl+1)%2;
-		double minSqDistance = pow(neighbours[1].x - params::colloids[otherColl][0],2) +
-				pow(neighbours[1].y - params::colloids[otherColl][1],2) +
-				pow(neighbours[1].z - params::colloids[otherColl][2],2) ;
-		debug()<<"First point has distance-from-colloid "<<minSqDistance<<endl;
-		Point startPoint;
+		sort(neighbours.begin(),neighbours.end());
+		debug()<<"sorted neighbours"<<endl;
+		vector<Point>::iterator it = unique(neighbours.begin(),neighbours.end());
+		neighbours.resize(distance(neighbours.begin(),it));
+		debug()<<"Removed duplicates, now "<<neighbours.size()<<" neighbours."<<endl;
+		debug()<<"Neighbours at:"<<endl;
 		for (vector<Point>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
-			double thisSqDistance = pow(it->x - params::colloids[otherColl][0],2) +
-						pow(it->y - params::colloids[otherColl][1],2) +
-						pow(it->z - params::colloids[otherColl][2],2) ;
-
-			if (thisSqDistance<minSqDistance){
-				startPoint=*(it->self);
-				minSqDistance=thisSqDistance;
-				debug()<<"This point has distance-from-colloid "<<thisSqDistance<<endl;
-			}
+			debug()<<it->x<<","<<it->y<<","<<it->z<<endl;
 		}
-		debug()<<"Closest point is at "<<startPoint.x<<","<<startPoint.y<<","<<startPoint.z<<endl;
 
-
-		// flood-fill from chosen point. If a point is in a region, make a note but don't add it to the flood-filled area.
-		vector<Point> stack; // FILO stack, to be filled with contiguous points
-		stack.push_back(startPoint);
+		// flood-fill from neighbours. If a point is in a region, make a note but don't add it to the flood-filled area.
+		vector<Point> stack=neighbours; // FILO stack, to be filled with contiguous points
+		vector<Point> visited; // Points we've already visited, and so should ignore
 		while (stack.size()>0){
-			debug()<<"Another pixel on the stack"<<endl;
+			//debug()<<"Another pixel on the stack"<<endl;
 			Point curr = stack.back();
 			stack.pop_back();
 
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
-				debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
-				if (curr.neighbours[iNeigh] && curr.neighbours[iNeigh]->sausageID>1) {
+				if (!curr.neighbours[iNeigh]) continue;
+				Point thisNeigh=*(curr.neighbours[iNeigh]);
+				if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
+				visited.push_back(thisNeigh);
+				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
+				if (thisNeigh.sausageID>1) {
 					bool in_a_region=false;
 					// For all of regions...
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
 						vector<Point> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
-						if (find(inner_region.begin(),inner_region.end(),(Point)*(curr.neighbours[iNeigh]))!=inner_region.end()){
+						if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
 							in_a_region=true;
 							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
-							debug()<<"I'm in a region"<<endl;
-							debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
+							//debug()<<"I'm in a region"<<endl;
+							//debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
 						}
 					}}
-					if (!in_a_region) stack.push_back(*curr.neighbours[iNeigh]);
+					if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
 				}
 			}
-
-
 		}
 		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
 
 	}} // end of 'for each region'
+
 	for (int i=0;i<4;i++){ for (int j=0;j<4;j++){
 		debug()<<"Adjacency["<<i<<"]["<<j<<"] = "<<adjacency[i][j]<<endl;
 	}}
+
+	for (int i=0;i<4;i++){ for (int j=i;j<4;j++){
+		if (adjacency[i][j]!=adjacency[j][i]){
+			error()<<"Adjacency matrix is not symmetric!"<<endl;
+			exit(EXIT_FAILURE);
+		}
+	}}
+	debug()<<"Adjacency matrix is correctly symmetric."<<endl;
+	for (int i=0;i<4;i++){
+		int sum=0;
+		for (int j=0;j<4;j++){
+			sum+=adjacency[i][j];
+		}
+		if (sum<2){ // Including the region itself (i.e. adjacency[i][i]=1)
+			error()<<"Region "<<(i%2?"above":"below")<<" colloid "<<(i/2)<<" doesn't appear to be linked to any others."<<endl;
+			exit(EXIT_FAILURE);
+		} else if (sum>2){
+			error()<<"Region "<<(i%2?"above":"below")<<" colloid "<<(i/2)<<" appears to be connected to more than one other region, inspect manually."<<endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	if (adjacency[0][2] && adjacency[1][3]){
+		info()<<"System appears to be untwisted (Class 1)"<<endl;
+	} else if (adjacency[0][3] && adjacency[1][2]){
+		info()<<"System appears to be twisted (Class 2)"<<endl;
+	} else {
+		error()<<"Unexpected system linkage, this should never happen."<<endl;
+		exit(EXIT_FAILURE);
+	}
 }
 
 void Sausage::find_com(){
