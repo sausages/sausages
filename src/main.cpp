@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 	infile.close();
 
 	// Put all points with cl<threshold in a sausage
-	info() << "Thresholding, sausages have cl<" << params::threshold_high << endl;
+	info() << "Thresholding, sausages have cl<" << params::threshold << endl;
 	int num_below_threshold = threshold(allPoints);
 	info() << "  " << num_below_threshold << " out of "
 		<< allPoints.size() << " points were below the theshold." << endl;
@@ -78,13 +78,48 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
-	// Calculate properties of relevant sausages
-	for (size_t i=0; i<relevant_sausages.size(); i++){
-		Sausage thisSausage=allSausages[relevant_sausages[i]];
-		thisSausage.find_com();
-		thisSausage.find_pobf();
-		thisSausage.estimate_sausage_length();
-		thisSausage.flood_fill_classify();
+	// Exit program is number of sausages found is not equal 2 or 1.
+	if ( relevant_sausages.size() > 2) {
+		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// Analysis for two relevant sausages found 
+	else if ( relevant_sausages.size() == 2) {
+	double size [2];
+	double ratio;
+		info() << "Two relevant sausages found." << endl;
+		for (size_t i=0; i<relevant_sausages.size(); i++){
+			size[i] = allSausages[relevant_sausages[i]].points.size();
+			allSausages[relevant_sausages[i]].find_com();
+			allSausages[relevant_sausages[i]].find_pobf();
+			allSausages[relevant_sausages[i]].estimate_sausage_length();
+			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
+		}
+		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
+		if (ratio < params::ratio_two_rings ){
+			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
+			exit(EXIT_SUCCESS);}
+		else if (ratio > params::ratio_2nd_loop ) {
+			info() << "The sausages have very different size. Hence it is the 2nd_loop structure." << endl;
+			exit(EXIT_SUCCESS);}
+		else {
+			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
+			Maybe change input parameters." << endl;
+			exit(EXIT_FAILURE);
+			}
+	}
+	
+	// Analysis for one relevant sausages found 
+	else if ( relevant_sausages.size() == 1) {
+	double size;
+		info() << "One relevant sausage found." << endl;
+		size = allSausages[relevant_sausages[0]].points.size();
+		allSausages[relevant_sausages[0]].find_com();
+		allSausages[relevant_sausages[0]].find_pobf();
+		//allSausages[relevant_sausages[0]].track_sausage();
+		info() << "Size of sausage: " << size << endl;
+		//Do FF to distinguish between figure of eight and figure of omega 
 	}
 
 	// Wrap up and exit

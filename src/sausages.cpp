@@ -23,7 +23,7 @@ int threshold(vector<Point> &allPoints){
 	int num_below_threshold=0;
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		if (it->cl < params::threshold_high){
+		if (it->cl < params::threshold){
 			it->sausageID=1;
 			num_below_threshold++;
 		} else {
