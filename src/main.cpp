@@ -54,9 +54,9 @@ int main(int argc, char *argv[]){
 	info() << "Distinguishing sausages..." << endl;
 	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
 	flood_fill_separate(allPoints,allSausages);
-	info() << "Sausage sizes:" << endl;
+	verbose() << "Sausage sizes:" << endl;
 	for (size_t i=0; i<allSausages.size(); i++){
-		info() << "  " << i+2 << " " << allSausages[i].points.size() << endl;
+		verbose() << "  " << i+2 << " " << allSausages[i].points.size() << endl;
 		}
 
 	// If the sausages are 'too small', ignore them.
