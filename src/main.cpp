@@ -120,6 +120,7 @@ int main(int argc, char *argv[]){
 		//allSausages[relevant_sausages[0]].track_sausage();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
+		allSausages[relevant_sausages[0]].flood_fill_classify();
 	}
 
 	// Wrap up and exit
