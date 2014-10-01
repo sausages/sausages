@@ -3,6 +3,7 @@
 #include <numeric>
 #include <algorithm>
 #include <stdexcept>
+#include <limits>
 #include "io.h"
 #include "point.h"
 #include "sausages.h"
@@ -279,7 +280,49 @@ void Sausage::flood_fill_classify(void){
 	}
 }
 
-void Sausage::find_com(){
+void Sausage::find_endpoints(void){
+
+	// dist is |V| x |V| array of min distances, initialised to infinity
+	int** dist = new int* [points.size()];
+	for (size_t i=0; i<points.size(); i++){
+		dist[i] = new int [points.size()];
+		for (size_t j=0; j<points.size(); j++){
+			dist[i][j]=numeric_limits<int>::max(); // No infinity() for integers, this will do
+		}
+	}
+	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
+
+	// For each vertex v, dist[v][v]=0
+	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
+	for (size_t v=0; v<points.size(); v++){
+		if (v%1000==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
+		for (size_t u=0; u<points.size(); u++){
+			dist[u][v] = (u==v) ? 0 : 1 ;
+		}
+	}
+
+	// shortestPath(i,j,k+1) = min ( shortestPath(i,j,k), shortestPath(i,k+1,k)+shortestPath(k+1,j,k) )
+	for (size_t k=0; k<points.size(); k++){
+		debug()<<"k="<<k<<"/"<<points.size()<<endl<<flush;
+		for (size_t i=0; i<points.size(); i++){
+			for (size_t j=0; j<points.size(); j++){
+				if (dist[i][j] > dist[i][k] + dist[k][j]){
+					dist[i][j] = dist[i][k] + dist[k][j];
+				}
+			}
+		}
+	}
+
+
+
+	for (size_t i=0; i<points.size(); i++){
+		delete [] dist[i];
+	}
+	delete [] dist;
+	exit(EXIT_SUCCESS);
+}
+
+void Sausage::find_com(void){
 	double x=0,y=0,z=0;
 	vector<Point>::iterator it;
 	for (it=points.begin(); it!=points.end(); ++it){

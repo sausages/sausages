@@ -78,6 +78,11 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
+	info() << "Bridging gaps..."<<endl;
+	for (size_t i=0;i<relevant_sausages.size();i++){
+		allSausages[relevant_sausages[i]].find_endpoints();
+	}
+
 	// Exit program is number of sausages found is not equal 2 or 1.
 	if ( relevant_sausages.size() > 2) {
 		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
