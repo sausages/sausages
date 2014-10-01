@@ -5,6 +5,8 @@
 #include "Eigen/Dense"
 #include "point.h"
 
+// All Eigen-related methods are defined in eigen-bits.cpp
+
 class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
 
