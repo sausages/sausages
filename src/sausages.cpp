@@ -305,9 +305,11 @@ void Sausage::find_endpoints(void){
 	for (size_t v=0; v<points.size(); v++){
 		if (v%100==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
 		dist[v][v]=0;
+		debug()<<"point at"<<points[v].x<<","<<points[v].y<<","<<points[v].z<<endl;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			size_t u=points[v].neighbours[iNeigh]->sausagePointsIndex;
 			dist[u][v]=1;
+			debug()<<"is next to"<<points[u].x<<","<<points[u].y<<","<<points[u].z<<endl;
 		}
 	}
 
