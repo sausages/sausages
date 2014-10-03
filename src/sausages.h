@@ -14,6 +14,7 @@ class Sausage {
 	int *slice_counter; ///< Holds # of points in slice
 	int nSlices; ///< # slices
 	double length; ///< Estimated length of sausage
+	size_t endpoints[2]; ///< Indices of the points in self.points which correspond to the endpoints of the sausage
 
 	Eigen::Matrix3d rotation_matrix; //rotation matrix from initial to new frame
 

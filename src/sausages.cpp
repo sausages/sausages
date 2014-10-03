@@ -56,6 +56,8 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				// There's got to be a nice way of doing this
 				curr.self->sausageID=newSausageID;
 				allSausages.back().points.push_back(curr);
+				curr.self->sausagePointsIndex=allSausages.back().points.size()-1;
+				//debug()<<allSausages.back().points.back().self<<" should equal "<<allSausages.back().points[curr.self->sausagePointsIndex].self<<endl;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					if (curr.neighbours[iNeigh]  && curr.neighbours[iNeigh]->sausageID==1) stack.push_back(*(curr.neighbours[iNeigh])) ;
 				}
@@ -281,13 +283,19 @@ void Sausage::flood_fill_classify(void){
 }
 
 void Sausage::find_endpoints(void){
+	// There is no 'infinity' for integers, like there is for doubles.
+	// However, there is a max(), which works out to be something like 2,147,000,000
+	// This is (hopefully) much larger than any actual distance across the network
+	// However, max+max gives an overflow, so we need something where inf+inf>inf
+	int myInfinity = numeric_limits<int>::max()/2-1;
+	debug()<<"myInf: "<<myInfinity<<", myInf+myInf: "<<myInfinity+myInfinity<<endl;
 
 	// dist is |V| x |V| array of min distances, initialised to infinity
 	int** dist = new int* [points.size()];
 	for (size_t i=0; i<points.size(); i++){
 		dist[i] = new int [points.size()];
 		for (size_t j=0; j<points.size(); j++){
-			dist[i][j]=numeric_limits<int>::max(); // No infinity() for integers, this will do
+			dist[i][j]=myInfinity;
 		}
 	}
 	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
@@ -295,25 +303,48 @@ void Sausage::find_endpoints(void){
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
 	for (size_t v=0; v<points.size(); v++){
-		if (v%1000==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
-		for (size_t u=0; u<points.size(); u++){
-			dist[u][v] = (u==v) ? 0 : 1 ;
+		if (v%100==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
+		dist[v][v]=0;
+		for (int iNeigh=0;iNeigh<6;iNeigh++){
+			size_t u=points[v].neighbours[iNeigh]->sausagePointsIndex;
+			dist[u][v]=1;
 		}
 	}
 
 	// shortestPath(i,j,k+1) = min ( shortestPath(i,j,k), shortestPath(i,k+1,k)+shortestPath(k+1,j,k) )
 	for (size_t k=0; k<points.size(); k++){
-		debug()<<"k="<<k<<"/"<<points.size()<<endl<<flush;
+		if (k%100==0) debug()<<"k="<<k<<"/"<<points.size()<<endl<<flush;
 		for (size_t i=0; i<points.size(); i++){
 			for (size_t j=0; j<points.size(); j++){
 				if (dist[i][j] > dist[i][k] + dist[k][j]){
 					dist[i][j] = dist[i][k] + dist[k][j];
+					if (i==1 && j==20){
+						debug()<<points[i].x<<","<<points[i].y<<","<<points[i].z<<endl;
+						debug()<<points[j].x<<","<<points[j].y<<","<<points[j].z<<endl;
+						debug()<<points[k].x<<","<<points[k].y<<","<<points[k].z<<endl;
+						debug()<<"new lower distance: "<<dist[i][j]<<endl;
+					}
 				}
 			}
 		}
 	}
 
+	// Find maximum minimum-distance
+	int max_min_dist=0;
+	for (size_t i=0; i<points.size(); i++){
+		for (size_t j=i; j<points.size(); j++){
+			if (dist[i][j]>max_min_dist){
+				debug()<<"dist: "<<max_min_dist<<", i: "<<i<<", j:"<<j<<endl;
+				max_min_dist=dist[i][j];
+				endpoints[0]=i;
+				endpoints[1]=j;
+			}
+		}
+	}
 
+	debug()<<"Endpoint 0 is #"<<endpoints[0]<<"at: "<<points[endpoints[0]].x<<","<<points[endpoints[0]].y<<","<<points[endpoints[0]].z<<","<<endl;
+	debug()<<"Endpoint 1 is #"<<endpoints[1]<<"at: "<<points[endpoints[1]].x<<","<<points[endpoints[1]].y<<","<<points[endpoints[1]].z<<","<<endl;
+	debug()<<"Minimum distance along the sausage between them is: "<<max_min_dist<<endl;
 
 	for (size_t i=0; i<points.size(); i++){
 		delete [] dist[i];

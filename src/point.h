@@ -18,6 +18,9 @@ struct Point
 	 */
 	int sausageID;
 
+	// The index of this point in its sauasages points array (so we don't have to search)
+	size_t sausagePointsIndex;
+
 	/** Pointers to neighbours in 3D grid
 	 * x:+right/-left ; y:+up/-down ; z:+forward/-back
 	 * Don't need up-left etc. as can do up->left
