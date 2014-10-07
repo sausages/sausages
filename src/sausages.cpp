@@ -42,24 +42,27 @@ int threshold(vector<Point> &allPoints){
  */
 void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
 	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
-	vector<Point> stack; // Empty FILO stack, filled with points to be coloured
+	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){
-			verbose() << "Starting sort of sausage #" << newSausageID << endl;
+			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
 			allSausages.push_back(Sausage(newSausageID));
-			stack.push_back(allPoints[firstPoint]);
+			stack.push_back(firstPoint);
 			while (stack.size()>0){
-				Point curr = stack.back();
+				Point *curr = &(allPoints[stack.back()]);
 				stack.pop_back();
 				// There's got to be a nice way of doing this
-				curr.self->sausageID=newSausageID;
-				allSausages.back().points.push_back(curr);
-				curr.self->sausagePointsIndex=allSausages.back().points.size()-1;
+				curr->sausageID=newSausageID;
+				allSausages[newSausageID].points.push_back(curr);
+				curr->sausagePointsIndex=allSausages[newSausageID].points.size()-1;
 				//debug()<<allSausages.back().points.back().self<<" should equal "<<allSausages.back().points[curr.self->sausagePointsIndex].self<<endl;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
-					if (curr.neighbours[iNeigh]  && curr.neighbours[iNeigh]->sausageID==1) stack.push_back(*(curr.neighbours[iNeigh])) ;
+					if (curr->neighbours[iNeigh]  && curr->neighbours[iNeigh]->sausageID==1){
+						stack.push_back(curr->neighbours[iNeigh]->allPointsIndex) ;
+						if (newSausageID==2) debug()<<"Adding "<<curr<<endl;
+					}
 				}
 			}
 			newSausageID++;
@@ -117,8 +120,9 @@ void Sausage::flood_fill_classify(void){
 
 	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
 	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
-	vector<Point> above[2], below[2];
-	for (vector<Point>::iterator it=points.begin(); it!=points.end(); it++){
+	vector<Point*> above[2], below[2];
+	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
+		Point* it = *iter;
 		for (int iColl=0; iColl<2; iColl++){
 			double p[3]; // xyz of this point
 			p[0]=it->x; p[1]=it->y; p[2]=it->z;
@@ -145,10 +149,10 @@ void Sausage::flood_fill_classify(void){
 			   second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
 				double projection = inner_product(u,u+3,v,0.0);
 				if (projection>0){
-					above[iColl].push_back(*(it->self));
+					above[iColl].push_back(it);
 					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
 				} else {
-					below[iColl].push_back(*(it->self));
+					below[iColl].push_back(it);
 					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region below colloid "<<iColl<<endl;
 				}
 			}
@@ -180,22 +184,23 @@ void Sausage::flood_fill_classify(void){
 	// For each region
 	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
 		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
-		vector<Point> region = aboveOrBelow ? above[iColl] : below[iColl];
+		vector<Point*> region = aboveOrBelow ? above[iColl] : below[iColl];
 		int otherColl=(iColl+1)%2;
 
 		// find all neighbours of the region which are inside this sausage and closer to the /other/ colloid
-		vector<Point> neighbours;
-		for (vector<Point>::iterator it=region.begin(); it!=region.end(); it++){
+		vector<Point*> neighbours;
+		for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
+			Point* it=*iter;
 			double distanceToOtherColl = pow(it->x - params::colloids[otherColl][0],2) +
 							pow(it->y - params::colloids[otherColl][1],2) +
 							pow(it->z - params::colloids[otherColl][2],2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
-				Point neigh = *(it->neighbours[iNeigh]);
-				if (neigh.sausageID>0 && find(region.begin(),region.end(),neigh)==region.end()){
-					double neighDistanceToOtherColl = pow(neigh.x - params::colloids[otherColl][0],2) +
-									pow(neigh.y - params::colloids[otherColl][1],2) +
-									pow(neigh.z - params::colloids[otherColl][2],2) ;
-					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(*(it->neighbours[iNeigh]));
+				Point* neigh = it->neighbours[iNeigh];
+				if (neigh->sausageID>0 && find(region.begin(),region.end(),neigh)==region.end()){
+					double neighDistanceToOtherColl = pow(neigh->x - params::colloids[otherColl][0],2) +
+									pow(neigh->y - params::colloids[otherColl][1],2) +
+									pow(neigh->z - params::colloids[otherColl][2],2) ;
+					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(it->neighbours[iNeigh]);
 				}
 			}
 		}
@@ -205,33 +210,33 @@ void Sausage::flood_fill_classify(void){
 		debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
 		sort(neighbours.begin(),neighbours.end());
 		debug()<<"sorted neighbours"<<endl;
-		vector<Point>::iterator it = unique(neighbours.begin(),neighbours.end());
+		vector<Point*>::iterator it = unique(neighbours.begin(),neighbours.end());
 		neighbours.resize(distance(neighbours.begin(),it));
 		debug()<<"Removed duplicates, now "<<neighbours.size()<<" neighbours."<<endl;
 		debug()<<"Neighbours at:"<<endl;
-		for (vector<Point>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
-			debug()<<it->x<<","<<it->y<<","<<it->z<<endl;
+		for (vector<Point*>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
+			debug()<<(*it)->x<<","<<(*it)->y<<","<<(*it)->z<<endl;
 		}
 
 		// flood-fill from neighbours. If a point is in a region, make a note but don't add it to the flood-filled area.
-		vector<Point> stack=neighbours; // FILO stack, to be filled with contiguous points
-		vector<Point> visited; // Points we've already visited, and so should ignore
+		vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
+		vector<Point*> visited; // Points we've already visited, and so should ignore
 		while (stack.size()>0){
 			//debug()<<"Another pixel on the stack"<<endl;
-			Point curr = stack.back();
+			Point* curr = stack.back();
 			stack.pop_back();
 
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
-				if (!curr.neighbours[iNeigh]) continue;
-				Point thisNeigh=*(curr.neighbours[iNeigh]);
+				if (!curr->neighbours[iNeigh]) continue;
+				Point* thisNeigh=curr->neighbours[iNeigh];
 				if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
 				visited.push_back(thisNeigh);
 				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
-				if (thisNeigh.sausageID>1) {
+				if (thisNeigh->sausageID>1) {
 					bool in_a_region=false;
 					// For all of regions...
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
-						vector<Point> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
+						vector<Point*> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
 						if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
 							in_a_region=true;
@@ -300,16 +305,24 @@ void Sausage::find_endpoints(void){
 	}
 	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
 
+
+	for (size_t v=0; v<points.size(); v++){
+		debug()<<"Points["<<v<<"] has sausagePointsIndex "<<points[v]->sausagePointsIndex<<endl;
+	}
+
+	exit(EXIT_SUCCESS);
+
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
 	for (size_t v=0; v<points.size(); v++){
 		if (v%100==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
 		dist[v][v]=0;
-		debug()<<"point at"<<points[v].x<<","<<points[v].y<<","<<points[v].z<<endl;
+		debug()<<"point #"<<points[v]->sausagePointsIndex<<" at "<<points[v]->x<<","<<points[v]->y<<","<<points[v]->z<<endl;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
-			size_t u=points[v].neighbours[iNeigh]->sausagePointsIndex;
+			if (points[v]->neighbours[iNeigh]->sausageID != sausageID) continue;
+			size_t u=points[v]->neighbours[iNeigh]->sausagePointsIndex;
 			dist[u][v]=1;
-			debug()<<"is next to"<<points[u].x<<","<<points[u].y<<","<<points[u].z<<endl;
+			debug()<<"is next to #"<<points[u]->sausagePointsIndex<<"("<<points[u]->self<<") of sausage #"<<points[u]->sausageID<<" at "<<points[u]->x<<","<<points[u]->y<<","<<points[u]->z<<endl;
 		}
 	}
 
@@ -321,9 +334,9 @@ void Sausage::find_endpoints(void){
 				if (dist[i][j] > dist[i][k] + dist[k][j]){
 					dist[i][j] = dist[i][k] + dist[k][j];
 					if (i==1 && j==20){
-						debug()<<points[i].x<<","<<points[i].y<<","<<points[i].z<<endl;
-						debug()<<points[j].x<<","<<points[j].y<<","<<points[j].z<<endl;
-						debug()<<points[k].x<<","<<points[k].y<<","<<points[k].z<<endl;
+						debug()<<points[i]->x<<","<<points[i]->y<<","<<points[i]->z<<endl;
+						debug()<<points[j]->x<<","<<points[j]->y<<","<<points[j]->z<<endl;
+						debug()<<points[k]->x<<","<<points[k]->y<<","<<points[k]->z<<endl;
 						debug()<<"new lower distance: "<<dist[i][j]<<endl;
 					}
 				}
@@ -336,16 +349,16 @@ void Sausage::find_endpoints(void){
 	for (size_t i=0; i<points.size(); i++){
 		for (size_t j=i; j<points.size(); j++){
 			if (dist[i][j]>max_min_dist){
-				debug()<<"dist: "<<max_min_dist<<", i: "<<i<<", j:"<<j<<endl;
 				max_min_dist=dist[i][j];
 				endpoints[0]=i;
 				endpoints[1]=j;
+				debug()<<"dist: "<<max_min_dist<<", i: "<<i<<", j:"<<j<<endl;
 			}
 		}
 	}
 
-	debug()<<"Endpoint 0 is #"<<endpoints[0]<<"at: "<<points[endpoints[0]].x<<","<<points[endpoints[0]].y<<","<<points[endpoints[0]].z<<","<<endl;
-	debug()<<"Endpoint 1 is #"<<endpoints[1]<<"at: "<<points[endpoints[1]].x<<","<<points[endpoints[1]].y<<","<<points[endpoints[1]].z<<","<<endl;
+	debug()<<"Endpoint 0 is #"<<endpoints[0]<<" at: "<<points[endpoints[0]]->x<<","<<points[endpoints[0]]->y<<","<<points[endpoints[0]]->z<<","<<endl;
+	debug()<<"Endpoint 1 is #"<<endpoints[1]<<" at: "<<points[endpoints[1]]->x<<","<<points[endpoints[1]]->y<<","<<points[endpoints[1]]->z<<","<<endl;
 	debug()<<"Minimum distance along the sausage between them is: "<<max_min_dist<<endl;
 
 	for (size_t i=0; i<points.size(); i++){
@@ -357,8 +370,8 @@ void Sausage::find_endpoints(void){
 
 void Sausage::find_com(void){
 	double x=0,y=0,z=0;
-	vector<Point>::iterator it;
-	for (it=points.begin(); it!=points.end(); ++it){
+	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); ++iter){
+		Point* it=*iter;
 		x+=it->x;
 		y+=it->y;
 		z+=it->z;
@@ -407,9 +420,9 @@ void Sausage::estimate_sausage_length(){
 	double **rotatedPoints = new double*[points.size()];
 	for (size_t i=0; i<points.size(); i++){
 		rotatedPoints[i] = new double[3];
-		rotatedPoints[i][0]=points[i].x - centre_of_mass[0];
-		rotatedPoints[i][1]=points[i].y - centre_of_mass[1];
-		rotatedPoints[i][2]=points[i].z - centre_of_mass[2];
+		rotatedPoints[i][0]=points[i]->x - centre_of_mass[0];
+		rotatedPoints[i][1]=points[i]->y - centre_of_mass[1];
+		rotatedPoints[i][2]=points[i]->z - centre_of_mass[2];
 	}
 
 	// calculate rotation matrix and its inverse, so that plane of best fit projects onto xy-plane

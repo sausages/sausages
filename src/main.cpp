@@ -47,17 +47,42 @@ int main(int argc, char *argv[]){
 	info() << "Linking pixels..." << endl;
 	neighLink_xyzclcpcs(allPoints);
 
+
+	debug()<<allPoints.size()<<" points."<<endl;
+	sort(allPoints.begin(),allPoints.end());
+	debug()<<"sorted allPoints"<<endl;
+	vector<Point>::iterator it = unique(allPoints.begin(),allPoints.end());
+	allPoints.resize(distance(allPoints.begin(),it));
+	debug()<<"Removed duplicates, now "<<allPoints.size()<<" points."<<endl;
+
+
 	// Check the neighbours
-	if (params::verbosity >= DEBUG) printAllNeighs(allPoints);
+	//if (params::verbosity >= DEBUG) printAllNeighs(allPoints);
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
 	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
 	flood_fill_separate(allPoints,allSausages);
+
+	// By here our sausagePointsIndex has become muddled
+	debug()<<"Sausage #"<<2<<endl;
+	for (size_t v=0; v<allSausages[2].points.size(); v++){
+		debug()<<"Points["<<v<<"] has sausagePointsIndex "<<allSausages[2].points[v]->sausagePointsIndex<<endl;
+		debug()<<"self:"<<allSausages[2].points[v]->self<<endl;
+	}
+
+	debug()<<allSausages[2].points.size()<<" points."<<endl;
+	sort(allSausages[2].points.begin(),allSausages[2].points.end());
+	debug()<<"sorted allPoints"<<endl;
+	vector<Point*>::iterator pit = unique(allSausages[2].points.begin(),allSausages[2].points.end());
+	allSausages[2].points.resize(distance(allSausages[2].points.begin(),pit));
+	debug()<<"Removed duplicates, now "<<allSausages[2].points.size()<<" points."<<endl;
+	exit(EXIT_SUCCESS);
+	
 	verbose() << "Sausage sizes:" << endl;
 	for (size_t i=0; i<allSausages.size(); i++){
 		verbose() << "  " << i+2 << " " << allSausages[i].points.size() << endl;
-		}
+	}
 
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages

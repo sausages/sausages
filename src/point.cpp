@@ -6,6 +6,10 @@
 
 using namespace std;
 
+Point::Point(void){
+	left=right=up=down=forward=back=NULL;
+}
+
 /** Links each point in allPoints to its 6 nearest-neighbours.
  * x:+right/-left ; y:+up/-down ; z:+forward/-back
  * @warning Assumes that points are listed in a specific order:

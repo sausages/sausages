@@ -3,8 +3,10 @@
 
 #include <vector>
 
-struct Point
+class Point
 {
+	public:
+
 	double x;  ///< cartesian x-coord of point
 	double y;  ///< cartesian y-coord of point
 	double z;  ///< cartesian z-coord of point
@@ -17,6 +19,9 @@ struct Point
 	 * Each point is assigned to one of these sausages.
 	 */
 	int sausageID;
+
+	// The index of this point in the allPoints array (so we don't have to search)
+	size_t allPointsIndex;
 
 	// The index of this point in its sauasages points array (so we don't have to search)
 	size_t sausagePointsIndex;
@@ -54,6 +59,8 @@ struct Point
 	bool operator < (const Point &Ref) const {
 		return(this->self < Ref.self);
 	}
+
+	Point(void);
 
 };
 

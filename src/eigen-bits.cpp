@@ -26,9 +26,9 @@ void Sausage::find_pobf(){
 
 	// Centre the points around (0,0,0) (the vector normal to the plane is unaffected)
 	for (size_t iPoint=0; iPoint<points.size(); iPoint++){
-		X(iPoint,0) = points[iPoint].x - centre_of_mass[0];
-		X(iPoint,1) = points[iPoint].y - centre_of_mass[1];
-		z(iPoint) = points[iPoint].z - centre_of_mass[2];
+		X(iPoint,0) = points[iPoint]->x - centre_of_mass[0];
+		X(iPoint,1) = points[iPoint]->y - centre_of_mass[1];
+		z(iPoint) = points[iPoint]->z - centre_of_mass[2];
 	}
 
 	// Eigen can give us a Jacobi SVD, and then use that SVD to give a (guaranteed least-squares) solution of Ax=b

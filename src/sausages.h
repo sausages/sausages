@@ -28,7 +28,7 @@ class Sausage {
 	Sausage(int sausageID); ///< Minimal constructor
 
 	int sausageID; ///< can only be >2, doesn't make sense to have non-sausage/unsorted
-	std::vector<Point> points; ///< pointers to points inside the sausage
+	std::vector<Point*> points; ///< pointers to points inside the sausage
 	bool is_significant; ///< Whether the sausage is larger than some minimum size
 
 	void find_com(void); ///< Find and set centre_of_mass
