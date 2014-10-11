@@ -41,30 +41,33 @@ int threshold(vector<Point> &allPoints){
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
 void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
-	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
-	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 
+	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
+	allSausages.push_back(*new Sausage(0)); // Empty, but keeps index numbers consistent
+	allSausages.push_back(*new Sausage(1)); // Empty, but keeps index numbers consistent
+
+	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
-			allSausages.push_back(Sausage(newSausageID));
+			allSausages.push_back(*new Sausage(newSausageID));
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
 				Point *curr = &(allPoints[stack.back()]);
 				stack.pop_back();
-				// There's got to be a nice way of doing this
+
 				curr->sausageID=newSausageID;
-				allSausages[newSausageID].points.push_back(curr);
-				curr->sausagePointsIndex=allSausages[newSausageID].points.size()-1;
-				//debug()<<allSausages.back().points.back().self<<" should equal "<<allSausages.back().points[curr.self->sausagePointsIndex].self<<endl;
+				allSausages.back().points.push_back(curr);
+				curr->sausagePointsIndex=allSausages.back().points.size()-1;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
-					if (curr->neighbours[iNeigh]  && curr->neighbours[iNeigh]->sausageID==1){
+					if (curr->neighbours[iNeigh]  && curr->neighbours[iNeigh]->sausageID==1 &&
+					    find(stack.begin(),stack.end(),curr->neighbours[iNeigh]->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
 						stack.push_back(curr->neighbours[iNeigh]->allPointsIndex) ;
-						if (newSausageID==2) debug()<<"Adding "<<curr<<endl;
 					}
 				}
 			}
+			debug()<<allSausages[newSausageID].points.size()<<" points in the sausages."<<endl<<flush;
 			newSausageID++;
 		}
 	}
@@ -305,24 +308,15 @@ void Sausage::find_endpoints(void){
 	}
 	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
 
-
-	for (size_t v=0; v<points.size(); v++){
-		debug()<<"Points["<<v<<"] has sausagePointsIndex "<<points[v]->sausagePointsIndex<<endl;
-	}
-
-	exit(EXIT_SUCCESS);
-
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
 	for (size_t v=0; v<points.size(); v++){
 		if (v%100==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
 		dist[v][v]=0;
-		debug()<<"point #"<<points[v]->sausagePointsIndex<<" at "<<points[v]->x<<","<<points[v]->y<<","<<points[v]->z<<endl;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			if (points[v]->neighbours[iNeigh]->sausageID != sausageID) continue;
 			size_t u=points[v]->neighbours[iNeigh]->sausagePointsIndex;
 			dist[u][v]=1;
-			debug()<<"is next to #"<<points[u]->sausagePointsIndex<<"("<<points[u]->self<<") of sausage #"<<points[u]->sausageID<<" at "<<points[u]->x<<","<<points[u]->y<<","<<points[u]->z<<endl;
 		}
 	}
 
@@ -333,12 +327,6 @@ void Sausage::find_endpoints(void){
 			for (size_t j=0; j<points.size(); j++){
 				if (dist[i][j] > dist[i][k] + dist[k][j]){
 					dist[i][j] = dist[i][k] + dist[k][j];
-					if (i==1 && j==20){
-						debug()<<points[i]->x<<","<<points[i]->y<<","<<points[i]->z<<endl;
-						debug()<<points[j]->x<<","<<points[j]->y<<","<<points[j]->z<<endl;
-						debug()<<points[k]->x<<","<<points[k]->y<<","<<points[k]->z<<endl;
-						debug()<<"new lower distance: "<<dist[i][j]<<endl;
-					}
 				}
 			}
 		}
@@ -352,7 +340,7 @@ void Sausage::find_endpoints(void){
 				max_min_dist=dist[i][j];
 				endpoints[0]=i;
 				endpoints[1]=j;
-				debug()<<"dist: "<<max_min_dist<<", i: "<<i<<", j:"<<j<<endl;
+				//debug()<<"dist: "<<max_min_dist<<", i: "<<i<<", j:"<<j<<endl;
 			}
 		}
 	}
@@ -365,7 +353,6 @@ void Sausage::find_endpoints(void){
 		delete [] dist[i];
 	}
 	delete [] dist;
-	exit(EXIT_SUCCESS);
 }
 
 void Sausage::find_com(void){
