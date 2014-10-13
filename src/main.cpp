@@ -57,19 +57,19 @@ int main(int argc, char *argv[]){
 
 	verbose() << "Sausage sizes:" << endl;
 	for (size_t i=0; i<allSausages.size(); i++){
-		verbose() << "  " << i+2 << " " << allSausages[i].points.size() << endl;
+		verbose() << "  " << i << " " << allSausages[i].points.size() << endl;
 	}
 
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
-	for (size_t i=0; i<allSausages.size(); i++){
+	for (size_t i=2; i<allSausages.size(); i++){ // Ignore unsorted sausages 1%2
 		int sausageSize=allSausages[i].points.size();
 		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
-			verbose() << "Ignoring sausage #" << i+2 << endl;
+			verbose() << "Ignoring sausage #" << i << endl;
 			allSausages[i].is_significant=false;
 		} else if (sausageSize > params::silent_ignore_size*num_below_threshold &&
 			sausageSize < params::min_sausage_size*num_below_threshold   ){
-			warning() << "Sausage #" << i+2 << " of size "  <<
+			warning() << "Sausage #" << i << " of size "  <<
 				sausageSize << " is not tiny, but is being ignored." << endl;
 			allSausages[i].is_significant=false;
 		} else if (sausageSize > params::min_sausage_size*num_below_threshold){
@@ -79,10 +79,13 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
-	info() << "Bridging gaps..."<<endl;
+	info() << "Finding endpoints..."<<endl;
 	for (size_t i=0;i<relevant_sausages.size();i++){
 		allSausages[relevant_sausages[i]].find_endpoints();
 	}
+
+	info() << "Joining small gaps..."<<endl;
+	join_endpoints(allSausages,relevant_sausages);
 
 	// Exit program is number of sausages found is not equal 2 or 1.
 	if ( relevant_sausages.size() > 2) {

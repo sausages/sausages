@@ -22,6 +22,8 @@ namespace params{
 	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
 	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
 	double epsilon=1.0e-10; // Some small number for comparison to zero
+	double max_sausage_gap_size=15; // Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
+	double min_sausage_gap_next_neigh_distance=30; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
 }
 
 void invalid_colloid_info(void){
@@ -96,10 +98,7 @@ void set_params(char *filename){
 
 	debug()<<"Colloid positions:"<<std::endl;
 	for (int i=0; i<2; i++){
-		for (int j=0; j<3; j++){
-			debug()<<colloids[i][j]<<std::endl;
-		}
-	debug()<<std::endl;
+		debug()<<colloids[i][0]<<","<<colloids[i][1]<<","<<colloids[i][2]<<std::endl;
 	}
 
 

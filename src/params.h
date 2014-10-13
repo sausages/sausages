@@ -16,6 +16,8 @@ namespace params{
 	extern double ratio_two_rings; ///< If ratio of two relevant sausage is below this, it's the two ring structure
 	extern double ratio_2nd_loop; ///< If the ratio of two relevant sausages is above this, it's the 2nd loop structure
 	extern double epsilon; ///< Some small number for comparison to zero
+	extern double max_sausage_gap_size; ///< Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
+	extern double min_sausage_gap_next_neigh_distance; ///< If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
 }
 
 

@@ -311,7 +311,6 @@ void Sausage::find_endpoints(void){
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
 	for (size_t v=0; v<points.size(); v++){
-		if (v%100==0) debug()<<"v="<<v<<"/"<<points.size()<<endl<<flush;
 		dist[v][v]=0;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			if (points[v]->neighbours[iNeigh]->sausageID != sausageID) continue;
@@ -353,6 +352,37 @@ void Sausage::find_endpoints(void){
 		delete [] dist[i];
 	}
 	delete [] dist;
+}
+
+void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages){
+	double dist[2*relevantSausages.size()][2*relevantSausages.size()];
+	for (size_t i=0; i<relevantSausages.size(); i++){
+		Sausage si = allSausages[relevantSausages[i]];
+		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
+			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
+				Sausage sj = allSausages[relevantSausages[j]];
+				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
+					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
+					float pi[3],pj[3],p2p[3];
+					pi[0]=si.points[si.endpoints[iEndpoint]]->x;
+					pi[1]=si.points[si.endpoints[iEndpoint]]->y;
+					pi[2]=si.points[si.endpoints[iEndpoint]]->z;
+					pj[0]=sj.points[sj.endpoints[jEndpoint]]->x;
+					pj[1]=sj.points[sj.endpoints[jEndpoint]]->y;
+					pj[2]=sj.points[sj.endpoints[jEndpoint]]->z;
+					p2p[0]=pi[0]-pj[0];
+					p2p[1]=pi[1]-pj[1];
+					p2p[2]=pi[2]-pj[2];
+
+					dist[2*i+iEndpoint][2*j+jEndpoint]=sqrt(inner_product(p2p,p2p+3,p2p,0.0));
+					dist[2*j+jEndpoint][2*i+iEndpoint]=dist[2*i+iEndpoint][2*j+jEndpoint];
+					debug()<<"Distance "<<i<<":"<<iEndpoint<<","<<j<<":"<<jEndpoint<<","<<dist[2*i+iEndpoint][2*j+jEndpoint]<<endl;
+				}
+			}
+		}
+	}
+
+
 }
 
 void Sausage::find_com(void){
