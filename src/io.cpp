@@ -51,11 +51,11 @@ void read_xyzclcpcs(std::ifstream& inputFile, vector<Point> &allPointsVector){
 	string line;
 	size_t iPoint=0;
 	while ( getline (inputFile, line) ){
-		Point *p = new Point();
+		Point p;
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
-			&p->x,&p->y,&p->z,&p->cl,&p->cp,&p->cs);
-		p->allPointsIndex=iPoint++;
-		allPointsVector.push_back(*p);
+			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
+		p.allPointsIndex=iPoint++;
+		allPointsVector.push_back(p);
 	}
 }
 

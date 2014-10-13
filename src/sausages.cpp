@@ -43,23 +43,26 @@ int threshold(vector<Point> &allPoints){
 void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
 
 	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
-	allSausages.push_back(*new Sausage(0)); // Empty, but keeps index numbers consistent
-	allSausages.push_back(*new Sausage(1)); // Empty, but keeps index numbers consistent
+	Sausage s(0);
+	allSausages.push_back(s); // Empty, but keeps index numbers consistent
+	s.sausageID=1;
+	allSausages.push_back(s); // Empty, but keeps index numbers consistent
 
 	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
-			allSausages.push_back(*new Sausage(newSausageID));
+			//allSausages.push_back(*new Sausage(newSausageID));
+			Sausage newSausage(newSausageID);
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
 				Point *curr = &(allPoints[stack.back()]);
 				stack.pop_back();
 
 				curr->sausageID=newSausageID;
-				allSausages.back().points.push_back(curr);
-				curr->sausagePointsIndex=allSausages.back().points.size()-1;
+				newSausage.points.push_back(curr);
+				curr->sausagePointsIndex=newSausage.points.size()-1;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					if (curr->neighbours[iNeigh]  && curr->neighbours[iNeigh]->sausageID==1 &&
 					    find(stack.begin(),stack.end(),curr->neighbours[iNeigh]->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
@@ -67,6 +70,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 					}
 				}
 			}
+			allSausages.push_back(newSausage);
 			debug()<<allSausages[newSausageID].points.size()<<" points in the sausages."<<endl<<flush;
 			newSausageID++;
 		}
