@@ -86,6 +86,14 @@ int main(int argc, char *argv[]){
 
 	info() << "Joining small gaps..."<<endl;
 	join_endpoints(allSausages,relevant_sausages);
+	debug() << "Sausage sizes:" << endl;
+	for (size_t i=0; i<allSausages.size(); i++){
+		debug() << "  " << i << " " << allSausages[i].points.size() << endl;
+	}
+	debug() << "Relevant sausages: " << endl;
+	for (size_t i=0; i<relevant_sausages.size(); i++){
+		debug() << "  " << i << " " << relevant_sausages[i] << endl;
+	}
 
 	// Exit program is number of sausages found is not equal 2 or 1.
 	if ( relevant_sausages.size() > 2) {
@@ -98,6 +106,7 @@ int main(int argc, char *argv[]){
 	double size [2];
 	double ratio;
 		info() << "Two relevant sausages found." << endl;
+		debug()<<"#points: "<<allSausages[relevant_sausages[0]].points.size()<<" and "<<allSausages[relevant_sausages[1]].points.size()<<endl;
 		for (size_t i=0; i<relevant_sausages.size(); i++){
 			size[i] = allSausages[relevant_sausages[i]].points.size();
 			allSausages[relevant_sausages[i]].find_com();

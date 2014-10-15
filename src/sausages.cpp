@@ -53,7 +53,6 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].sausageID==1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
-			//allSausages.push_back(*new Sausage(newSausageID));
 			Sausage newSausage(newSausageID);
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
@@ -359,6 +358,7 @@ void Sausage::find_endpoints(void){
 }
 
 void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages){
+	// Work out distance between endpoints
 	double dist[2*relevantSausages.size()][2*relevantSausages.size()];
 	for (size_t i=0; i<relevantSausages.size(); i++){
 		Sausage si = allSausages[relevantSausages[i]];
@@ -386,7 +386,68 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 		}
 	}
 
+	// Join endpoints that are 'close' to each other
+	size_t other_endpoint;
+	bool another_endpoint;
+	for (size_t i=0; i<relevantSausages.size(); i++){
+		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
+			another_endpoint=false;
+			int num_nearby_endpoints=0;
+			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
+				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
+					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
+					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::max_sausage_gap_size*params::pixel_size){
+						debug()<<"Picked out "<<j<<":"<<jEndpoint<<" and "<<i<<":"<<iEndpoint<<endl;
+						another_endpoint=true;
+						other_endpoint=2*j+jEndpoint;
+					}
+					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::min_sausage_gap_next_neigh_distance*params::pixel_size){
+						num_nearby_endpoints++;
+					}
 
+				}
+			}
+			if (num_nearby_endpoints>1){
+				error()<<"Too many endpoints near endpoint "<<iEndpoint<<" of sausage "<<relevantSausages[i]<<endl;
+				exit(EXIT_FAILURE);
+			}
+			if (another_endpoint){
+				// Join endpoints i:iEndpoint and j:jEndpoint
+				// To do this:
+				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex
+				//  - Merge endpoints, change i:(jEndpoint+1)%2 to j:jEndpoint
+				//  - Remove sausagej from relevantSausages
+
+				size_t j=other_endpoint/2;
+				size_t jEndpoint=other_endpoint%2;
+				Sausage *sausagei=&allSausages[relevantSausages[i]];
+				Sausage *sausagej=&allSausages[relevantSausages[j]];
+
+				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex
+				for (vector<Point*>::iterator iter=sausagej->points.begin(); iter!=sausagej->points.end(); ++iter){
+					(*iter)->sausageID=relevantSausages[i];
+					(*iter)->sausagePointsIndex+=sausagej->points.size();
+				}
+				debug()<<"sausagei size: "<<sausagei->points.size()<<endl;
+				debug()<<"sausagej size: "<<sausagej->points.size()<<endl;
+				sausagei->points.insert(sausagei->points.end(),sausagej->points.begin(),sausagej->points.end());
+				debug()<<"new sausagei size: "<<sausagei->points.size()<<endl;
+
+				//  - Merge endpoints, change i:(jEndpoint+1)%2 to j:jEndpoint (these are saved by sausagePointsIndex)
+				sausagei->endpoints[(jEndpoint+1)%2] = sausagei->points.size()+sausagej->endpoints[jEndpoint];
+
+				//  - Remove sausagej from relevantSausages
+				relevantSausages.erase(relevantSausages.begin()+j); // Awkward, but erase() requires an iterator
+
+				// Artificially add points between nearby endpoints
+				
+
+				// Recurse, in case more sausages need joining, then exit
+				join_endpoints(allSausages,relevantSausages);
+				return;
+			}
+		}
+	}
 }
 
 void Sausage::find_com(void){
