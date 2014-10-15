@@ -414,33 +414,88 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 			if (another_endpoint){
 				// Join endpoints i:iEndpoint and j:jEndpoint
 				// To do this:
-				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex
-				//  - Merge endpoints, change i:(jEndpoint+1)%2 to j:jEndpoint
-				//  - Remove sausagej from relevantSausages
+				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
+				//  - Recalculate sausagei's endpoints
+				//  - Remove sausagej from relevantSausages (unless sausagej==sausagei)
 
 				size_t j=other_endpoint/2;
 				size_t jEndpoint=other_endpoint%2;
 				Sausage *sausagei=&allSausages[relevantSausages[i]];
 				Sausage *sausagej=&allSausages[relevantSausages[j]];
 
-				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex
-				for (vector<Point*>::iterator iter=sausagej->points.begin(); iter!=sausagej->points.end(); ++iter){
-					(*iter)->sausageID=relevantSausages[i];
-					(*iter)->sausagePointsIndex+=sausagej->points.size();
+				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
+				if (sausagej!=sausagei){
+					for (vector<Point*>::iterator iter=sausagej->points.begin(); iter!=sausagej->points.end(); ++iter){
+						(*iter)->sausageID=relevantSausages[i];
+						(*iter)->sausagePointsIndex+=sausagei->points.size();
+					}
+					debug()<<"sausagei size: "<<sausagei->points.size()<<endl;
+					debug()<<"sausagej size: "<<sausagej->points.size()<<endl;
+					sausagei->points.insert(sausagei->points.end(),sausagej->points.begin(),sausagej->points.end());
+					debug()<<"new sausagei size: "<<sausagei->points.size()<<endl;
 				}
-				debug()<<"sausagei size: "<<sausagei->points.size()<<endl;
-				debug()<<"sausagej size: "<<sausagej->points.size()<<endl;
-				sausagei->points.insert(sausagei->points.end(),sausagej->points.begin(),sausagej->points.end());
-				debug()<<"new sausagei size: "<<sausagei->points.size()<<endl;
-
-				//  - Merge endpoints, change i:(jEndpoint+1)%2 to j:jEndpoint (these are saved by sausagePointsIndex)
-				sausagei->endpoints[(jEndpoint+1)%2] = sausagei->points.size()+sausagej->endpoints[jEndpoint];
-
-				//  - Remove sausagej from relevantSausages
-				relevantSausages.erase(relevantSausages.begin()+j); // Awkward, but erase() requires an iterator
 
 				// Artificially add points between nearby endpoints
-				
+				Point *curr = sausagei->points[sausagei->endpoints[iEndpoint]];
+				Point *target = sausagej->points[sausagej->endpoints[jEndpoint]];
+				// Draw line along x
+				while (curr->x!=target->x){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
+						exit(EXIT_FAILURE);
+					}
+					if (curr->sausageID!=sausagei->sausageID){
+						curr->sausageID=sausagei->sausageID;
+						sausagei->points.push_back(curr);
+						curr->sausagePointsIndex=sausagei->points.size()-1;
+					}
+					if (curr->x > target->x){
+						curr=curr->left;
+					} else {
+						curr=curr->right;
+					}
+				}
+				// Draw line along y
+				while (curr->y!=target->y){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
+						exit(EXIT_FAILURE);
+					}
+					if (curr->sausageID!=sausagei->sausageID){
+						curr->sausageID=sausagei->sausageID;
+						sausagei->points.push_back(curr);
+						curr->sausagePointsIndex=sausagei->points.size()-1;
+					}
+					if (curr->y > target->y){
+						curr=curr->down;
+					} else {
+						curr=curr->up;
+					}
+				}
+				// Draw line along z
+				while (curr->z!=target->z){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
+						exit(EXIT_FAILURE);
+					}
+					if (curr->sausageID!=sausagei->sausageID){
+						curr->sausageID=sausagei->sausageID;
+						sausagei->points.push_back(curr);
+						curr->sausagePointsIndex=sausagei->points.size()-1;
+					}
+					if (curr->z > target->z){
+						curr=curr->back;
+					} else {
+						curr=curr->forward;
+					}
+				}
+
+				// Sausage has changed, need to recalculate endpoints
+				sausagei->find_endpoints();
+
+				//  - Remove sausagej from relevantSausages if it's been merged into sausagei,
+				//    but check we haven't just closed a gap in sausagei (i.e. joined i:0 and i:0) 
+				if (sausagei!=sausagej) relevantSausages.erase(relevantSausages.begin()+j); // Awkward, but erase() requires an iterator
 
 				// Recurse, in case more sausages need joining, then exit
 				join_endpoints(allSausages,relevantSausages);
