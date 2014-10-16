@@ -26,7 +26,7 @@ class Sausage {
 
 	Sausage(int sausageID); ///< Minimal constructor
 
-	int sausageID; ///< can only be >2, doesn't make sense to have non-sausage/unsorted
+	int sausageID; ///< Which sausage this is
 	std::vector<Point*> points; ///< pointers to points inside the sausage
 	size_t endpoints[2]; ///< Indices of the points in self.points which correspond to the endpoints of the sausage
 	bool is_significant; ///< Whether the sausage is larger than some minimum size

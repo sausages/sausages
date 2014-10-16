@@ -14,11 +14,8 @@ class Point
 	double cp; ///< raw cp value of point
 	double cs; ///< raw cl value of point
 
-	/** 0 for cl<threshold, 1 for unsorted.
-	 * When sorted, each distinct sausage has a different number >=2.
-	 * Each point is assigned to one of these sausages.
-	 */
-	int sausageID;
+	int sausageID; ///< Which sausage the point is in (-1 is unsorted)
+	bool isInASausage;
 
 	// The index of this point in the allPoints array (so we don't have to search)
 	size_t allPointsIndex;
@@ -40,14 +37,12 @@ class Point
 	Point* back;
 
 	/** Array of {l,r,u,d,f,b}
-	 * In practice we should use this, not explicit left/right etc
-	 * The exception is when reading input/setting up
 	 * Advantage of array is possibility of looping over it
 	 */
 	Point* neighbours[6];
 
 	// Pointer to self, pretty sure this is irrelevant, but...
-	// I currently need it for the flood-fill (iterators are copies) and == operator
+	// I currently need it for the == operator
 	Point* self;
 
 	// Assume if our self-pointer is the same then we are the same

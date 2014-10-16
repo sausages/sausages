@@ -15,26 +15,22 @@ Sausage::Sausage(int ID){
 	sausageID=ID;
 }
 
-/** Sets the sausageID of each point, returning how many were below threshold
- * Set to 1 if the cl value is below the threshold (in a sausage),
- * 0 otherwise (not in a sausage)
+/** Points are in a sausge if their cl value is < threshold
  */
 int threshold(vector<Point> &allPoints){
 	int num_below_threshold=0;
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
 		if (it->cl < params::threshold){
-			it->sausageID=1;
+			it->isInASausage=true;
 			num_below_threshold++;
-		} else {
-			it->sausageID=0;
 		}
 	}
 	return num_below_threshold;
 }
 
 /** Ordinary Flood-fill algorithm
- * 1) Find the first point in an unnumbered sausage
+ * 1) Find the first sausage-worthy point not yet sorted into a sausage
  * 2) Add it to a numbered sausage, and add all its unsorted neighbours to a stack
  * 3) While there are points in the stack, take the last one, add it to
  *     the sausage and its unsorted neighbours to the stack
@@ -42,16 +38,11 @@ int threshold(vector<Point> &allPoints){
  */
 void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
 
-	int newSausageID=2; // Start at 2 (0 is no-sausage and 1 is unsorted)
-	Sausage s(0);
-	allSausages.push_back(s); // Empty, but keeps index numbers consistent
-	s.sausageID=1;
-	allSausages.push_back(s); // Empty, but keeps index numbers consistent
-
+	int newSausageID=0;
 	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
-		if (allPoints[firstPoint].sausageID==1){
+		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
 			Sausage newSausage(newSausageID);
 			stack.push_back(firstPoint);
@@ -63,9 +54,10 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				newSausage.points.push_back(curr);
 				curr->sausagePointsIndex=newSausage.points.size()-1;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
-					if (curr->neighbours[iNeigh]  && curr->neighbours[iNeigh]->sausageID==1 &&
-					    find(stack.begin(),stack.end(),curr->neighbours[iNeigh]->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
-						stack.push_back(curr->neighbours[iNeigh]->allPointsIndex) ;
+					Point *neigh=curr->neighbours[iNeigh];
+					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
+					    find(stack.begin(),stack.end(),neigh->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
+						stack.push_back(neigh->allPointsIndex) ;
 					}
 				}
 			}
@@ -202,7 +194,7 @@ void Sausage::flood_fill_classify(void){
 							pow(it->z - params::colloids[otherColl][2],2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
-				if (neigh->sausageID>0 && find(region.begin(),region.end(),neigh)==region.end()){
+				if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
 					double neighDistanceToOtherColl = pow(neigh->x - params::colloids[otherColl][0],2) +
 									pow(neigh->y - params::colloids[otherColl][1],2) +
 									pow(neigh->z - params::colloids[otherColl][2],2) ;
@@ -238,7 +230,7 @@ void Sausage::flood_fill_classify(void){
 				if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
 				visited.push_back(thisNeigh);
 				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
-				if (thisNeigh->sausageID>1) {
+				if (thisNeigh->isInASausage) {
 					bool in_a_region=false;
 					// For all of regions...
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
@@ -440,11 +432,12 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				Point *target = sausagej->points[sausagej->endpoints[jEndpoint]];
 				// Draw line along x
 				while (curr->x!=target->x){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
 						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
 						exit(EXIT_FAILURE);
 					}
 					if (curr->sausageID!=sausagei->sausageID){
+						curr->isInASausage=true;
 						curr->sausageID=sausagei->sausageID;
 						sausagei->points.push_back(curr);
 						curr->sausagePointsIndex=sausagei->points.size()-1;
@@ -457,11 +450,12 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				}
 				// Draw line along y
 				while (curr->y!=target->y){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
 						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
 						exit(EXIT_FAILURE);
 					}
 					if (curr->sausageID!=sausagei->sausageID){
+						curr->isInASausage=true;
 						curr->sausageID=sausagei->sausageID;
 						sausagei->points.push_back(curr);
 						curr->sausagePointsIndex=sausagei->points.size()-1;
@@ -474,11 +468,12 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				}
 				// Draw line along z
 				while (curr->z!=target->z){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->sausageID != 0 ){
+					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
 						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
 						exit(EXIT_FAILURE);
 					}
 					if (curr->sausageID!=sausagei->sausageID){
+						curr->isInASausage=true;
 						curr->sausageID=sausagei->sausageID;
 						sausagei->points.push_back(curr);
 						curr->sausagePointsIndex=sausagei->points.size()-1;

@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
 
 	// Check #args
 	if (argc!=2 && argc!=3){
-		cerr<<"Usage: "<<argv[0]<<" inputFile [paramFile]"<<endl;
+		cerr<<"Usage: "<<argv[0]<<" inputFile paramFile"<<endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
 
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
-	for (size_t i=2; i<allSausages.size(); i++){ // Ignore unsorted sausages 1%2
+	for (size_t i=0; i<allSausages.size(); i++){
 		int sausageSize=allSausages[i].points.size();
 		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
 			verbose() << "Ignoring sausage #" << i << endl;
@@ -117,11 +117,9 @@ int main(int argc, char *argv[]){
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
-			exit(EXIT_SUCCESS);}
-		else if (ratio > params::ratio_2nd_loop ) {
+		} else if (ratio > params::ratio_2nd_loop ) {
 			info() << "The sausages have very different size. Hence it is the 2nd_loop structure." << endl;
-			exit(EXIT_SUCCESS);}
-		else {
+		} else {
 			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
 			Maybe change input parameters." << endl;
 			exit(EXIT_FAILURE);
@@ -130,9 +128,8 @@ int main(int argc, char *argv[]){
 	
 	// Analysis for one relevant sausages found 
 	else if ( relevant_sausages.size() == 1) {
-	double size;
 		info() << "One relevant sausage found." << endl;
-		size = allSausages[relevant_sausages[0]].points.size();
+		double size = allSausages[relevant_sausages[0]].points.size();
 		allSausages[relevant_sausages[0]].find_com();
 		allSausages[relevant_sausages[0]].find_pobf();
 		//allSausages[relevant_sausages[0]].track_sausage();

@@ -8,6 +8,8 @@ using namespace std;
 
 Point::Point(void){
 	left=right=up=down=forward=back=NULL;
+	sausageID=-1; // unsorted
+	isInASausage=false;
 }
 
 /** Links each point in allPoints to its 6 nearest-neighbours.
