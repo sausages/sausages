@@ -316,7 +316,7 @@ void Sausage::find_endpoints(void){
 	for (size_t v=0; v<points.size(); v++){
 		dist[v][v]=0;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
-			if (points[v]->neighbours[iNeigh]->sausageID != sausageID) continue;
+			if (NULL==points[v]->neighbours[iNeigh] || points[v]->neighbours[iNeigh]->sausageID != sausageID) continue;
 			size_t u=points[v]->neighbours[iNeigh]->sausagePointsIndex;
 			dist[u][v]=1;
 		}
