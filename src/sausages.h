@@ -10,7 +10,8 @@
 class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
 
-	double **slice_positions; ///< xyz positions of COM of points within a slice
+	double **pos_coms_pobf_slice; ///< xyz positions of COMs found using pobf slice algorithm 
+	double **pos_coms_halfsphere; ///< xyz positions of COMs using halfsphere algorithm 
 	int *slice_counter; ///< Holds # of points in slice
 	int nSlices; ///< # slices
 	double length; ///< Estimated length of sausage
@@ -20,7 +21,8 @@ class Sausage {
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
-	void calculate_sausage_length(double** slice_positions); ///<Calculate the length using COMs of slices
+	void calculate_sausage_length_pobf_coms(double** slice_positions); ///<Calculate the length using COMs of pobf slices 
+	void calculate_sausage_length_halfsphere_coms(double** slice_positions); ///<Calculate the length using COMs of halfspheres
 
 	public:
 
@@ -33,7 +35,8 @@ class Sausage {
 
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
-	void estimate_sausage_length(void); ///<Approximate length of sausage
+	void estimate_sausage_length_using_pobf(void); ///<Approximate length of sausage using pobf, only works for single untwisted loops
+	void estimate_sausage_length_using_halfsphere(void); ///<Approximate length of sausage using pobf, only works for single untwisted loops
 	void flood_fill_classify(void);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares

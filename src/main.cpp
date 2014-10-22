@@ -111,7 +111,7 @@ int main(int argc, char *argv[]){
 			size[i] = allSausages[relevant_sausages[i]].points.size();
 			allSausages[relevant_sausages[i]].find_com();
 			allSausages[relevant_sausages[i]].find_pobf();
-			allSausages[relevant_sausages[i]].estimate_sausage_length();
+			allSausages[relevant_sausages[i]].estimate_sausage_length_using_pobf();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));

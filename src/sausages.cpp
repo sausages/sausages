@@ -527,26 +527,26 @@ void Sausage::rotate_to_xy_plane(double** pointsArray){
 	return;
 }
 
-void Sausage::calculate_sausage_length(double **slice_positions){
+void Sausage::calculate_sausage_length_pobf_coms(double **pos_coms_pobf_slice){
 
 	// loop over all COM of slices and calculate length
 	length = 0;
 	for(int i = 0; i != nSlices-1; i++) {
-		length += sqrt( pow(slice_positions[i][0]-slice_positions[i+1][0],2)+
-				pow(slice_positions[i][1]-slice_positions[i+1][1],2)+
-				pow(slice_positions[i][2]-slice_positions[i+1][2],2));
+		length += sqrt( pow(pos_coms_pobf_slice[i][0]-pos_coms_pobf_slice[i+1][0],2)+
+				pow(pos_coms_pobf_slice[i][1]-pos_coms_pobf_slice[i+1][1],2)+
+				pow(pos_coms_pobf_slice[i][2]-pos_coms_pobf_slice[i+1][2],2));
 	}
-	length += sqrt( pow(slice_positions[nSlices-1][0]-slice_positions[0][0],2)+
-			pow(slice_positions[nSlices-1][1]-slice_positions[0][1],2)+
-			pow(slice_positions[nSlices-1][2]-slice_positions[0][2],2));
+	length += sqrt( pow(pos_coms_pobf_slice[nSlices-1][0]-pos_coms_pobf_slice[0][0],2)+
+			pow(pos_coms_pobf_slice[nSlices-1][1]-pos_coms_pobf_slice[0][1],2)+
+			pow(pos_coms_pobf_slice[nSlices-1][2]-pos_coms_pobf_slice[0][2],2));
 
-	info() << "The estimated length of the sausage is " << length << endl;
+	info() << "The estimated length of the sausage using pobf is " << length << endl;
 	return;
 }
 
-void Sausage::estimate_sausage_length(){
+void Sausage::estimate_sausage_length_using_pobf(){
 
-	info() << "--------> Estimating sausage length... " << endl;
+	info() << "--------> Estimating sausage length using pobf slice... " << endl;
 
 	// Make array of points, shifted so that COM is in origin
 	double **rotatedPoints = new double*[points.size()];
@@ -565,9 +565,9 @@ void Sausage::estimate_sausage_length(){
 	nSlices = points.size()/params::points_per_slice;
 	info() << "Sausage was divided in " << nSlices << " slices." << endl;
 
-	double **slice_positions = new double*[nSlices];
+	double **pos_coms_pobf_slice = new double*[nSlices];
 	for (int i=0; i<nSlices; i++){
-		slice_positions[i] = new double[3];
+		pos_coms_pobf_slice[i] = new double[3];
 	}
 	double *slice_counter = new double[nSlices];
 
@@ -585,9 +585,9 @@ void Sausage::estimate_sausage_length(){
 		}
 
 		//add x,y,z coordinates to that slice
-		slice_positions[sliceId][0]+=rotatedPoints[i][0];
-		slice_positions[sliceId][1]+=rotatedPoints[i][1];
-		slice_positions[sliceId][2]+=rotatedPoints[i][2];
+		pos_coms_pobf_slice[sliceId][0]+=rotatedPoints[i][0];
+		pos_coms_pobf_slice[sliceId][1]+=rotatedPoints[i][1];
+		pos_coms_pobf_slice[sliceId][2]+=rotatedPoints[i][2];
 		slice_counter[sliceId]++;
 	}
 
@@ -597,18 +597,18 @@ void Sausage::estimate_sausage_length(){
 			cerr << "Slice is empty!!" << endl;
 			exit(EXIT_FAILURE);}
 		else{
-			slice_positions[k][0] = slice_positions[k][0]/slice_counter[k];
-			slice_positions[k][1] = slice_positions[k][1]/slice_counter[k];
-			slice_positions[k][2] = slice_positions[k][2]/slice_counter[k];
+			pos_coms_pobf_slice[k][0] = pos_coms_pobf_slice[k][0]/slice_counter[k];
+			pos_coms_pobf_slice[k][1] = pos_coms_pobf_slice[k][1]/slice_counter[k];
+			pos_coms_pobf_slice[k][2] = pos_coms_pobf_slice[k][2]/slice_counter[k];
 
-			debug() << slice_counter[k] << " COM " << slice_positions[k][0] << " " << slice_positions[k][1] << " " << slice_positions[k][2] << endl;}
+			debug() << slice_counter[k] << " COM " << pos_coms_pobf_slice[k][0] << " " << pos_coms_pobf_slice[k][1] << " " << pos_coms_pobf_slice[k][2] << endl;}
 	}
 
 	// convert COM's of slice back to initial frame
-	//rotate_from_xy_plane(slice_positions);
+	//rotate_from_xy_plane(pos_coms_pobf_slice);
 
 	// calculate length
-	calculate_sausage_length(slice_positions);
+	calculate_sausage_length_pobf_coms(pos_coms_pobf_slice);
 
 	// clean up
 	debug() << "deleting rotated_points" << endl;
@@ -617,11 +617,113 @@ void Sausage::estimate_sausage_length(){
 	}
 	delete rotatedPoints;
 
-	debug() << "deleting slice_positions" << endl;
+	debug() << "deleting pos_coms_pobf_slice" << endl;
 	for (int i=0; i<nSlices; i++){
-		delete slice_positions[i];
+		delete pos_coms_pobf_slice[i];
 	}
-	delete slice_positions;
+	delete pos_coms_pobf_slice;
 
 	return;
 }
+
+void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_coms_halfsphere){
+
+	// loop over all COM of slices and calculate length
+/*	length = 0;
+	for(int i = 0; i != nSlices-1; i++) {
+		length += sqrt( pow(pos_coms_halfsphere[i][0]-pos_coms_halfsphere[i+1][0],2)+
+				pow(pos_coms_halfsphere[i][1]-pos_coms_halfsphere[i+1][1],2)+
+				pow(pos_coms_halfsphere[i][2]-pos_coms_halfsphere[i+1][2],2));
+	}
+	length += sqrt( pow(pos_coms_halfsphere[nSlices-1][0]-pos_coms_halfsphere[0][0],2)+
+			pow(pos_coms_halfsphere[nSlices-1][1]-pos_coms_halfsphere[0][1],2)+
+			pow(pos_coms_halfsphere[nSlices-1][2]-pos_coms_halfsphere[0][2],2));
+
+	info() << "The estimated length of the sausage using halfspheres is " << length << endl;*/
+	return;
+}
+
+void Sausage::estimate_sausage_length_using_halfsphere(){
+
+/*	info() << "--------> Estimating sausage length using halfspheres... " << endl;
+
+	// Make array of points, shifted so that COM is in origin
+	double **rotatedPoints = new double*[points.size()];
+	for (size_t i=0; i<points.size(); i++){
+		rotatedPoints[i] = new double[3];
+		rotatedPoints[i][0]=points[i]->x - centre_of_mass[0];
+		rotatedPoints[i][1]=points[i]->y - centre_of_mass[1];
+		rotatedPoints[i][2]=points[i]->z - centre_of_mass[2];
+	}
+
+	// calculate rotation matrix and its inverse, so that plane of best fit projects onto xy-plane
+	calculate_rotation_matrix();
+	rotate_to_xy_plane(rotatedPoints);
+
+	// Find number of slices
+	nSlices = points.size()/params::points_per_slice;
+	info() << "Sausage was divided in " << nSlices << " slices." << endl;
+
+	double **pos_coms_halfsphere = new double*[nSlices];
+	for (int i=0; i<nSlices; i++){
+		pos_coms_halfsphere[i] = new double[3];
+	}
+	double *slice_counter = new double[nSlices];
+
+
+	// find what slice we are in (loop over all points)
+	double theta;
+	int sliceId;
+	for(size_t i = 0; i != points.size(); i++) {
+
+		theta=atan2(rotatedPoints[i][1],rotatedPoints[i][0])+M_PI;
+		sliceId = (int) nSlices*theta/(2.0*M_PI);
+		if (sliceId < 0 || sliceId >= nSlices ) {
+			cerr << "SliceId is out of bound" << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		//add x,y,z coordinates to that slice
+		pos_coms_halfsphere[sliceId][0]+=rotatedPoints[i][0];
+		pos_coms_halfsphere[sliceId][1]+=rotatedPoints[i][1];
+		pos_coms_halfsphere[sliceId][2]+=rotatedPoints[i][2];
+		slice_counter[sliceId]++;
+	}
+
+	// work out centre of mass for each slice
+	for(int k = 0; k != nSlices; k++) {
+		if (slice_counter[k] == 0) {
+			cerr << "Slice is empty!!" << endl;
+			exit(EXIT_FAILURE);}
+		else{
+			pos_coms_halfsphere[k][0] = pos_coms_halfsphere[k][0]/slice_counter[k];
+			pos_coms_halfsphere[k][1] = pos_coms_halfsphere[k][1]/slice_counter[k];
+			pos_coms_halfsphere[k][2] = pos_coms_halfsphere[k][2]/slice_counter[k];
+
+			debug() << slice_counter[k] << " COM " << pos_coms_halfsphere[k][0] << " " << pos_coms_halfsphere[k][1] << " " << pos_coms_halfsphere[k][2] << endl;}
+	}
+
+	// convert COM's of slice back to initial frame
+	//rotate_from_xy_plane(pos_coms_halfsphere);
+
+	// calculate length
+	calculate_sausage_length_halfsphere(pos_coms_halfsphere);
+
+	// clean up
+	debug() << "deleting rotated_points" << endl;
+	for (size_t i=0; i<points.size(); i++){
+		delete rotatedPoints[i];
+	}
+	delete rotatedPoints;
+
+	debug() << "deleting pos_coms_halfsphere" << endl;
+	for (int i=0; i<nSlices; i++){
+		delete pos_coms_halfsphere[i];
+	}
+	delete pos_coms_halfsphere;*/
+
+	return;
+}
+
+
+
