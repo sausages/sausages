@@ -25,17 +25,11 @@ int main(int argc, char *argv[]){
 	// Set various parameters and variables
 	set_params(argv[2]);
 
-	// Open, read and close input data file
-	ifstream infile (argv[1]);
-	if (!infile.is_open()){
-		cerr<<"Error opening file "<<argv[1]<<endl;
-		exit(EXIT_FAILURE);
-	}
-	info() << "Reading file " << argv[1] << endl;
+	// Read points from data file
 	vector<Point> allPoints; ///< A vector of all points in simulation
-	read_xyzclcpcs(infile,allPoints);
+	info() << "Reading file " << argv[1] << endl;
+	read_file(argv[1],allPoints);
 	info() << "  found " << allPoints.size() << " points." << endl;
-	infile.close();
 
 	// Put all points with cl<threshold in a sausage
 	info() << "Thresholding, sausages have cl<" << params::threshold << endl;
