@@ -277,9 +277,16 @@ void Sausage::flood_fill_classify(void){
 	}
 	if (adjacency[0][2] && adjacency[1][3]){
 		info()<<"System appears to be untwisted (Class 1)"<<endl;
+		brief() << "Figure of omega structure." << endl;
+		brief() << "3" << endl;
 	} else if (adjacency[0][3] && adjacency[1][2]){
 		info()<<"System appears to be twisted (Class 2)"<<endl;
+		brief() << "Figure of eight structure." << endl;
+		brief() << "2" << endl;
+	
 	} else {
+		brief() << "Structure undefined." << endl;
+		brief() << "0" << endl;
 		error()<<"Unexpected system linkage, this should never happen."<<endl;
 		exit(EXIT_FAILURE);
 	}
@@ -626,101 +633,165 @@ void Sausage::estimate_sausage_length_using_pobf(){
 	return;
 }
 
-void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_coms_halfsphere){
+void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_com_halfsphere){
 
 	// loop over all COM of slices and calculate length
 /*	length = 0;
 	for(int i = 0; i != nSlices-1; i++) {
-		length += sqrt( pow(pos_coms_halfsphere[i][0]-pos_coms_halfsphere[i+1][0],2)+
-				pow(pos_coms_halfsphere[i][1]-pos_coms_halfsphere[i+1][1],2)+
-				pow(pos_coms_halfsphere[i][2]-pos_coms_halfsphere[i+1][2],2));
+		length += sqrt( pow(pos_com_halfsphere[i][0]-pos_com_halfsphere[i+1][0],2)+
+				pow(pos_com_halfsphere[i][1]-pos_com_halfsphere[i+1][1],2)+
+				pow(pos_com_halfsphere[i][2]-pos_com_halfsphere[i+1][2],2));
 	}
-	length += sqrt( pow(pos_coms_halfsphere[nSlices-1][0]-pos_coms_halfsphere[0][0],2)+
-			pow(pos_coms_halfsphere[nSlices-1][1]-pos_coms_halfsphere[0][1],2)+
-			pow(pos_coms_halfsphere[nSlices-1][2]-pos_coms_halfsphere[0][2],2));
+	length += sqrt( pow(pos_com_halfsphere[nSlices-1][0]-pos_com_halfsphere[0][0],2)+
+			pow(pos_com_halfsphere[nSlices-1][1]-pos_com_halfsphere[0][1],2)+
+			pow(pos_com_halfsphere[nSlices-1][2]-pos_com_halfsphere[0][2],2));
 
 	info() << "The estimated length of the sausage using halfspheres is " << length << endl;*/
 	return;
 }
 
+void Sausage::calculate_com_halfsphere(double *centre, double radius, double *com_x, double *com_y, double *com_z){
+	info() << "Centre " << centre[0] << " " << centre[1] << " " << centre[2] << endl;
+	int counter = 0;
+	*com_x = 0.0;
+	*com_y = 0.0;
+	*com_z = 0.0;
+	double dx,dy,dz,dist;
+	info() << "points.size() = " << points.size() << endl;
+	for(size_t i = 0; i != points.size(); i++){
+		dx = points[i]->x - centre[0];
+		dy = points[i]->y - centre[1];
+		dz = points[i]->z - centre[2];
+		dist = sqrt(dx*dx+dy*dy+dz*dz);
+		// add all points within radius to work out com 
+		if (dist < radius) {
+			*com_x += points[i]->x;
+			*com_y += points[i]->y;
+			*com_z += points[i]->z;
+			counter ++;
+		}
+	}
+	if (counter != 0){
+		*com_x /= counter; *com_y /= counter; *com_z /= counter;}
+	else {
+		cerr << " Halfsphere algorithm failed. Sphere to calculate COM is empty! " << endl;
+		exit(EXIT_FAILURE);}
+	info() << *com_x << " " << *com_y << " " << *com_z << " " << counter << endl;
+}
+
+
 void Sausage::estimate_sausage_length_using_halfsphere(){
 
-/*	info() << "--------> Estimating sausage length using halfspheres... " << endl;
+	info() << "--------> Estimating sausage length using halfspheres... " << endl;
 
-	// Make array of points, shifted so that COM is in origin
-	double **rotatedPoints = new double*[points.size()];
-	for (size_t i=0; i<points.size(); i++){
-		rotatedPoints[i] = new double[3];
-		rotatedPoints[i][0]=points[i]->x - centre_of_mass[0];
-		rotatedPoints[i][1]=points[i]->y - centre_of_mass[1];
-		rotatedPoints[i][2]=points[i]->z - centre_of_mass[2];
+	// Find number of halfspheres (last one might be bigger as threshold)
+	int nSpheres = points.size()/params::points_per_halfsphere;
+	info() << "Sausage was divided in " << nSpheres << " slices." << endl;
+	info() << " a / b " << points.size() << " " << params::points_per_halfsphere << endl;
+
+	double **pos_com_halfsphere = new double*[nSpheres];
+	for (int i=0; i<nSpheres; i++){
+		pos_com_halfsphere[i] = new double[3];
 	}
 
-	// calculate rotation matrix and its inverse, so that plane of best fit projects onto xy-plane
-	calculate_rotation_matrix();
-	rotate_to_xy_plane(rotatedPoints);
+	double * current_pos = new double[3];
+	
+	// pick arbitrary starting point and find coms in sphere R_small
 
-	// Find number of slices
-	nSlices = points.size()/params::points_per_slice;
-	info() << "Sausage was divided in " << nSlices << " slices." << endl;
+	current_pos[0] = points[0]->x;
+	current_pos[1] = points[0]->y;
+	current_pos[2] = points[0]->z;
 
-	double **pos_coms_halfsphere = new double*[nSlices];
-	for (int i=0; i<nSlices; i++){
-		pos_coms_halfsphere[i] = new double[3];
-	}
-	double *slice_counter = new double[nSlices];
+	double R_small = 1.5;
+	calculate_com_halfsphere(current_pos,R_small,&pos_com_halfsphere[0][0],&pos_com_halfsphere[0][1],&pos_com_halfsphere[0][2]);
 
-
-	// find what slice we are in (loop over all points)
-	double theta;
-	int sliceId;
-	for(size_t i = 0; i != points.size(); i++) {
-
-		theta=atan2(rotatedPoints[i][1],rotatedPoints[i][0])+M_PI;
-		sliceId = (int) nSlices*theta/(2.0*M_PI);
-		if (sliceId < 0 || sliceId >= nSlices ) {
-			cerr << "SliceId is out of bound" << endl;
-			exit(EXIT_FAILURE);
+	// pick 2nd point that is closest to starting point + 2*R_small
+	double dx,dy,dz,dist;
+	double dist_max = 10000;
+	int max_index;
+	for(size_t i = 0; i != points.size(); i++){
+		dx = points[i]->x - current_pos[0];
+		dy = points[i]->y - current_pos[1];
+		dz = points[i]->z - current_pos[2];
+		dist = sqrt(dx*dx+dy*dy+dz*dz) - 2.0*R_small;
+		if (fabs(dist) < dist_max) {
+			dist_max = fabs(dist);
+			max_index = i;
 		}
-
-		//add x,y,z coordinates to that slice
-		pos_coms_halfsphere[sliceId][0]+=rotatedPoints[i][0];
-		pos_coms_halfsphere[sliceId][1]+=rotatedPoints[i][1];
-		pos_coms_halfsphere[sliceId][2]+=rotatedPoints[i][2];
-		slice_counter[sliceId]++;
 	}
 
-	// work out centre of mass for each slice
-	for(int k = 0; k != nSlices; k++) {
-		if (slice_counter[k] == 0) {
-			cerr << "Slice is empty!!" << endl;
-			exit(EXIT_FAILURE);}
-		else{
-			pos_coms_halfsphere[k][0] = pos_coms_halfsphere[k][0]/slice_counter[k];
-			pos_coms_halfsphere[k][1] = pos_coms_halfsphere[k][1]/slice_counter[k];
-			pos_coms_halfsphere[k][2] = pos_coms_halfsphere[k][2]/slice_counter[k];
+	current_pos[0] = points[max_index]->x;
+	current_pos[1] = points[max_index]->y;
+	current_pos[2] = points[max_index]->z;
 
-			debug() << slice_counter[k] << " COM " << pos_coms_halfsphere[k][0] << " " << pos_coms_halfsphere[k][1] << " " << pos_coms_halfsphere[k][2] << endl;}
+	calculate_com_halfsphere(current_pos,R_small,&pos_com_halfsphere[1][0],&pos_com_halfsphere[1][1],&pos_com_halfsphere[1][2]);
+
+	int m;
+	int index; 
+	double dir [3];
+	double dir_hat [3];
+	double dir_mag;
+	double radius;
+	double dot;
+	double R_min = 0.1;
+	double dR = 0.1;
+	double R;
+ 	int counter;	
+	
+	for (m=2; m < nSpheres; m++){
+
+		index = m; //Since first (index=0) and second (index=1) point were already calculated
+
+		// work out moving direction from two previous coms
+		dir[0] = pos_com_halfsphere[index-1][0] - pos_com_halfsphere[index-2][0];
+		dir[1] = pos_com_halfsphere[index-1][1] - pos_com_halfsphere[index-2][1];
+		dir[2] = pos_com_halfsphere[index-1][2] - pos_com_halfsphere[index-2][2];
+		dir_mag = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
+		dir_hat[0] = dir[0]/dir_mag;
+		dir_hat[1] = dir[1]/dir_mag;
+		dir_hat[2] = dir[2]/dir_mag;
+
+		//info() << "Dir from 0 to 1 pos_com " << dir_hat[0] << " " << dir_hat[1] << " " << dir_hat[2] << endl;
+
+		radius = R_small;
+		// find new point for which halfsphere com is calculated
+		current_pos[0] = pos_com_halfsphere[index-1][0] + radius*dir_hat[0];
+		current_pos[1] = pos_com_halfsphere[index-1][1] + radius*dir_hat[1];
+		current_pos[2] = pos_com_halfsphere[index-1][2] + radius*dir_hat[2];
+		
+		//info() << "Current pos " << current_pos[0] << " " << current_pos[1] << " " << current_pos[2] << endl;
+		
+		R = R_min;
+		counter =0;
+		while (counter < 10) {
+			counter = 0;
+			// loop over all points
+			for(size_t i = 0; i != points.size(); i++){
+				dx = points[i]->x - current_pos[0];
+				dy = points[i]->y - current_pos[1];
+				dz = points[i]->z - current_pos[2];
+				dist = sqrt(dx*dx+dy*dy+dz*dz);
+				dx /= dist; dy /= dist; dz /= dist;
+				dot = dir_hat[0]*dx + dir_hat[1]*dy + dir_hat[2]*dz; 
+				//info() << "dot " << dot << endl;
+				if ( dist < R &&  dot >= 0.0 ){
+					counter ++;
+				}
+			}
+			R += dR;
+		}
+	//info() << "index " << index << " Radius " << R << " counter " << counter << endl;
+	
+	calculate_com_halfsphere(current_pos,R,&pos_com_halfsphere[index][0],&pos_com_halfsphere[index][1],&pos_com_halfsphere[index][2]);
+	
+	//info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
 	}
 
-	// convert COM's of slice back to initial frame
-	//rotate_from_xy_plane(pos_coms_halfsphere);
-
-	// calculate length
-	calculate_sausage_length_halfsphere(pos_coms_halfsphere);
-
-	// clean up
-	debug() << "deleting rotated_points" << endl;
-	for (size_t i=0; i<points.size(); i++){
-		delete rotatedPoints[i];
+	for (m=0;m < nSpheres; m++){
+		info() << "pos_com_halfsphere " << pos_com_halfsphere[m][0] << " " << pos_com_halfsphere[m][1] << " " << pos_com_halfsphere[m][2] << endl; 
 	}
-	delete rotatedPoints;
 
-	debug() << "deleting pos_coms_halfsphere" << endl;
-	for (int i=0; i<nSlices; i++){
-		delete pos_coms_halfsphere[i];
-	}
-	delete pos_coms_halfsphere;*/
+	// delete pos_com_halfsphere ?
 
 	return;
 }

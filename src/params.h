@@ -2,7 +2,7 @@
 #define PARAMS_H
 
 // enums are implicitly assigned to 0,1,2.. so e.g. DEBUG > WARNING
-enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
+enum verbosityLevel {ERROR, WARNING, BRIEF, INFO, VERBOSE, DEBUG};
 
 namespace params{
 	extern verbosityLevel verbosity;
@@ -11,6 +11,7 @@ namespace params{
 	extern double min_sausage_size; ///< A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	extern double pixel_size; ///< Distance between nearest-neighbour points
 	extern int points_per_slice; ///< How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
+	extern int points_per_halfsphere; ///< How many points (on average) are in each halfsphere for the halfsphere sausage-length measurer
 	extern double colloids[2][3]; ///< xyz positions of the two colloids
 	extern double flood_fill_classify_slice_size; ///< How many pixels wide should the regions in flood_fill_classify be?
 	extern double ratio_two_rings; ///< If ratio of two relevant sausage is below this, it's the two ring structure

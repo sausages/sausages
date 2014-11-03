@@ -10,7 +10,7 @@
 "silent_ignore_size" : 0.1,
 */
 
-// ERROR:0, WARNING:1, INFO:2, VERBOSE:3, DEBUG:4
+// ERROR:0, WARNING:1, BRIEF: 2, INFO:3, VERBOSE:4, DEBUG:5
 "verbosity" : 4
 
 

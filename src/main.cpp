@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 	info() << "Reading file " << argv[1] << endl;
+	brief() << "Inputfilename " << argv[1] << endl;
 	vector<Point> allPoints; ///< A vector of all points in simulation
 	read_xyzclcpcs(infile,allPoints);
 	info() << "  found " << allPoints.size() << " points." << endl;
@@ -97,6 +98,8 @@ int main(int argc, char *argv[]){
 
 	// Exit program is number of sausages found is not equal 2 or 1.
 	if ( relevant_sausages.size() > 2) {
+		brief() << "Structure is undefined." << endl;
+		brief() << "0" << endl;
 		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
 		exit(EXIT_FAILURE);
 	}
@@ -117,9 +120,15 @@ int main(int argc, char *argv[]){
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
+			brief() << "Two-ring structure." << endl;
+			brief() << "1" << endl;
 		} else if (ratio > params::ratio_2nd_loop ) {
 			info() << "The sausages have very different size. Hence it is the 2nd_loop structure." << endl;
+			brief() << "2nd loop structure." << endl;
+			brief() << "4" << endl;
 		} else {
+			brief() << "Structure is undefined." << endl;
+			brief() << "0" << endl;
 			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
 			Maybe change input parameters." << endl;
 			exit(EXIT_FAILURE);
@@ -132,11 +141,13 @@ int main(int argc, char *argv[]){
 		double size = allSausages[relevant_sausages[0]].points.size();
 		allSausages[relevant_sausages[0]].find_com();
 		allSausages[relevant_sausages[0]].find_pobf();
-		//allSausages[relevant_sausages[0]].track_sausage();
+		allSausages[relevant_sausages[0]].estimate_sausage_length_using_halfsphere();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
 		allSausages[relevant_sausages[0]].flood_fill_classify();
 	}
+
+	brief() << "This is a test if brief works" << endl;
 
 	// Wrap up and exit
 	info() << "Exiting successfully" << endl;

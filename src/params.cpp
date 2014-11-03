@@ -15,8 +15,9 @@ namespace params{
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
-	double pixel_size = 0.5; // Distance between nearest-neighbour points
+	double pixel_size = 0.25; // Distance between nearest-neighbour points
 	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
+	int points_per_halfsphere = 10; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	double colloids[2][3]; // xyz positions of the two colloids
 	double ratio_two_rings = 0.1; // Threshold ratio for which two relevant sausages are identified as two_rings
 	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
@@ -69,9 +70,10 @@ void set_params(char *filename){
 			switch(verbosity){
 				case 0: std::cout<<"ERROR"; break;
 				case 1: std::cout<<"WARNING"; break;
-				case 2: std::cout<<"INFO"; break;
-				case 3: std::cout<<"VERBOSE"; break;
-				case 4: std::cout<<"DEBUG"; break;
+				case 2: std::cout<<"BRIEF";break;
+				case 3: std::cout<<"INFO"; break;
+				case 4: std::cout<<"VERBOSE"; break;
+				case 5: std::cout<<"DEBUG"; break;
 			}
 			std::cout<<std::endl;
 	}
@@ -146,6 +148,12 @@ void set_params(char *filename){
 	if (cJSON_GetObjectItem(root,"points_per_slice")){
 			points_per_slice = cJSON_GetObjectItem(root,"points_per_slice")->valuedouble;
 			info()<<"points_per_slice "<<points_per_slice<<std::endl;
+	}
+
+	// points_per_halfsphere
+	if (cJSON_GetObjectItem(root,"points_per_halfsphere")){
+			points_per_halfsphere = cJSON_GetObjectItem(root,"points_per_halfsphere")->valuedouble;
+			info()<<"points_per_halfsphere "<<points_per_halfsphere<<std::endl;
 	}
 	
 	// ratio_two_rings

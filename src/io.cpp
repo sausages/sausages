@@ -29,6 +29,10 @@ std::ostream &warning(void) {
 	if (params::verbosity >= WARNING){ return std::cout; } else{ return nullStream; }
 }
 
+std::ostream &brief(void) {
+	if (params::verbosity >= BRIEF){ return std::cout; } else{ return nullStream; }
+}
+
 std::ostream &info(void) {
 	if (params::verbosity >= INFO){ return std::cout; } else{ return nullStream; }
 }
@@ -40,6 +44,8 @@ std::ostream &verbose(void) {
 std::ostream &debug(void) {
 	if (params::verbosity >= DEBUG){ return std::cout; } else{ return nullStream; }
 }
+
+
 
 /**
  * Reads in data from inputFile with the format:

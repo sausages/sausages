@@ -17,6 +17,7 @@ class NullBuffer : public std::streambuf
 /** Verious dummy streams, which will output to cout only when verbosityLevel is high enough */
 extern std::ostream &error(void) ;
 extern std::ostream &warning(void) ;
+extern std::ostream &brief(void) ;
 extern std::ostream &info(void) ;
 extern std::ostream &verbose(void) ;
 extern std::ostream &debug(void) ;
