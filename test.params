@@ -11,7 +11,7 @@
 */
 
 // ERROR:0, WARNING:1, BRIEF: 2, INFO:3, VERBOSE:4, DEBUG:5
-"verbosity" : 4
+"verbosity" : 3
 
 
 }

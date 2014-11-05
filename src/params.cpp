@@ -14,7 +14,7 @@ namespace params{
 	verbosityLevel verbosity = INFO;
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
-	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
+	double min_sausage_size = 0.05; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	double pixel_size = 0.25; // Distance between nearest-neighbour points
 	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	int points_per_halfsphere = 10; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer

@@ -651,13 +651,13 @@ void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_com_halfsphe
 }
 
 void Sausage::calculate_com_halfsphere(double *centre, double radius, double *com_x, double *com_y, double *com_z){
-	info() << "Centre " << centre[0] << " " << centre[1] << " " << centre[2] << endl;
+//	info() << "Centre " << centre[0] << " " << centre[1] << " " << centre[2] << endl;
 	int counter = 0;
 	*com_x = 0.0;
 	*com_y = 0.0;
 	*com_z = 0.0;
 	double dx,dy,dz,dist;
-	info() << "points.size() = " << points.size() << endl;
+//	info() << "points.size() = " << points.size() << endl;
 	for(size_t i = 0; i != points.size(); i++){
 		dx = points[i]->x - centre[0];
 		dy = points[i]->y - centre[1];
@@ -676,7 +676,7 @@ void Sausage::calculate_com_halfsphere(double *centre, double radius, double *co
 	else {
 		cerr << " Halfsphere algorithm failed. Sphere to calculate COM is empty! " << endl;
 		exit(EXIT_FAILURE);}
-	info() << *com_x << " " << *com_y << " " << *com_z << " " << counter << endl;
+//	info() << *com_x << " " << *com_y << " " << *com_z << " " << counter << endl;
 }
 
 
@@ -697,6 +697,19 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 	double * current_pos = new double[3];
 	
 	// pick arbitrary starting point and find coms in sphere R_small
+	double problem_dist; 
+	double pointx = -10.9167;
+	double pointy = 11.213;
+	double pointz = 0.185185;
+	for(size_t i = 0; i != points.size(); i++){
+		problem_dist = sqrt(pow(points[i]->x-pointx,2)+ pow(points[i]->y-pointy,2)+ pow(points[i]->z-pointz,2));
+		if (problem_dist < 4.0){
+			info() << "Problem region " << points[i]->x << " " << points[i]->y << " " << points[i]->z << endl;
+		}
+	}
+
+	// print all points near a problem region
+
 
 	current_pos[0] = points[0]->x;
 	current_pos[1] = points[0]->y;
@@ -737,6 +750,7 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 	double dR = 0.1;
 	double R;
  	int counter;	
+	double distsq_previous, distsq_preprevious;
 	
 	for (m=2; m < nSpheres; m++){
 
@@ -780,20 +794,82 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 			}
 			R += dR;
 		}
-	//info() << "index " << index << " Radius " << R << " counter " << counter << endl;
+		//info() << "index " << index << " Radius " << R << " counter " << counter << endl;
 	
-	calculate_com_halfsphere(current_pos,R,&pos_com_halfsphere[index][0],&pos_com_halfsphere[index][1],&pos_com_halfsphere[index][2]);
-	
-	//info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
+		calculate_com_halfsphere(current_pos,R,&pos_com_halfsphere[index][0],&pos_com_halfsphere[index][1],&pos_com_halfsphere[index][2]);
+		//info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
+		
+		// check that we aren't reversing on ourselves and if so try again with narrower angle
+		distsq_previous = pow(pos_com_halfsphere[index][0]-pos_com_halfsphere[index-1][0],2) + pow(pos_com_halfsphere[index][1]-pos_com_halfsphere[index-1][1],2) + pow(pos_com_halfsphere[index][2]-pos_com_halfsphere[index-1][2],2);
+		distsq_preprevious = pow(pos_com_halfsphere[index][0]-pos_com_halfsphere[index-2][0],2) + pow(pos_com_halfsphere[index][1]-pos_com_halfsphere[index-2][1],2) + pow(pos_com_halfsphere[index][2]-pos_com_halfsphere[index-2][2],2);
+		if (distsq_preprevious < distsq_previous && index >5){
+			// try for angle of 45 degrees instead
+			R = R_min;
+			counter = 0;
+			while (counter < 10) {
+				counter = 0;
+				// loop over all points
+				for(size_t i = 0; i != points.size(); i++){
+					dx = points[i]->x - current_pos[0];
+					dy = points[i]->y - current_pos[1];
+					dz = points[i]->z - current_pos[2];
+					dist = sqrt(dx*dx+dy*dy+dz*dz);
+					dx /= dist; dy /= dist; dz /= dist;
+					dot = dir_hat[0]*dx + dir_hat[1]*dy + dir_hat[2]*dz; 
+					//info() << "dot " << dot << endl;
+					if ( dist < R &&  dot >= 0.5 ){  //0.5=cos(60)
+						counter ++;
+					}
+				}
+				R += dR;
+			}
+		info() << "Halfsphere is down to 45 degress. Radius is " << R << ". Counter is " << counter << endl;
+
+		// find com only using points that are inside 45 degrees and radius
+		counter =0;
+		pos_com_halfsphere[index][0] = 0.0;
+		pos_com_halfsphere[index][1] = 0.0;
+		pos_com_halfsphere[index][2] = 0.0;
+		// loop over all points
+		for(size_t i = 0; i != points.size(); i++){
+			dx = points[i]->x - current_pos[0];
+			dy = points[i]->y - current_pos[1];
+			dz = points[i]->z - current_pos[2];
+			dist = sqrt(dx*dx+dy*dy+dz*dz);
+			dx /= dist; dy /= dist; dz /= dist;
+			dot = dir_hat[0]*dx + dir_hat[1]*dy + dir_hat[2]*dz; 
+			if ( dist < R &&  dot >= 0.5 ){  //0.5 = cos(60)
+				counter ++;
+				pos_com_halfsphere[index][0] += points[i]->x;
+				pos_com_halfsphere[index][1] += points[i]->y;
+				pos_com_halfsphere[index][2] += points[i]->z;
+			}
+		}
+		pos_com_halfsphere[index][0] /= counter;
+		pos_com_halfsphere[index][1] /= counter;
+		pos_com_halfsphere[index][2] /= counter;
+		info() << "Reduced halfsphere angle to 45. Counter is " << counter << ". It should be equal 10." << endl;
+		//Note we don't update the direction.
+
+		// check whether we are still reversing, if so exit programm
+		distsq_previous = pow(pos_com_halfsphere[index][0]-pos_com_halfsphere[index-1][0],2) + pow(pos_com_halfsphere[index][1]-pos_com_halfsphere[index-1][1],2) + pow(pos_com_halfsphere[index][2]-pos_com_halfsphere[index-1][2],2);
+		distsq_preprevious = pow(pos_com_halfsphere[index][0]-pos_com_halfsphere[index-2][0],2) + pow(pos_com_halfsphere[index][1]-pos_com_halfsphere[index-2][1],2) + pow(pos_com_halfsphere[index][2]-pos_com_halfsphere[index-2][2],2);
+		if (distsq_preprevious < distsq_previous){
+			cerr << "The next point in halfsphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
+			cerr << "Last com point found was " << pos_com_halfsphere[index-1][0] << " " << pos_com_halfsphere[index-1][1] << " " << pos_com_halfsphere[index-1][2] << endl;
+			exit(EXIT_FAILURE);
+		}
+		}
+		info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
+		info() << "direction " << dir_hat[0] << " " << dir_hat[1] << " " << dir_hat[2] << endl;
 	}
+	/*	for (m=0;m < nSpheres; m++){
+			info() << "pos_com_halfsphere " << pos_com_halfsphere[m][0] << " " << pos_com_halfsphere[m][1] << " " << pos_com_halfsphere[m][2] << endl; 
+		}*/
 
-	for (m=0;m < nSpheres; m++){
-		info() << "pos_com_halfsphere " << pos_com_halfsphere[m][0] << " " << pos_com_halfsphere[m][1] << " " << pos_com_halfsphere[m][2] << endl; 
-	}
+		// delete pos_com_halfsphere ?
 
-	// delete pos_com_halfsphere ?
-
-	return;
+		return;
 }
 
 
