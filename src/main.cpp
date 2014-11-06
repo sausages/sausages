@@ -31,8 +31,7 @@ int main(int argc, char *argv[]){
 		cerr<<"Error opening file "<<argv[1]<<endl;
 		exit(EXIT_FAILURE);
 	}
-	info() << "Reading file " << argv[1] << endl;
-	brief() << "Inputfilename " << argv[1] << endl;
+	brief() << "Reading file " << argv[1] << endl;
 	vector<Point> allPoints; ///< A vector of all points in simulation
 	read_xyzclcpcs(infile,allPoints);
 	info() << "  found " << allPoints.size() << " points." << endl;
