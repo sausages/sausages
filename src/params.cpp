@@ -160,4 +160,9 @@ void set_params(char *filename){
 			info()<<"ratio_2nd_loop "<<ratio_2nd_loop<<std::endl;
 	}
 
+
+	// Clean up
+	cJSON_Delete(root);
+	paramfile.close();
+
 }

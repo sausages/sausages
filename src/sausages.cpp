@@ -613,15 +613,15 @@ void Sausage::estimate_sausage_length(){
 	// clean up
 	debug() << "deleting rotated_points" << endl;
 	for (size_t i=0; i<points.size(); i++){
-		delete rotatedPoints[i];
+		delete[] rotatedPoints[i];
 	}
-	delete rotatedPoints;
+	delete[] rotatedPoints;
 
 	debug() << "deleting slice_positions" << endl;
 	for (int i=0; i<nSlices; i++){
-		delete slice_positions[i];
+		delete[] slice_positions[i];
 	}
-	delete slice_positions;
+	delete[] slice_positions;
 
 	return;
 }
