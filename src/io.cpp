@@ -55,7 +55,21 @@ void read_xyzclcpcs(std::ifstream& inputFile, vector<Point> &allPointsVector){
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
 		p.allPointsIndex=iPoint++;
-		allPointsVector.push_back(p);
+		try{
+			allPointsVector.push_back(p);
+		} catch (std::bad_alloc &e){
+			size_t pointsRead=allPointsVector.size();
+			allPointsVector.clear();
+			error()<<"Ran out of memory after reading in "<<pointsRead<<" points."<<std::endl;
+			error()<<"Counting points left..."<<std::flush;
+			size_t pointsLeft=0;
+			while ( getline (inputFile, line) ){ pointsLeft++;}
+			error()<<pointsLeft<<std::endl;
+			error()<<"i.e. we could only allocate for "<<100*float(pointsRead)/float(pointsRead+pointsLeft)
+				<<"% of the points in the file, increase memory available."<<std::endl;
+			exit(EXIT_FAILURE);
+		}
+
 	}
 }
 
