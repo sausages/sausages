@@ -574,9 +574,13 @@ void Sausage::estimate_sausage_length_using_pobf(){
 
 	double **pos_coms_pobf_slice = new double*[nSlices];
 	for (int i=0; i<nSlices; i++){
-		pos_coms_pobf_slice[i] = new double[3];
+//<<<<<<< HEAD
+//		pos_coms_pobf_slice[i] = new double[3];
+//=======
+		slice_positions[i] = new double[3]();
+//>>>>>>> master
 	}
-	double *slice_counter = new double[nSlices];
+	double *slice_counter = new double[nSlices]();
 
 
 	// find what slice we are in (loop over all points)
@@ -620,15 +624,23 @@ void Sausage::estimate_sausage_length_using_pobf(){
 	// clean up
 	debug() << "deleting rotated_points" << endl;
 	for (size_t i=0; i<points.size(); i++){
-		delete rotatedPoints[i];
+		delete[] rotatedPoints[i];
 	}
-	delete rotatedPoints;
+	delete[] rotatedPoints;
 
 	debug() << "deleting pos_coms_pobf_slice" << endl;
 	for (int i=0; i<nSlices; i++){
-		delete pos_coms_pobf_slice[i];
+//<<<<<<< HEAD
+/*		delete pos_coms_pobf_slice[i];
 	}
 	delete pos_coms_pobf_slice;
+======= */
+		delete[] slice_positions[i];
+	}
+	delete[] slice_positions;
+
+	delete[] slice_counter;
+//>>>>>>> master
 
 	return;
 }
