@@ -623,5 +623,7 @@ void Sausage::estimate_sausage_length(){
 	}
 	delete[] slice_positions;
 
+	delete[] slice_counter;
+
 	return;
 }
