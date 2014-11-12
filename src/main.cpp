@@ -139,8 +139,10 @@ int main(int argc, char *argv[]){
 	}
 
 	// Wrap up and exit
+	allSausages.clear();
+	allPoints.clear();
 	info() << "Exiting successfully" << endl;
-	exit(EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 
 
