@@ -567,9 +567,9 @@ void Sausage::estimate_sausage_length(){
 
 	double **slice_positions = new double*[nSlices];
 	for (int i=0; i<nSlices; i++){
-		slice_positions[i] = new double[3];
+		slice_positions[i] = new double[3]();
 	}
-	double *slice_counter = new double[nSlices];
+	double *slice_counter = new double[nSlices]();
 
 
 	// find what slice we are in (loop over all points)
