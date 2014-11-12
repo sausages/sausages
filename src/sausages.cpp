@@ -879,6 +879,17 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 		if ( sqrt(pow(pos_com_halfsphere[index][0] - points[0]->x,2) + pow(pos_com_halfsphere[index][1] - points[0]->y,2) + pow(pos_com_halfsphere[index][2] - points[0]->z,2)) < R_small)
 		{
 			info() << "Halfsphere algorithm has successfully reached its starting point. \n" << endl;
+			//copy COMs into final array
+			double **pos_com_halfsphere_final = new double*[index];
+			for (int i=0; i<index; i++){
+				pos_com_halfsphere_final[i] = new double[3];
+			}	
+			for (int i=0; i<index; i++){
+				pos_com_halfsphere_final[i][0]  = pos_com_halfsphere[i][0];
+				pos_com_halfsphere_final[i][1]  = pos_com_halfsphere[i][1];
+				pos_com_halfsphere_final[i][2]  = pos_com_halfsphere[i][2];
+			}
+			nPosHalfsphere = index;
 			reached_start = true;
 		}
 		m++;

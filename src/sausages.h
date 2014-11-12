@@ -11,9 +11,11 @@ class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
 
 	double **pos_coms_pobf_slice; ///< xyz positions of COMs found using pobf slice algorithm 
-	double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm 
 	int *slice_counter; ///< Holds # of points in slice
 	int nSlices; ///< # slices
+	double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm, not all of it will be used, fix later
+	double **pos_com_halfsphere_final; ///< xyz positions of COMs using halfsphere algorithm 
+	int nPosHalfsphers; ///< # of COMs used for halfsphere tracking
 	double length; ///< Estimated length of sausage
 
 	Eigen::Matrix3d rotation_matrix; //rotation matrix from initial to new frame
