@@ -49,8 +49,8 @@ int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
 		istream& inStream = infile;
 
 		if (inputFileName.rfind(".diot")==inputFileName.size()-5){
-			return 0;
-	//		return read_diot(inStream,allPointsVector);
+			//return 0;
+			return read_diot(inStream,allPointsVector);
 		} else {
 			return read_xyzclcpcs(inStream,allPointsVector);
 		}
@@ -130,6 +130,85 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 }
 
 
+/**
+ * Reads in data from inputSteam with the .diot format.
+ * Each point is appended to PointsVector, which is passed in by reference.
+ */
+int read_diot(std::istream &input, std::vector<Point> &allPoints){
+	string version;
+	int numVoxels[3];
+	float voxelSize[3];
+	float lowBounds[3];
+	int numSpheres=0;
+	string line,buffer;
+	// Lines can appear in any order, so make sure we've seen them
+	bool bVersion=0,bNumVoxels=0,bVoxelSize=0,bLowBounds=0,bBeginClCpCs=0;
+	// Read in system parameters
+	while ( getline (input, line) ){
+		line = line.substr(0,line.find("#")); // Remove comments (anything after #)
+		line.erase(0,line.find_first_not_of(" \t")); // Remove leading whitespace
+		if (string::npos != line.find_last_not_of(" \t")) line.erase(line.find_last_not_of(" \t")+1); // Remove trailing whitespace
+		if (line=="") continue; // Skip blank lines
+
+		if (line.find("version")!=string::npos){
+			stringstream ss(line);
+			ss>>buffer;
+			ss>>version;
+			bVersion=1;
+		} else if (line.find("numVoxels")!=string::npos){
+			stringstream ss(line);
+			ss>>buffer;
+			ss>>numVoxels[0];
+			ss>>numVoxels[1];
+			ss>>numVoxels[2];
+			bNumVoxels=1;
+		} else if (line.find("voxelSize")!=string::npos){
+			stringstream ss(line);
+			ss>>buffer;
+			ss>>voxelSize[0];
+			ss>>voxelSize[1];
+			ss>>voxelSize[2];
+			bVoxelSize=1;
+		} else if (line.find("lowBounds")!=string::npos){
+			stringstream ss(line);
+			ss>>buffer;
+			ss>>lowBounds[0];
+			ss>>lowBounds[1];
+			ss>>lowBounds[2];
+			bLowBounds=1;
+		} else if (line.find("sphere")!=string::npos){
+			stringstream ss(line);
+			ss>>buffer;
+			ss>>params::colloids[numSpheres][0];
+			ss>>params::colloids[numSpheres][1];
+			ss>>params::colloids[numSpheres][2];
+			numSpheres++;
+		} else if (line.find("beginClCpCs")!=string::npos){
+			bBeginClCpCs=1;
+			break;
+		}
+	}
+	// Did we read everything we needed to?
+	if (!(bVersion && bNumVoxels && bVoxelSize && bLowBounds)) {
+		error()<<"Invalid .diot format"<<endl;
+		exit(EXIT_FAILURE);
+	}
+	if (numSpheres!=2){
+		error()<<"Can't yet handle systems without 2 colloids, sorry"<<endl;
+		exit(EXIT_FAILURE);
+	}
+
+	debug()<<"SFSG"<<endl;
+	exit(0);
+	// Read in points, only saving threshold-passing ones, linking them properly
+	while ( getline (input, line) ){
+		Point p;
+		allPoints.push_back(p);
+	}
+	return 0;
+}
+
+
 int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsVector){
 	// Initialise
 	mz_zip_archive zip_archive;
@@ -166,8 +245,8 @@ int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsV
 	iss.str((char*)p);
 	string filename(file_stat.m_filename);
 	if (filename.rfind(".diot")==filename.size()-5){
-		return 0;
-		//return read_diot(iss,allPointsVector);
+		//return 0;
+		return read_diot(iss,allPointsVector);
 	} else {
 		return read_xyzclcpcs(iss,allPointsVector);
 	}
