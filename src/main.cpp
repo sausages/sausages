@@ -18,31 +18,22 @@ int main(int argc, char *argv[]){
 
 	// Check #args
 	if (argc!=2 && argc!=3){
-		cerr<<"Usage: "<<argv[0]<<" inputFile paramFile"<<endl;
+		cerr<<"Usage: "<<argv[0]<<" inputFile [paramFile]"<<endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Set various parameters and variables
-	set_params(argv[2]);
+	if (argc>2){
+		set_params(argv[2]);
+	} else {
+		set_params(NULL);
+	}
 
-	// Read points from data file
+	// Read input data file
 	vector<Point> allPoints; ///< A vector of all points in simulation
 	info() << "Reading file " << argv[1] << endl;
-	read_file(argv[1],allPoints);
-	info() << "  found " << allPoints.size() << " points." << endl;
-
-	// Put all points with cl<threshold in a sausage
-	info() << "Thresholding, sausages have cl<" << params::threshold << endl;
-	int num_below_threshold = threshold(allPoints);
-	info() << "  " << num_below_threshold << " out of "
-		<< allPoints.size() << " points were below the theshold." << endl;
-
-	// Link the points to their neighbours
-	info() << "Linking pixels..." << endl;
-	neighLink_xyzclcpcs(allPoints);
-
-	// Check the neighbours
-	//if (params::verbosity >= DEBUG) printAllNeighs(allPoints);
+	//int num_below_threshold = read_xyzclcpcs(argv[1],allPoints);
+	int num_below_threshold = read_input(argv[1],allPoints);
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;

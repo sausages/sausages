@@ -6,9 +6,9 @@
 #include <vector>
 #include "point.h"
 
-void read_file(std::string inputFileName, std::vector<Point> &allPointsVector);
-void read_xyzclcpcs(std::istream& input, std::vector<Point> &allPointsVector);
-void read_zipped_xyzclcpcs(std::string inputArchiveFileName, std::vector<Point> &allPointsVector);
+int read_input(std::string inputFileName, std::vector<Point> &allPointsVector);
+int read_xyzclcpcs(std::istream& input, std::vector<Point> &allPointsVector);
+int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsVector);
 
 class NullBuffer : public std::streambuf
 {
