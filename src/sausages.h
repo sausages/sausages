@@ -15,7 +15,7 @@ class Sausage {
 	int nSlices; ///< # slices
 	double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm, not all of it will be used, fix later
 	double **pos_com_halfsphere_final; ///< xyz positions of COMs using halfsphere algorithm 
-	int nPosHalfsphers; ///< # of COMs used for halfsphere tracking
+	int nPosHalfspheres; ///< # of COMs used for halfsphere tracking
 	double length; ///< Estimated length of sausage
 
 	Eigen::Matrix3d rotation_matrix; //rotation matrix from initial to new frame

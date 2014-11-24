@@ -572,6 +572,7 @@ void Sausage::estimate_sausage_length_using_pobf(){
 	nSlices = points.size()/params::points_per_slice;
 	info() << "Sausage was divided in " << nSlices << " slices." << endl;
 
+        double **slice_positions = new double*[nSlices];
 	double **pos_coms_pobf_slice = new double*[nSlices];
 	for (int i=0; i<nSlices; i++){
 //<<<<<<< HEAD
@@ -884,8 +885,8 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 			exit(EXIT_FAILURE);
 		}
 		}
-		info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
-		info() << "direction " << dir_hat[0] << " " << dir_hat[1] << " " << dir_hat[2] << endl;
+//		info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
+//		info() << "direction " << dir_hat[0] << " " << dir_hat[1] << " " << dir_hat[2] << endl;
 
 		// check whether we have reached our starting point
 		if ( sqrt(pow(pos_com_halfsphere[index][0] - points[0]->x,2) + pow(pos_com_halfsphere[index][1] - points[0]->y,2) + pow(pos_com_halfsphere[index][2] - points[0]->z,2)) < R_small)
@@ -901,7 +902,7 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 				pos_com_halfsphere_final[i][1]  = pos_com_halfsphere[i][1];
 				pos_com_halfsphere_final[i][2]  = pos_com_halfsphere[i][2];
 			}
-			nPosHalfsphere = index;
+			nPosHalfspheres = index;
 			reached_start = true;
 		}
 		m++;
@@ -910,11 +911,12 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 			exit(EXIT_FAILURE);
 		}
 
-	}//m loop
-	/*	for (m=0;m < nSpheres; m++){
-			info() << "pos_com_halfsphere " << pos_com_halfsphere[m][0] << " " << pos_com_halfsphere[m][1] << " " << pos_com_halfsphere[m][2] << endl; 
-		}*/
+	}//end of while loop
 
+	for (int i=0; i< index; i++){
+		info() << "pos_com_halfsphere_final " << pos_com_halfsphere_final[i][0] << " " << pos_com_halfsphere_final[i][1] << " " << pos_com_halfsphere_final[i][2] << endl;
+	}
+		
 		// delete pos_com_halfsphere ?
 
 		return;
