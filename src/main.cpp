@@ -113,7 +113,8 @@ int main(int argc, char *argv[]){
 			size[i] = allSausages[relevant_sausages[i]].points.size();
 			allSausages[relevant_sausages[i]].find_com();
 			allSausages[relevant_sausages[i]].find_pobf();
-			allSausages[relevant_sausages[i]].estimate_sausage_length_using_pobf();
+			//allSausages[relevant_sausages[i]].estimate_sausage_length_using_pobf();
+			allSausages[relevant_sausages[i]].estimate_sausage_length_using_halfsphere();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
@@ -147,8 +148,13 @@ int main(int argc, char *argv[]){
 	}
 
 	brief() << "This is a test if brief works" << endl;
-
-	// Wrap up and exit
+    
+    // Wrap up and exit
+/*    for(int i = 0; i < nPosHalfspheres; ++i) {
+        delete [] pos_com_halfsphere_final[i];
+        }
+    delete [] pos_com_halfsphere_final;*/
+	
 	allSausages.clear();
 	allPoints.clear();
 	info() << "Exiting successfully" << endl;

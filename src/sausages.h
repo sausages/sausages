@@ -13,7 +13,7 @@ class Sausage {
 	double **pos_coms_pobf_slice; ///< xyz positions of COMs found using pobf slice algorithm 
 	int *slice_counter; ///< Holds # of points in slice
 	int nSlices; ///< # slices
-	double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm, not all of it will be used, fix later
+	//double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm, not all of it will be used, fix later
 	double **pos_com_halfsphere_final; ///< xyz positions of COMs using halfsphere algorithm 
 	int nPosHalfspheres; ///< # of COMs used for halfsphere tracking
 	double length; ///< Estimated length of sausage

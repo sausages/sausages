@@ -646,20 +646,20 @@ void Sausage::estimate_sausage_length_using_pobf(){
 	return;
 }
 
-void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_com_halfsphere){
+void Sausage::calculate_sausage_length_halfsphere_coms(double **pos_com_halfsphere_final){
 
-	// loop over all COM of slices and calculate length
-/*	length = 0;
-	for(int i = 0; i != nSlices-1; i++) {
-		length += sqrt( pow(pos_com_halfsphere[i][0]-pos_com_halfsphere[i+1][0],2)+
-				pow(pos_com_halfsphere[i][1]-pos_com_halfsphere[i+1][1],2)+
-				pow(pos_com_halfsphere[i][2]-pos_com_halfsphere[i+1][2],2));
+	// loop over all COM of halfspheres and calculate length
+	length = 0;
+	for(int i = 0; i != nPosHalfspheres-1; i++) { 
+		length += sqrt( pow(pos_com_halfsphere_final[i][0]-pos_com_halfsphere_final[i+1][0],2)+
+				pow(pos_com_halfsphere_final[i][1]-pos_com_halfsphere_final[i+1][1],2)+
+				pow(pos_com_halfsphere_final[i][2]-pos_com_halfsphere_final[i+1][2],2));
 	}
-	length += sqrt( pow(pos_com_halfsphere[nSlices-1][0]-pos_com_halfsphere[0][0],2)+
-			pow(pos_com_halfsphere[nSlices-1][1]-pos_com_halfsphere[0][1],2)+
-			pow(pos_com_halfsphere[nSlices-1][2]-pos_com_halfsphere[0][2],2));
+	length += sqrt( pow(pos_com_halfsphere_final[nPosHalfspheres-1][0]-pos_com_halfsphere_final[0][0],2)+
+			pow(pos_com_halfsphere_final[nPosHalfspheres-1][1]-pos_com_halfsphere_final[0][1],2)+
+			pow(pos_com_halfsphere_final[nPosHalfspheres-1][2]-pos_com_halfsphere_final[0][2],2));
 
-	info() << "The estimated length of the sausage using halfspheres is " << length << endl;*/
+	info() << "The estimated length of the sausage using halfspheres is " << length << endl;
 	return;
 }
 
@@ -708,7 +708,7 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 	double * current_pos = new double[3];
 	
 	// pick arbitrary starting point and find coms in sphere R_small
-	double problem_dist;  
+/*	double problem_dist;  
 	double pointx = -10.9167;
 	double pointy = 11.213;
 	double pointz = 0.185185;
@@ -717,7 +717,7 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 		if (problem_dist < 4.0){
 			info() << "Problem region " << points[i]->x << " " << points[i]->y << " " << points[i]->z << endl;
 		}
-	}
+	}*/
 
 	// print all points near a problem region
 
@@ -888,38 +888,56 @@ void Sausage::estimate_sausage_length_using_halfsphere(){
 //		info() << "index,  pos_com_halfsphere " << index << " " << pos_com_halfsphere[index][0] << " " << pos_com_halfsphere[index][1] << " " << pos_com_halfsphere[index][2] << endl;
 //		info() << "direction " << dir_hat[0] << " " << dir_hat[1] << " " << dir_hat[2] << endl;
 
+        // error exit if we should have already reached the starting point by now
+        m++;
+		if ( m > nSpheres - 1) {
+			cerr << "Halfsphere algorithm never reached its starting point. \n" << endl;
+			exit(EXIT_FAILURE);
+		}
 		// check whether we have reached our starting point
 		if ( sqrt(pow(pos_com_halfsphere[index][0] - points[0]->x,2) + pow(pos_com_halfsphere[index][1] - points[0]->y,2) + pow(pos_com_halfsphere[index][2] - points[0]->z,2)) < R_small)
 		{
 			info() << "Halfsphere algorithm has successfully reached its starting point. \n" << endl;
 			//copy COMs into final array
-			double **pos_com_halfsphere_final = new double*[index];
-			for (int i=0; i<index; i++){
-				pos_com_halfsphere_final[i] = new double[3];
+            nPosHalfspheres = index+1;
+			pos_com_halfsphere_final = new double*[nPosHalfspheres];
+			for (int i=0; i<nPosHalfspheres; i++){
+				pos_com_halfsphere_final[i] = new double[3]();
 			}	
-			for (int i=0; i<index; i++){
+			for (int i=0; i<nPosHalfspheres; i++){
 				pos_com_halfsphere_final[i][0]  = pos_com_halfsphere[i][0];
 				pos_com_halfsphere_final[i][1]  = pos_com_halfsphere[i][1];
 				pos_com_halfsphere_final[i][2]  = pos_com_halfsphere[i][2];
 			}
-			nPosHalfspheres = index;
 			reached_start = true;
+            verbose() << "nPosHalfspheres " << nPosHalfspheres << endl;
 		}
-		m++;
-		if ( m > nSpheres - 1) {
-			cerr << "Halfsphere algorithm never reached its starting point. \n" << endl;
-			exit(EXIT_FAILURE);
-		}
+		
 
 	}//end of while loop
+	
+    double gap_dist_sq;
 
-	for (int i=0; i< index; i++){
-		info() << "pos_com_halfsphere_final " << pos_com_halfsphere_final[i][0] << " " << pos_com_halfsphere_final[i][1] << " " << pos_com_halfsphere_final[i][2] << endl;
-	}
-		
-		// delete pos_com_halfsphere ?
+	for (int i=0; i<nPosHalfspheres; i++){
+        if (i != 0 ){
+            gap_dist_sq = pow(pos_com_halfsphere_final[i][0]-pos_com_halfsphere_final[i-1][0],2) \
+                + pow(pos_com_halfsphere_final[i][1]-pos_com_halfsphere_final[i-1][1],2) \
+                + pow(pos_com_halfsphere_final[i][2]-pos_com_halfsphere_final[i-1][2],2);
+            if (gap_dist_sq > 4.0){
+                warning() << "There was a large gap in the sausage with index " << i << " and gap distance " << sqrt(gap_dist_sq) << endl;
+            }
+        }
+    }
 
-		return;
+	for (int k=0; k<nPosHalfspheres; k++){
+		info() << "pos_com_halfsphere_final " << pos_com_halfsphere_final[k][0] << " " << pos_com_halfsphere_final[k][1] << " " << pos_com_halfsphere_final[k][2] << endl;
+    }
+
+
+    // calculate length
+	//calculate_sausage_length_halfsphere_coms(pos_com_halfsphere_final);
+    
+    return;
 }
 
 
