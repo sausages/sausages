@@ -13,7 +13,6 @@ class Sausage {
 	double **pos_coms_pobf_slice; ///< xyz positions of COMs found using pobf slice algorithm 
 	int *slice_counter; ///< Holds # of points in slice
 	int nSlices; ///< # slices
-	//double **pos_com_halfsphere; ///< xyz positions of COMs using halfsphere algorithm, not all of it will be used, fix later
 	double **pos_com_halfsphere_final; ///< xyz positions of COMs using halfsphere algorithm 
 	int nPosHalfspheres; ///< # of COMs used for halfsphere tracking
 	double length; ///< Estimated length of sausage
@@ -24,7 +23,8 @@ class Sausage {
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
 	void calculate_sausage_length_pobf_coms(double** slice_positions); ///<Calculate the length using COMs of pobf slices 
-	void calculate_sausage_length_halfsphere_coms(double** slice_positions); ///<Calculate the length using COMs of halfspheres
+	//void calculate_sausage_length_halfsphere_coms(double** slice_positions); ///<Calculate the length using COMs of halfspheres
+	void calculate_sausage_length_halfsphere_coms(); ///<Calculate the length using COMs of halfspheres
 	void calculate_com_halfsphere(double *centre_pos, double radius, double *com_x, double *com_y, double *com_z); ///< Finds the centre of mass of a sphere around a given point x,y,z with certain radius
 	
 	public:
