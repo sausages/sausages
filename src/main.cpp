@@ -79,11 +79,13 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
+    // Find all endpoints. Endpoints are unphysical. They only arise due to a lack of input data.
 	info() << "Finding endpoints..."<<endl;
 	for (size_t i=0;i<relevant_sausages.size();i++){
 		allSausages[relevant_sausages[i]].find_endpoints();
 	}
 
+    // Close small gaps by joing the appropriate endpoints.
 	info() << "Joining small gaps..."<<endl;
 	join_endpoints(allSausages,relevant_sausages);
 	debug() << "Sausage sizes:" << endl;
@@ -117,6 +119,7 @@ int main(int argc, char *argv[]){
 			allSausages[relevant_sausages[i]].estimate_sausage_length_using_halfsphere();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
+        // Find the ratio in size for the two sausages. 
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
@@ -130,7 +133,7 @@ int main(int argc, char *argv[]){
 			brief() << "Structure is undefined." << endl;
 			brief() << "0" << endl;
 			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
-			Maybe change input parameters." << endl;
+			Inspect visually." << endl;
 			exit(EXIT_FAILURE);
 			}
 	}
@@ -147,8 +150,6 @@ int main(int argc, char *argv[]){
 		allSausages[relevant_sausages[0]].flood_fill_classify();
 	}
 
-	brief() << "This is a test if brief works" << endl;
-    
     // Wrap up and exit
 /*    for(int i = 0; i < nPosHalfspheres; ++i) {
         delete [] pos_com_halfsphere_final[i];

@@ -24,7 +24,7 @@ namespace params{
 	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
 	double epsilon=1.0e-10; // Some small number for comparison to zero
 	double max_sausage_gap_size=15; // Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
-	double min_sausage_gap_next_neigh_distance=30; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+	double min_sausage_gap_next_neigh_distance=20; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
 }
 
 void invalid_colloid_info(void){
