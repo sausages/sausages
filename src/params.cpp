@@ -5,6 +5,7 @@
 #include <cstring>
 #include "cJSON/cJSON.h"
 #include "io.h"
+#include "main.h"
 #include "params.h"
 
 using namespace params;
@@ -17,7 +18,7 @@ namespace params{
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	double pixel_size = 0.5; // Distance between nearest-neighbour points
 	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
-	double colloids[2][3]; // xyz positions of the two colloids
+	bool colloidsInParamFile = false; // Colloids shouldn't be both in param and input file
 	double ratio_two_rings = 0.1; // Threshold ratio for which two relevant sausages are identified as two_rings
 	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
 	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
@@ -76,29 +77,30 @@ void set_params(char *filename){
 			std::cout<<std::endl;
 	}
 
-	// Colloids
+	// Colloids, we can only deal with two in a param file (this is deprecated, pre-DIOT)
 	if (!cJSON_GetObjectItem(root,"colloids")){
-		error()<<"No colloid information found in param file"<<std::endl;
-		exit(EXIT_FAILURE);
-	}
+		colloidsInParamFile=false;
+	} else {
+		colloidsInParamFile=true;
+		cJSON *first = cJSON_GetObjectItem(root,"colloids")->child;
+		if ( !first || !first->child || !first->child->next || !first->child->next->next )
+			invalid_colloid_info();
+		cJSON *second = first->next;
+		if ( !second || !second->child || !second->child->next || !second->child->next->next )
+			invalid_colloid_info();
 
-	cJSON *first = cJSON_GetObjectItem(root,"colloids")->child;
-	if ( !first || !first->child || !first->child->next || !first->child->next->next )
-		invalid_colloid_info();
-	cJSON *second = first->next;
-	if ( !second || !second->child || !second->child->next || !second->child->next->next )
-		invalid_colloid_info();
+		for (int i=0; i<2; i++){
+			vector3d newColloid;
+			newColloid.x=first->child->valuedouble;
+			newColloid.y=first->child->next->valuedouble;
+			newColloid.z=first->child->next->next->valuedouble;
+			model::colloidPos.push_back(newColloid);
+		}
 
-	colloids[0][0]=first->child->valuedouble;
-	colloids[0][1]=first->child->next->valuedouble;
-	colloids[0][2]=first->child->next->next->valuedouble;
-	colloids[1][0]=second->child->valuedouble;
-	colloids[1][1]=second->child->next->valuedouble;
-	colloids[1][2]=second->child->next->next->valuedouble;
-
-	debug()<<"Colloid positions:"<<std::endl;
-	for (int i=0; i<2; i++){
-		debug()<<colloids[i][0]<<","<<colloids[i][1]<<","<<colloids[i][2]<<std::endl;
+		debug()<<"Colloid positions:"<<std::endl;
+		for (int i=0; i<2; i++){
+			debug()<<model::colloidPos[i]<<std::endl;
+		}
 	}
 
 
@@ -106,8 +108,8 @@ void set_params(char *filename){
 	/* Doubles */
 	// threshold
 	if (cJSON_GetObjectItem(root,"threshold")){
-			threshold= cJSON_GetObjectItem(root,"threshold")->valuedouble;
-			info()<<"threshold"<<threshold<<std::endl;
+			params::threshold= cJSON_GetObjectItem(root,"threshold")->valuedouble;	// Need to specify threshold to avoid conflict
+			info()<<"threshold"<<params::threshold<<std::endl;			// with function in sausages.h, via main.h
 	}
 
 	// silent_ignore_size

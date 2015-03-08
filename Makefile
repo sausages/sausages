@@ -7,7 +7,7 @@ CXXFLAGS = -g -Wall -Wextra
 SRCDIR   = src
 BUILDDIR = build
 
-FILES    = eigen-bits io main params point sausages
+FILES    = eigen-bits io main maths params point sausages
 SRC      = $(patsubst %, $(SRCDIR)/%.cpp, $(FILES))
 HEADERS  = $(patsubst %, $(SRCDIR)/%.h, $(FILES))
 OBJS     = $(patsubst %, $(BUILDDIR)/%.o, $(FILES))

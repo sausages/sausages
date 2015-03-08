@@ -1,13 +1,23 @@
+#include "main.h"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
 #include <vector>
 #include "point.h"
 #include "io.h"
-#include "sausages.h"
+#include "maths.h"
 #include "params.h"
+#include "sausages.h"
 
 using namespace std;
+using namespace model;
+
+// Declare model variables (need to be extern in main.h)
+///@TODO Global variables are bad, make this a class
+std::vector<vector3d> model::colloidPos; ///< Positions of the colloids
+std::vector<double> model::colloidRadii; ///< Radii of the colloids
+std::vector<Point> model::allPoints; ///< All points in simulation
+std::vector<Sausage> model::allSausages; ///< All sausages in simulation
 
 /**
  * Main function
@@ -26,18 +36,19 @@ int main(int argc, char *argv[]){
 	if (argc>2){
 		set_params(argv[2]);
 	} else {
-		set_params(NULL);
+		// Just use defaults
+		//set_params(NULL);
 	}
+	debug() << "Colloids in param file: " << params::colloidsInParamFile << endl;
 
 	// Read input data file
-	vector<Point> allPoints; ///< A vector of all points in simulation
 	info() << "Reading file " << argv[1] << endl;
-	//int num_below_threshold = read_xyzclcpcs(argv[1],allPoints);
 	int num_below_threshold = read_input(argv[1],allPoints);
+	info() << "Read "<<num_below_threshold << " points."<<endl;
+	info() << "Stored "<< allPoints.size() << " points."<<endl;
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
-	vector<Sausage> allSausages; ///< A vector of all sausages in simulation
 	flood_fill_separate(allPoints,allSausages);
 
 	verbose() << "Sausage sizes:" << endl;

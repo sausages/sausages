@@ -5,9 +5,10 @@
 #include <stdexcept>
 #include <limits>
 #include "io.h"
+#include "main.h"
+#include "params.h"
 #include "point.h"
 #include "sausages.h"
-#include "params.h"
 
 using namespace std;
 
@@ -88,33 +89,29 @@ void Sausage::flood_fill_classify(void){
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
 	 */
-	double v[3];
-	double AB[3];
-	double alpha,beta;
 
 	// AB is vector joining colloids
-	AB[0]=params::colloids[0][0]-params::colloids[1][0];
-	AB[1]=params::colloids[0][1]-params::colloids[1][1];
-	AB[2]=params::colloids[0][2]-params::colloids[1][2];
-	double norm_AB=sqrt(inner_product(AB,AB+3,AB,0.0));
-	debug()<<"Vector AB is {"<<AB[0]<<","<<AB[1]<<","<<AB[2]<<"} of length "<<norm_AB<<endl;
+	vector3d AB = model::colloidPos[0] - model::colloidPos[1];
+	double norm_AB = sqrt(dot(AB,AB));
+	debug()<<"Vector AB is "<<AB<<" of length "<<norm_AB<<endl;
 
 	// Plane of best fit is of form alpha*x+beta*y=z
-	alpha=-plane_of_best_fit[0];
-	beta=-plane_of_best_fit[1];
+	double alpha=-plane_of_best_fit[0];
+	double beta=-plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB, we can determine:
-	if (abs(AB[1]+beta*AB[2]) > params::epsilon){
-		v[0]=1; // No need to normalise
-		v[1]=(-alpha-AB[0])/(AB[1]+beta*AB[2]);
+	vector3d v;
+	if (abs(AB.y+beta*AB.z) > params::epsilon){
+		v.x=1; // No need to normalise
+		v.y=(-alpha-AB.x)/(AB.y+beta*AB.z);
 	}else{
-		v[0]=(-AB[1]-beta*AB[2])/(AB[0]+alpha); // = 0, more or less
-		v[1]=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
+		v.x=(-AB.y-beta*AB.z)/(AB.x+alpha); // = 0, more or less
+		v.y=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
 	}
-	v[2]=alpha*v[0]+beta*v[1];
+	v.z=alpha*v.x+beta*v.y;
 
-	double norm_v=sqrt(inner_product(v,v+3,v,0.0));
-	debug()<<"Vector v (perp. AB & || PoBF & unit) is {"<<v[0]<<","<<v[1]<<","<<v[2]<<"} of length "<<norm_v<<endl;
+	double norm_v = sqrt(dot(v,v));
+	debug()<<"Vector v (perp. AB & || PoBF & unit) is "<<v<<" of length "<<norm_v<<endl;
 
 	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
 	// If so, add it to a region dependant on whether it is v-wards or anti-v-wards
@@ -122,30 +119,22 @@ void Sausage::flood_fill_classify(void){
 	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
 		Point* it = *iter;
 		for (int iColl=0; iColl<2; iColl++){
-			double p[3]; // xyz of this point
-			p[0]=it->x; p[1]=it->y; p[2]=it->z;
+			vector3d p; // xyz of this point
+			p.x=it->x; p.y=it->y; p.z=it->z;
 
-			double u[3]; // Vector from point to colloid
-			u[0]=it->x - params::colloids[iColl][0];
-			u[1]=it->y - params::colloids[iColl][1];
-			u[2]=it->z - params::colloids[iColl][2];
-			//debug()<<"Vector u is {"<<u[0]<<","<<u[1]<<","<<u[2]<<"} of length "<<norm_u<<endl;
+			vector3d u = p - model::colloidPos[iColl]; // Vector from point to colloid
 
 			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
-			double first_plane[3], second_plane[3];
-			for (int i=0; i<3; i++){
-				first_plane[i]  = params::colloids[iColl][i] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB[i]/norm_AB);
-				second_plane[i] = params::colloids[iColl][i] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB[i]/norm_AB);
-			}
-			double first_distance  = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(first_plane,first_plane+3,AB,0.0) ) / norm_AB;
-			double second_distance = abs( inner_product(AB, AB+3, p, 0.0) - inner_product(second_plane,second_plane+3,AB,0.0) ) / norm_AB;
-			//debug()<<"distances: "<<first_distance<<","<<second_distance<<endl;
+			vector3d first_plane  = model::colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			vector3d second_plane = model::colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
+			double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
 
 			// Is it between the two planes? If so, it is <= flood_fill_classify_slice_size from each plane
 			if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
 			   second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
-				double projection = inner_product(u,u+3,v,0.0);
+				double projection = dot(u,v);
 				if (projection>0){
 					above[iColl].push_back(it);
 					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
@@ -189,15 +178,15 @@ void Sausage::flood_fill_classify(void){
 		vector<Point*> neighbours;
 		for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
 			Point* it=*iter;
-			double distanceToOtherColl = pow(it->x - params::colloids[otherColl][0],2) +
-							pow(it->y - params::colloids[otherColl][1],2) +
-							pow(it->z - params::colloids[otherColl][2],2) ;
+			double distanceToOtherColl = pow(it->x - model::colloidPos[otherColl].x,2) +
+							pow(it->y - model::colloidPos[otherColl].y,2) +
+							pow(it->z - model::colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
 				if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
-					double neighDistanceToOtherColl = pow(neigh->x - params::colloids[otherColl][0],2) +
-									pow(neigh->y - params::colloids[otherColl][1],2) +
-									pow(neigh->z - params::colloids[otherColl][2],2) ;
+					double neighDistanceToOtherColl = pow(neigh->x - model::colloidPos[otherColl].x,2) +
+									pow(neigh->y - model::colloidPos[otherColl].y,2) +
+									pow(neigh->z - model::colloidPos[otherColl].z,2) ;
 					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(it->neighbours[iNeigh]);
 				}
 			}

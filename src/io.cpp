@@ -16,6 +16,8 @@
 #include "sausages.h"
 #include "io.h"
 #include "params.h"
+#include "main.h"
+#include "maths.h"
 #include "miniz/miniz.c"
 
 using namespace std;
@@ -49,9 +51,16 @@ int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
 		istream& inStream = infile;
 
 		if (inputFileName.rfind(".diot")==inputFileName.size()-5){
-			//return 0;
+			if (params::colloidsInParamFile){
+				cerr << "Cannot have colloid positions in param file when using .diot format" << endl;
+				exit(EXIT_FAILURE);
+			}
 			return read_diot(inStream,allPointsVector);
 		} else {
+			if (!params::colloidsInParamFile){
+				cerr << "Must have colloid positions in param file when not using .diot format" << endl;
+				exit(EXIT_FAILURE);
+			}
 			return read_xyzclcpcs(inStream,allPointsVector);
 		}
 	}
@@ -135,77 +144,186 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
  * Each point is appended to PointsVector, which is passed in by reference.
  */
 int read_diot(std::istream &input, std::vector<Point> &allPoints){
+	if (params::colloidsInParamFile){
+		error()<<"Cannot have colloid info in the param file when using .diot format"<<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	string version;
 	int numVoxels[3];
 	float voxelSize[3];
 	float lowBounds[3];
-	int numSpheres=0;
-	string line,buffer;
+	string line,buffer,scanningMode;
 	// Lines can appear in any order, so make sure we've seen them
 	bool bVersion=0,bNumVoxels=0,bVoxelSize=0,bLowBounds=0,bBeginClCpCs=0;
-	// Read in system parameters
+	// Read in model information
 	while ( getline (input, line) ){
 		line = line.substr(0,line.find("#")); // Remove comments (anything after #)
 		line.erase(0,line.find_first_not_of(" \t")); // Remove leading whitespace
 		if (string::npos != line.find_last_not_of(" \t")) line.erase(line.find_last_not_of(" \t")+1); // Remove trailing whitespace
 		if (line=="") continue; // Skip blank lines
 
+		stringstream ss(line);
+
 		if (line.find("version")!=string::npos){
-			stringstream ss(line);
 			ss>>buffer;
 			ss>>version;
 			bVersion=1;
 		} else if (line.find("numVoxels")!=string::npos){
-			stringstream ss(line);
 			ss>>buffer;
 			ss>>numVoxels[0];
 			ss>>numVoxels[1];
 			ss>>numVoxels[2];
 			bNumVoxels=1;
 		} else if (line.find("voxelSize")!=string::npos){
-			stringstream ss(line);
 			ss>>buffer;
 			ss>>voxelSize[0];
 			ss>>voxelSize[1];
 			ss>>voxelSize[2];
 			bVoxelSize=1;
 		} else if (line.find("lowBounds")!=string::npos){
-			stringstream ss(line);
 			ss>>buffer;
 			ss>>lowBounds[0];
 			ss>>lowBounds[1];
 			ss>>lowBounds[2];
 			bLowBounds=1;
-		} else if (line.find("sphere")!=string::npos){
-			stringstream ss(line);
+		} else if (line.find("colloidPos")!=string::npos){
 			ss>>buffer;
-			ss>>params::colloids[numSpheres][0];
-			ss>>params::colloids[numSpheres][1];
-			ss>>params::colloids[numSpheres][2];
-			numSpheres++;
+			size_t colloidNum;
+			ss>>colloidNum;
+			if (colloidNum!=model::colloidPos.size()+1){
+				error()<<"Colloids must be declared in order, aborting"<<endl;
+				exit(EXIT_FAILURE);
+			}
+			vector3d newColloid;
+			ss>>newColloid.x;
+			ss>>newColloid.y;
+			ss>>newColloid.z;
+			model::colloidPos.push_back(newColloid);
+		} else if (line.find("colloidRad")!=string::npos){
+			ss>>buffer;
+			size_t colloidNum;
+			ss>>colloidNum;
+			if (colloidNum>model::colloidPos.size()){
+				error()<<"Colloids properties must be declared after its position, aborting"<<endl;
+				exit(EXIT_FAILURE);
+			}
+			double colloidRad;
+			ss>>colloidRad;
+			model::colloidRadii.push_back(colloidRad);
 		} else if (line.find("beginClCpCs")!=string::npos){
 			bBeginClCpCs=1;
+			ss>>buffer;
+			ss>>scanningMode;
 			break;
 		}
 	}
 	// Did we read everything we needed to?
-	if (!(bVersion && bNumVoxels && bVoxelSize && bLowBounds)) {
+	if (!(bVersion && bNumVoxels && bVoxelSize && bLowBounds && bBeginClCpCs)) {
 		error()<<"Invalid .diot format"<<endl;
 		exit(EXIT_FAILURE);
 	}
-	if (numSpheres!=2){
-		error()<<"Can't yet handle systems without 2 colloids, sorry"<<endl;
+	if (model::colloidPos.size()!=2){
+		error()<<"Can currently only handle systems with 2 colloids, sorry"<<endl;
 		exit(EXIT_FAILURE);
 	}
 
-	debug()<<"SFSG"<<endl;
-	exit(0);
 	// Read in points, only saving threshold-passing ones, linking them properly
-	while ( getline (input, line) ){
-		Point p;
-		allPoints.push_back(p);
+	int points_read=0; // !=allPoints.size();
+	int ix=0,iy=0,iz=0; // Point coordinate in point-space
+	double cl,cp,cs;
+
+	string zyxInc ("zyxInc");
+	if (scanningMode!=zyxInc){ // Lovely, lovely C++ strings <3
+		error()<<"Currently can only handle zyxInc scanning mode in diot files."<<endl;
+		exit(EXIT_FAILURE);
 	}
-	return 0;
+
+	int iPoint=0;
+	vector<int> pointMap; // Has a sensible structure, each element point to an allPoints element (or -1 if cl<threshold)
+	while ( getline (input, line) ){
+		points_read++;
+		// Assuming BeginClCpCs is in zyxInc
+		iz++;
+		if (iz==numVoxels[2]){
+			iz=0; iy++;
+		}
+		if (iy==numVoxels[1]){
+			iy=0; ix++;
+		}
+
+		stringstream ss(line);
+		ss>>cl;
+		ss>>cp;
+		ss>>cs;
+
+		// Only save points that pass threshold condition
+		if (cl < params::threshold){
+			Point p;
+			p.cl=cl; p.cs=cs; p.cp=cp;
+			p.x = ix*voxelSize[0] + lowBounds[0];
+			p.y = iy*voxelSize[1] + lowBounds[1];
+			p.z = iz*voxelSize[2] + lowBounds[2];
+			p.allPointsIndex = iPoint++;
+			p.isInASausage=true;
+			allPoints.push_back(p);
+			pointMap.push_back(p.allPointsIndex);
+		} else {
+			pointMap.push_back(-1);
+		}
+	}
+
+	/* Links each point in allPoints to its 6 nearest-neighbours, using pointMap.
+	 * pointMap has an index-structure we can use, and each element point to an allPoints element
+	 * x:+right/-left ; y:+up/-down ; z:+forward/-back
+	 * Assumes scanningMode = zyxInc
+	 */
+
+	for (size_t i=0; i<pointMap.size(); i++){
+		if (pointMap[i]<0) continue; // These are points w. cl<threshold
+
+		int iCurr=pointMap[i]; // allPoint index
+		int Nx = numVoxels[0], Ny = numVoxels[1], Nz = numVoxels[2];
+
+		// Pointer to self, pretty sure this is irrelevant, but
+		// I currently need it for the flood-fill (iterators are copies)
+		allPoints[iCurr].self = &(allPoints[iCurr]);
+
+		// If not right-most
+		if (((i/(Nz*Ny))+1)%Nx != 0){
+			if (pointMap[i+Nz*Ny] != -1){ // If right-of-me passed thresholding
+				int iRight = pointMap[i+Nz*Ny];
+				allPoints[iCurr].right  = &(allPoints[iRight]);
+				allPoints[iRight].left = &(allPoints[iCurr]);
+			}
+		}
+		// If not upper-most
+		if (((i/Nz)+1)%Ny != 0){
+			if (pointMap[i+Nz] != -1){ // If above-me passed thresholding
+				int iUp = pointMap[i+Nz];
+				allPoints[iCurr].up   = &(allPoints[iUp]);
+				allPoints[iUp].down = &(allPoints[iCurr]);
+			}
+		}
+		// If not forward-most
+		if ((i+1)%Nz != 0){
+			if (pointMap[i+1] != -1){ // If forward-of-me passed thresholding
+				int iForward = pointMap[i+1];
+				allPoints[iCurr].forward = &(allPoints[iForward]);
+				allPoints[iForward].back   = &(allPoints[iCurr]);
+			}
+		}
+	}
+
+	// Update neighbours array
+	for (size_t i=0; i<allPoints.size(); i++){
+		allPoints[i].neighbours[0]=allPoints[i].left;
+		allPoints[i].neighbours[1]=allPoints[i].right;
+		allPoints[i].neighbours[2]=allPoints[i].up;
+		allPoints[i].neighbours[3]=allPoints[i].down;
+		allPoints[i].neighbours[4]=allPoints[i].forward;
+		allPoints[i].neighbours[5]=allPoints[i].back;
+	}
+	return points_read;
 }
 
 
