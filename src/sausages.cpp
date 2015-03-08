@@ -556,9 +556,9 @@ void Sausage::estimate_sausage_length(){
 
 	double **slice_positions = new double*[nSlices];
 	for (int i=0; i<nSlices; i++){
-		slice_positions[i] = new double[3];
+		slice_positions[i] = new double[3]();
 	}
-	double *slice_counter = new double[nSlices];
+	double *slice_counter = new double[nSlices]();
 
 
 	// find what slice we are in (loop over all points)
@@ -602,15 +602,17 @@ void Sausage::estimate_sausage_length(){
 	// clean up
 	debug() << "deleting rotated_points" << endl;
 	for (size_t i=0; i<points.size(); i++){
-		delete rotatedPoints[i];
+		delete[] rotatedPoints[i];
 	}
-	delete rotatedPoints;
+	delete[] rotatedPoints;
 
 	debug() << "deleting slice_positions" << endl;
 	for (int i=0; i<nSlices; i++){
-		delete slice_positions[i];
+		delete[] slice_positions[i];
 	}
-	delete slice_positions;
+	delete[] slice_positions;
+
+	delete[] slice_counter;
 
 	return;
 }
