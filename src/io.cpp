@@ -44,7 +44,7 @@ void initialiseBrief(void){
 		std::cerr << "Cannot use 'brief' file until after params have been initialised" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	briefFile.open(params::brief_filename);
+	briefFile.open(params::brief_filename.c_str());
 	briefIsInitialised=true;
 	return;
 }
@@ -59,7 +59,7 @@ int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
 		return read_zipped(inputFileName,allPointsVector);
 	} else {
 		debug()<<"Not a zip file"<<endl;
-		ifstream infile (inputFileName);
+		ifstream infile (inputFileName.c_str());
 		if (!infile.is_open()){
 			cerr<<"Error opening file "<<inputFileName<<endl;
 			exit(EXIT_FAILURE);
@@ -392,14 +392,16 @@ int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsV
 	istringstream iss;
 	iss.str((char*)p);
 	string filename(file_stat.m_filename);
+	int points_read;
 	if (filename.rfind(".diot")==filename.size()-5){
-		//return 0;
-		return read_diot(iss,allPointsVector);
+		points_read = read_diot(iss,allPointsVector);
 	} else {
-		return read_xyzclcpcs(iss,allPointsVector);
+		points_read = read_xyzclcpcs(iss,allPointsVector);
 	}
 
 	mz_free(p);
 	mz_zip_reader_end(&zip_archive);
+
+	return points_read;
 
 }

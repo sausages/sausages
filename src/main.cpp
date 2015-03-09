@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
 		set_params(argv[2]);
 	} else {
 		// Just use defaults
-		//set_params(NULL);
+		set_params(NULL);
 	}
 	debug() << "Colloids in param file: " << params::colloidsInParamFile << endl;
 	brief() << "Testing brief" << endl;

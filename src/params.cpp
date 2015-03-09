@@ -35,6 +35,12 @@ void invalid_colloid_info(void){
 
 
 void set_params(char *filename){
+	if (filename == NULL){
+		// Default initialisation
+		brief_filename=std::string("default.brief");
+		return;
+	}
+
 	std::ifstream paramfile (filename);
 	if (!paramfile.is_open()){
 		error()<<"Error opening file " << filename << std::endl;
