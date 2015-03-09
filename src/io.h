@@ -17,6 +17,11 @@ class NullBuffer : public std::streambuf
 		  int overflow(int c) { return c; }
 };
 
+extern bool briefIsInitialised;
+extern std::ofstream &brief(void);
+extern std::ofstream briefFile;
+void initialiseBrief(void);
+
 /** Verious dummy streams, which will output to cout only when verbosityLevel is high enough */
 extern std::ostream &error(void) ;
 extern std::ostream &warning(void) ;

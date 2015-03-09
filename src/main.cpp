@@ -40,6 +40,7 @@ int main(int argc, char *argv[]){
 		//set_params(NULL);
 	}
 	debug() << "Colloids in param file: " << params::colloidsInParamFile << endl;
+	brief() << "Testing brief" << endl;
 
 	// Read input data file
 	info() << "Reading file " << argv[1] << endl;

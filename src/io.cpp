@@ -26,12 +26,28 @@ using namespace std;
 NullBuffer nullBuffer;
 std::ostream nullStream(&nullBuffer);
 
+
 /** Functions returning std::cout only at certain verbosity levels, else nullStream */
 std::ostream &error(void) { if (params::verbosity >= ERROR){ return std::cout; } else{ return nullStream; } }
 std::ostream &warning(void) { if (params::verbosity >= WARNING){ return std::cout; } else{ return nullStream; } }
 std::ostream &info(void) { if (params::verbosity >= INFO){ return std::cout; } else{ return nullStream; } }
 std::ostream &verbose(void) { if (params::verbosity >= VERBOSE){ return std::cout; } else{ return nullStream; } }
 std::ostream &debug(void) { if (params::verbosity >= DEBUG){ return std::cout; } else{ return nullStream; } }
+
+/** Code relating to the 'Brief' file, standardised output info in a different file to cout */
+bool briefIsInitialised = false;
+std::ofstream &brief(void) { if (!briefIsInitialised) { initialiseBrief(); } return briefFile; }
+std::ofstream briefFile;
+
+void initialiseBrief(void){
+	if (params::brief_filename.empty()){
+		std::cerr << "Cannot use 'brief' file until after params have been initialised" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	briefFile.open(params::brief_filename);
+	briefIsInitialised=true;
+	return;
+}
 
 /** Decide, based on filename extension, what file type the input is,
  *  and call the relevant function

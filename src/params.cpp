@@ -13,6 +13,7 @@ using namespace params;
 // Set defaults
 namespace params{
 	verbosityLevel verbosity = INFO;
+	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
@@ -76,6 +77,14 @@ void set_params(char *filename){
 			}
 			std::cout<<std::endl;
 	}
+
+	// Brief filename
+	if (cJSON_GetObjectItem(root,"brief_filename")){
+		brief_filename=std::string(cJSON_GetObjectItem(root,"brief_filename")->valuestring);
+	} else {
+		brief_filename=std::string("default.brief");
+	}
+
 
 	// Colloids, we can only deal with two in a param file (this is deprecated, pre-DIOT)
 	if (!cJSON_GetObjectItem(root,"colloids")){

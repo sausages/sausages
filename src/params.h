@@ -6,6 +6,7 @@ enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
 
 namespace params{
 	extern verbosityLevel verbosity;
+	extern std::string brief_filename; ///< 'brief' file is for standardised output, in a different file to cout
 	extern double threshold; ///< c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	extern double silent_ignore_size; ///< If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	extern double min_sausage_size; ///< A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
