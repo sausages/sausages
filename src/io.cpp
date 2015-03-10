@@ -93,6 +93,17 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 	string line;
 	size_t iPoint=0;
 	while ( getline (input, line) ){
+		/** TODO this is inefficient, should maybe only happen when being careful */
+		int wordcount = 0;
+	        stringstream ss( line );
+		string word;
+		while( ss >> word ) ++wordcount;
+		if (wordcount != 6 && wordcount != 10){
+			warning() << "Seem to be " << wordcount
+				<< " words on line " << iPoint+1
+				<< ", this is unexpected (expect 6 or 10)" <<endl;
+		}
+
 		Point p;
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
