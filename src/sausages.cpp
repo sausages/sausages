@@ -419,8 +419,9 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				// Artificially add points between nearby endpoints
 				Point *curr = sausagei->points[sausagei->endpoints[iEndpoint]];
 				Point *target = sausagej->points[sausagej->endpoints[jEndpoint]];
-				// Draw line along x
-				while (curr->x!=target->x){
+
+				// At each step we move along the dimension which takes us fastest to target.
+				while (curr->x!=target->x || curr->y!=target->y || curr->z!=target->z){
 					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
 						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
 						exit(EXIT_FAILURE);
@@ -431,46 +432,16 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 						sausagei->points.push_back(curr);
 						curr->sausagePointsIndex=sausagei->points.size()-1;
 					}
-					if (curr->x > target->x){
-						curr=curr->left;
+					double dx = abs(curr->x - target->x);
+					double dy = abs(curr->y - target->y);
+					double dz = abs(curr->z - target->z);
+
+					if (dx>dy && dx>dz){
+						curr = (curr->x > target->x) ? curr->left : curr->right;
+					} else if (dy>dz) {
+						curr = (curr->y > target->y) ? curr->down : curr->up;
 					} else {
-						curr=curr->right;
-					}
-				}
-				// Draw line along y
-				while (curr->y!=target->y){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
-						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
-						exit(EXIT_FAILURE);
-					}
-					if (curr->sausageID!=sausagei->sausageID){
-						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
-					}
-					if (curr->y > target->y){
-						curr=curr->down;
-					} else {
-						curr=curr->up;
-					}
-				}
-				// Draw line along z
-				while (curr->z!=target->z){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
-						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
-						exit(EXIT_FAILURE);
-					}
-					if (curr->sausageID!=sausagei->sausageID){
-						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
-					}
-					if (curr->z > target->z){
-						curr=curr->back;
-					} else {
-						curr=curr->forward;
+						curr = (curr->z > target->z) ? curr->back : curr->forward;
 					}
 				}
 
