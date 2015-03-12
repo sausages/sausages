@@ -14,6 +14,8 @@ using namespace params;
 namespace params{
 	verbosityLevel verbosity = INFO;
 	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
+	std::string thresholded_filename = ""; // 'thresholded' file is for output of points below the threshold, in a different file to cout
+	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages, one file per sausage
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
@@ -90,6 +92,19 @@ void set_params(char *filename){
 	} else {
 		brief_filename=std::string("default.brief");
 	}
+	info()<<"brief_filename "<<brief_filename<<std::endl;
+
+	// points_filename
+	if (cJSON_GetObjectItem(root,"thresholded_filename")){
+			thresholded_filename = cJSON_GetObjectItem(root,"thresholded_filename")->valuestring;
+			info()<<"thresholded_filename "<<thresholded_filename<<std::endl;
+	}
+
+	// sausage_filename
+	if (cJSON_GetObjectItem(root,"sausage_filename")){
+			sausage_filename = cJSON_GetObjectItem(root,"sausage_filename")->valuestring;
+			info()<<"sausage_filename "<<sausage_filename<<std::endl;
+	}
 
 
 	// Colloids, we can only deal with two in a param file (this is deprecated, pre-DIOT)
@@ -124,7 +139,7 @@ void set_params(char *filename){
 	// threshold
 	if (cJSON_GetObjectItem(root,"threshold")){
 			params::threshold= cJSON_GetObjectItem(root,"threshold")->valuedouble;	// Need to specify threshold to avoid conflict
-			info()<<"threshold"<<params::threshold<<std::endl;			// with function in sausages.h, via main.h
+			info()<<"threshold "<<params::threshold<<std::endl;			// with function in sausages.h, via main.h
 	}
 
 	// silent_ignore_size

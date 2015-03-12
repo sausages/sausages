@@ -20,13 +20,24 @@ Sausage::Sausage(int ID){
  */
 int threshold(vector<Point> &allPoints){
 	int num_below_threshold=0;
+	bool writePoints = false;
+	std::ofstream thresholdedFile;
+	if (!params::thresholded_filename.empty()){
+		writePoints = true;
+		thresholdedFile.open(params::thresholded_filename);
+	}
 	vector<Point>::iterator it;
 	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
 		if (it->cl < params::threshold){
+			if (writePoints){
+				thresholdedFile << it->x << ' ' << it->y << ' ' << it->z << endl;
+			}
 			it->isInASausage=true;
 			num_below_threshold++;
 		}
 	}
+	if (writePoints) thresholdedFile.close();
+
 	return num_below_threshold;
 }
 
@@ -46,6 +57,12 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
 			Sausage newSausage(newSausageID);
+			bool writePoints = false;
+			std::ofstream sausageFile;
+			if (!params::sausage_filename.empty()){
+				writePoints = true;
+				sausageFile.open(params::sausage_filename+std::to_string(newSausageID));
+			}
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
 				Point *curr = &(allPoints[stack.back()]);
@@ -54,6 +71,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				curr->sausageID=newSausageID;
 				newSausage.points.push_back(curr);
 				curr->sausagePointsIndex=newSausage.points.size()-1;
+				if (writePoints) sausageFile << curr->x << ' ' << curr->y << ' ' << curr->z << endl;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					Point *neigh=curr->neighbours[iNeigh];
 					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
@@ -64,6 +82,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 			}
 			allSausages.push_back(newSausage);
 			debug()<<allSausages[newSausageID].points.size()<<" points in the sausages."<<endl<<flush;
+			if (writePoints) sausageFile.close();
 			newSausageID++;
 		}
 	}

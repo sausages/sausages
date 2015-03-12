@@ -281,6 +281,12 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 
 	int iPoint=0;
 	vector<int> pointMap; // Has a sensible structure, each element point to an allPoints element (or -1 if cl<threshold)
+	bool writePoints = false;
+	std::ofstream thresholdedFile;
+	if (!params::thresholded_filename.empty()){
+		writePoints = true;
+		thresholdedFile.open(params::thresholded_filename);
+	}
 	while ( getline (input, line) ){
 		points_read++;
 		// Assuming BeginClCpCs is in zyxInc
@@ -308,10 +314,16 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 			p.isInASausage=true;
 			allPoints.push_back(p);
 			pointMap.push_back(p.allPointsIndex);
+			if (writePoints){
+				thresholdedFile << p.x << ' ' << p.y << ' ' << p.z << endl;
+			}
+
 		} else {
 			pointMap.push_back(-1);
 		}
 	}
+
+	if (writePoints) thresholdedFile.close();
 
 	/* Links each point in allPoints to its 6 nearest-neighbours, using pointMap.
 	 * pointMap has an index-structure we can use, and each element point to an allPoints element
