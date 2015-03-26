@@ -15,7 +15,10 @@ class Sausage {
 	int nSlices; ///< # slices
 	double length; ///< Estimated length of sausage
 
-	Eigen::Matrix3d rotation_matrix; //rotation matrix from initial to new frame
+
+	bool have_pobf; ///< have we calculated the plane of best fit yet?
+	bool have_rotation_matrix; ///< have we calculated the rotation matrix yet?
+	Eigen::Matrix3d rotation_matrix; ///< rotation matrix from initial to new frame
 
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)

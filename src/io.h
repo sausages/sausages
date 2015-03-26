@@ -18,7 +18,9 @@ class NullBuffer : public std::streambuf
 };
 
 extern bool briefIsInitialised;
-extern std::ofstream &brief(void);
+//extern std::ofstream &brief(void);
+//extern std::ofstream &brief(std::vector<int> versions);
+extern std::ostream &brief(std::vector<int> versions);
 extern std::ofstream briefFile;
 void initialiseBrief(void);
 

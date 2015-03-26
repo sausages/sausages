@@ -39,20 +39,22 @@ int main(int argc, char *argv[]){
 		// Just use defaults
 		set_params(NULL);
 	}
+	brief({1}) << "brief_version	1" << endl;
+	brief({1}) << "input_filename	" << argv[1] << endl;
+
 	debug() << "Colloids in param file: " << params::colloidsInParamFile << endl;
-	brief() << "Testing brief" << endl;
 
 	// Read input data file
 	info() << "Reading file " << argv[1] << endl;
 	int num_below_threshold = read_input(argv[1],allPoints);
-	info() << "Read "<<num_below_threshold << " points."<<endl;
+	info() << num_below_threshold << " points below threshold."<<endl;
 	info() << "Stored "<< allPoints.size() << " points."<<endl;
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
 	flood_fill_separate(allPoints,allSausages);
 
-	verbose() << "Sausage sizes:" << endl;
+	verbose() << "Sausage sizes:" << endl << flush;
 	for (size_t i=0; i<allSausages.size(); i++){
 		verbose() << "  " << i << " " << allSausages[i].points.size() << endl;
 	}
@@ -76,32 +78,39 @@ int main(int argc, char *argv[]){
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
+	// Find endpoints of all relevant sausages
 	info() << "Finding endpoints..."<<endl;
 	for (size_t i=0;i<relevant_sausages.size();i++){
 		allSausages[relevant_sausages[i]].find_endpoints();
 	}
 
+	// Join the endpoints
 	info() << "Joining small gaps..."<<endl;
 	join_endpoints(allSausages,relevant_sausages);
-	debug() << "Sausage sizes:" << endl;
+
+	// Plenty of output
+	brief({1}) << "num_sausages	" << allSausages.size() << endl;
+
+	debug() << "Post-joining sausage sizes:" << endl;
 	for (size_t i=0; i<allSausages.size(); i++){
 		debug() << "  " << i << " " << allSausages[i].points.size() << endl;
+		brief({1}) << "saus_" << i << "_size	" << allSausages[i].points.size() << endl;
 	}
-	debug() << "Relevant sausages: " << endl;
+	debug() << "Relevant sausages (prints index of sausages): " << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
 		debug() << "  " << i << " " << relevant_sausages[i] << endl;
 	}
 
 	// Exit program is number of sausages found is not equal 2 or 1.
 	if ( relevant_sausages.size() > 2) {
-		cerr<<"Number of sausage sizes detected is larger than 2! Unphysical. Check your input parameters." << endl;
+		cerr<<"More than two sausages found after endpoint-joining! This is unphysical, please check your input parameters." << endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Analysis for two relevant sausages found 
 	else if ( relevant_sausages.size() == 2) {
-	double size [2];
-	double ratio;
+		double size [2];
+		double ratio;
 		info() << "Two relevant sausages found." << endl;
 		debug()<<"#points: "<<allSausages[relevant_sausages[0]].points.size()<<" and "<<allSausages[relevant_sausages[1]].points.size()<<endl;
 		for (size_t i=0; i<relevant_sausages.size(); i++){

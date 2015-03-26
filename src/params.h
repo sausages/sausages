@@ -7,6 +7,7 @@ enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
 namespace params{
 	extern verbosityLevel verbosity;
 	extern std::string brief_filename; ///< 'brief' file is for standardised output, in a different file to cout
+	extern int brief_version; ///< each brief version is standardised
 	extern std::string thresholded_filename; ///< 'thresholded' file is for output of points below the threshold, in a different file to cout
 	extern std::string sausage_filename; ///< 'sausage' file is for output of points in sausages, one file per sausage
 	extern double threshold; ///< c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)

@@ -14,11 +14,14 @@ using namespace std;
 
 Sausage::Sausage(int ID){
 	sausageID=ID;
+	have_rotation_matrix = false;
+	have_pobf = false;
 }
 
 /** Points are in a sausge if their cl value is < threshold
  */
 int threshold(vector<Point> &allPoints){
+	debug() << "begin threshold" << endl << flush;
 	int num_below_threshold=0;
 	bool writePoints = false;
 	std::ofstream thresholdedFile;
@@ -49,13 +52,14 @@ int threshold(vector<Point> &allPoints){
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
 void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
+	debug() << "begin flood_fill_separate" << endl << flush;
 
 	int newSausageID=0;
 	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
 		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
-			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
+			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl << flush;
 			Sausage newSausage(newSausageID);
 			bool writePoints = false;
 			std::ofstream sausageFile;
@@ -75,7 +79,8 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					Point *neigh=curr->neighbours[iNeigh];
 					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
-					    find(stack.begin(),stack.end(),neigh->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
+					    //find(stack.begin(),stack.end(),neigh->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
+					    !elementOf(stack,neigh->allPointsIndex)){ // Don't add to the stack if it's already there
 						stack.push_back(neigh->allPointsIndex) ;
 					}
 				}
@@ -109,10 +114,16 @@ void Sausage::flood_fill_classify(void){
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
 	 */
 
+	debug() << "begin flood_fill_classify" << endl << flush;
+
 	// AB is vector joining colloids
 	vector3d AB = model::colloidPos[0] - model::colloidPos[1];
 	double norm_AB = sqrt(dot(AB,AB));
 	debug()<<"Vector AB is "<<AB<<" of length "<<norm_AB<<endl;
+	if (norm_AB < params::epsilon){
+		cerr << "Vector between colloids is very small, check inputs! Aborting." << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	// Plane of best fit is of form alpha*x+beta*y=z
 	double alpha=-plane_of_best_fit[0];
@@ -170,6 +181,11 @@ void Sausage::flood_fill_classify(void){
 	verbose()<<below[0].size()<<" pixels in region below first colloid"<<endl;
 	verbose()<<below[1].size()<<" pixels in region below second colloid"<<endl;
 
+	if (below[0].size() * below[1].size() * above[0].size() * above[1].size() == 0){
+		cerr << "One of the regions is empty, this is bad, exiting." << endl << flush;
+		exit(EXIT_FAILURE);
+	}
+
 	/* Debug: print out all points in sausage, and points in regions */
 	/*
 	cout << "XXXX" << endl;
@@ -189,7 +205,7 @@ void Sausage::flood_fill_classify(void){
 	int adjacency[4][4] = {}; // initalise to all zero
 	// For each region
 	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
-		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
+		debug()<<"in region: colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
 		vector<Point*> region = aboveOrBelow ? above[iColl] : below[iColl];
 		int otherColl=(iColl+1)%2;
 
@@ -202,7 +218,8 @@ void Sausage::flood_fill_classify(void){
 							pow(it->z - model::colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
-				if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
+				//if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
+				if (neigh->isInASausage && !elementOf(region,neigh)){
 					double neighDistanceToOtherColl = pow(neigh->x - model::colloidPos[otherColl].x,2) +
 									pow(neigh->y - model::colloidPos[otherColl].y,2) +
 									pow(neigh->z - model::colloidPos[otherColl].z,2) ;
@@ -235,7 +252,8 @@ void Sausage::flood_fill_classify(void){
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				if (!curr->neighbours[iNeigh]) continue;
 				Point* thisNeigh=curr->neighbours[iNeigh];
-				if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
+				//if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
+				if (elementOf(visited,thisNeigh)) continue;
 				visited.push_back(thisNeigh);
 				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
 				if (thisNeigh->isInASausage) {
@@ -244,14 +262,16 @@ void Sausage::flood_fill_classify(void){
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
 						vector<Point*> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
-						if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
+						//if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
+						if (elementOf(inner_region,thisNeigh)){
 							in_a_region=true;
 							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
 							//debug()<<"I'm in a region"<<endl;
 							//debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
 						}
 					}}
-					if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
+					//if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
+					if (!in_a_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
 				}
 			}
 		}
@@ -294,6 +314,9 @@ void Sausage::flood_fill_classify(void){
 }
 
 void Sausage::find_endpoints(void){
+
+	debug() << "begin find_endpoints" << endl << flush;
+
 	// There is no 'infinity' for integers, like there is for doubles.
 	// However, there is a max(), which works out to be something like 2,147,000,000
 	// This is (hopefully) much larger than any actual distance across the network

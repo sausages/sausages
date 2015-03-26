@@ -34,10 +34,22 @@ std::ostream &info(void) { if (params::verbosity >= INFO){ return std::cout; } e
 std::ostream &verbose(void) { if (params::verbosity >= VERBOSE){ return std::cout; } else{ return nullStream; } }
 std::ostream &debug(void) { if (params::verbosity >= DEBUG){ return std::cout; } else{ return nullStream; } }
 
-/** Code relating to the 'Brief' file, standardised output info in a different file to cout */
+/** Code relating to the 'Brief' file, standardised output info in a different file to cout
+ * Usage:
+ * brief({1,2,4}) << "This is printed in versions 1,2,4 only" << endl;
+ */
+
 bool briefIsInitialised = false;
-std::ofstream &brief(void) { if (!briefIsInitialised) { initialiseBrief(); } return briefFile; }
 std::ofstream briefFile;
+
+std::ostream &brief(std::vector<int> versions) {
+	if (!briefIsInitialised) initialiseBrief();
+	if (elementOf(versions, params::brief_version)){
+		return briefFile;
+	} else {
+		return nullStream;
+	}
+}
 
 void initialiseBrief(void){
 	if (params::brief_filename.empty()){
@@ -173,9 +185,12 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 	}
 
 	info()<<"Read in "<<allPoints.size()<<" points."<<endl;
+	brief({1}) << "total_points	" << allPoints.size() << endl;
+	brief({1}) << "threshold	" << params::threshold << endl;
 	info()<<"Thresholding, cl<"<<params::threshold<<" belong to a sausage"<<endl;
 	int numInASausage = threshold(allPoints);
 	info()<<numInASausage<<" points left after thresholding."<<endl;
+	brief({1}) << "threshold_pts	" << numInASausage << endl;
 	return numInASausage;
 }
 

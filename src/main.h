@@ -15,6 +15,13 @@ namespace model{
 
 }
 
+// There doesn't seem to be an existing neat way of pythonic "element in vec"
+// So here is something that will allow "elementOf(vec,element)"
+template <class T>
+bool elementOf(std::vector<T> vec , T element){
+	return (std::find(vec.begin(), vec.end(), element) != vec.end());
+}
+
 
 
 #endif // MAIN_H

@@ -19,7 +19,12 @@ void Sausage::find_pobf(){
 	 * \f]
 	 */
 
+
 	using namespace Eigen;
+
+	if (have_pobf) return;
+	have_pobf = true;
+
 	MatrixXd X(points.size(), 2);  ///< {x,y}-values of sausage's points, relative to sausage's CoM
 	VectorXd z(points.size());      ///< z-values of sausage's points, relative to sausage's CoM
 	Vector2d beta;                 ///< plane parameters
@@ -66,6 +71,11 @@ void Sausage::find_pobf(){
  *
  */
 void Sausage::calculate_rotation_matrix(void){
+
+	if (have_rotation_matrix) return;
+	have_rotation_matrix = true;
+
+	find_pobf();
 
 	Eigen::Vector3d a(plane_of_best_fit[0],plane_of_best_fit[1],plane_of_best_fit[2]);
 	Eigen::Vector3d z(0,0,1);

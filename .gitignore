@@ -3,5 +3,6 @@ sausages
 *.swp
 input_files
 docs
+results
 .DS_Store
 *dSYM

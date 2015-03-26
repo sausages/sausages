@@ -14,6 +14,7 @@ using namespace params;
 namespace params{
 	verbosityLevel verbosity = INFO;
 	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
+	int brief_version = 1 ; // each brief version is standardised
 	std::string thresholded_filename = ""; // 'thresholded' file is for output of points below the threshold, in a different file to cout
 	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages, one file per sausage
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
@@ -120,10 +121,11 @@ void set_params(char *filename){
 			invalid_colloid_info();
 
 		for (int i=0; i<2; i++){
+			cJSON *currColloid = (i==0) ? first : second ;
 			vector3d newColloid;
-			newColloid.x=first->child->valuedouble;
-			newColloid.y=first->child->next->valuedouble;
-			newColloid.z=first->child->next->next->valuedouble;
+			newColloid.x=currColloid->child->valuedouble;
+			newColloid.y=currColloid->child->next->valuedouble;
+			newColloid.z=currColloid->child->next->next->valuedouble;
 			model::colloidPos.push_back(newColloid);
 		}
 
@@ -174,6 +176,12 @@ void set_params(char *filename){
 
 
 	/* Integers */
+	// points_per_slice
+	if (cJSON_GetObjectItem(root,"brief_version")){
+			brief_version = cJSON_GetObjectItem(root,"brief_version")->valuedouble;
+			info()<<"brief_version "<<brief_version<<std::endl;
+	}
+
 	// points_per_slice
 	if (cJSON_GetObjectItem(root,"points_per_slice")){
 			points_per_slice = cJSON_GetObjectItem(root,"points_per_slice")->valuedouble;

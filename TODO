@@ -1,3 +1,5 @@
 Create System class, with what is currently the model:: namespace, and get rid of globals.
 
 Fix 'bubbles' in sausages (i.e. small sausages inside other sausages), explicitly remove small-sausage points, set isInARelevantSausage to false.
+
+Move all brief() writes to main, so it's clearer and easier to keep consistent

@@ -1,8 +1,9 @@
 # no-missing-field-initializers means we allow struct s={} to initialise
 # members of s to zero/null
 # Make sure not to include any -O, even -O0, as even this can hide loop counter
-CXXFLAGS = -g -Wall
-#CXXFLAGS = -Ofast
+CFLAGS =  -g -Wall
+#CFLAGS = -Ofast
+CXXFLAGS = -std=c++11 $(CFLAGS)
 
 SRCDIR   = src
 BUILDDIR = build
@@ -20,7 +21,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(SRCDIR)/%.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(BUILDDIR)/cJSON.o : $(SRCDIR)/cJSON/cJSON.c
-	$(CC) $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 
 .PHONY:
