@@ -1,0 +1,4 @@
+Basic test to check that one of our original systems works as expected.
+
+Uses xyzclcpcs file-format (original format)
+cl cutoff is 0.12, larger than the default

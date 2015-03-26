@@ -1,0 +1,10 @@
+This end-to-end test implementation is kind of slow, and not as good as real unit-tests etc, but it's a start and I've already caught one bug using it :)
+
+Please add more tests! Check out test1 for an example, feel free to copy it as a template.
+Each test should have:
+	run.sh which runs the test, return 0 if everything went ok, 1 otherwise.
+	cleanup.sh which resets the directory to a state consistent with the git repo
+	any input files, in gzip if possible (you can unzip in run.sh)
+	expected output files. brief, thresh and saus.dat# are good choices (stdout is a poor choice since it changes so often)
+
+Please don't commit anything to master which breaks tests, but feel free to add new tests that break until we add new functionality in topic branches.
