@@ -123,11 +123,17 @@ int main(int argc, char *argv[]){
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
+			brief({1}) << "system_class	3" << endl;
+			brief({1}) << "system_str	twoRings" << endl;
 		} else if (ratio > params::ratio_2nd_loop ) {
 			info() << "The sausages have very different size. Hence it is the 2nd_loop structure." << endl;
+			brief({1}) << "system_class	4" << endl;
+			brief({1}) << "system_str	theta" << endl;
 		} else {
 			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
 			Maybe change input parameters." << endl;
+			brief({1}) << "system_class	0" << endl;
+			brief({1}) << "system_str	undefined" << endl;
 			exit(EXIT_FAILURE);
 			}
 	}
