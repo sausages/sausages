@@ -1,6 +1,10 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#include <vector>
+#include "main.h"
+#include "maths.h"
+
 // enums are implicitly assigned to 0,1,2.. so e.g. DEBUG > WARNING
 enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
 
@@ -25,6 +29,6 @@ namespace params{
 }
 
 
-void set_params(char *paramFile);
+void set_params(char *paramFile, std::vector<vector3d> &colloidPos);
 
 #endif // PARAMS_H

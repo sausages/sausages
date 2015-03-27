@@ -10,14 +10,7 @@
 #include "sausages.h"
 
 using namespace std;
-using namespace model;
 
-// Declare model variables (need to be extern in main.h)
-///@TODO Global variables are bad, make this a class
-std::vector<vector3d> model::colloidPos; ///< Positions of the colloids
-std::vector<double> model::colloidRadii; ///< Radii of the colloids
-std::vector<Point> model::allPoints; ///< All points in simulation
-std::vector<Sausage> model::allSausages; ///< All sausages in simulation
 
 /**
  * Main function
@@ -32,12 +25,15 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
+	// Setup model
+	Model model;
+
 	// Set various parameters and variables
 	if (argc>2){
-		set_params(argv[2]);
+		set_params(argv[2],model.colloidPos);
 	} else {
 		// Just use defaults
-		set_params(NULL);
+		set_params(NULL,model.colloidPos);
 	}
 	brief({1}) << "brief_version	1" << endl;
 	brief({1}) << "input_filename	" << argv[1] << endl;
@@ -46,33 +42,37 @@ int main(int argc, char *argv[]){
 
 	// Read input data file
 	info() << "Reading file " << argv[1] << endl;
-	int num_below_threshold = read_input(argv[1],allPoints);
-	info() << num_below_threshold << " points below threshold."<<endl;
-	info() << "Stored "<< allPoints.size() << " points."<<endl;
+	read_input(argv[1], model);
+	info() << "Read "<< model.total_points << " points."<<endl;
+	info() << "Stored "<< model.allPoints.size() << " points."<<endl;
+
+	brief({1}) << "total_points	" << model.total_points << endl;
+	brief({1}) << "threshold	" << params::threshold << endl;
+	brief({1}) << "threshold_pts	" << model.threshold_points << endl;
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
-	flood_fill_separate(allPoints,allSausages);
+	flood_fill_separate(model.allPoints,model.allSausages);
 
 	verbose() << "Sausage sizes:" << endl << flush;
-	for (size_t i=0; i<allSausages.size(); i++){
-		verbose() << "  " << i << " " << allSausages[i].points.size() << endl;
+	for (size_t i=0; i<model.allSausages.size(); i++){
+		verbose() << "  " << i << " " << model.allSausages[i].points.size() << endl;
 	}
 
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
-	for (size_t i=0; i<allSausages.size(); i++){
-		int sausageSize=allSausages[i].points.size();
-		if (sausageSize < params::silent_ignore_size*num_below_threshold ){
+	for (size_t i=0; i<model.allSausages.size(); i++){
+		int sausageSize=model.allSausages[i].points.size();
+		if (sausageSize < params::silent_ignore_size*model.threshold_points ){
 			verbose() << "Ignoring sausage #" << i << endl;
-			allSausages[i].is_significant=false;
-		} else if (sausageSize > params::silent_ignore_size*num_below_threshold &&
-			sausageSize < params::min_sausage_size*num_below_threshold   ){
+			model.allSausages[i].is_significant=false;
+		} else if (sausageSize > params::silent_ignore_size*model.threshold_points &&
+			sausageSize < params::min_sausage_size*model.threshold_points   ){
 			warning() << "Sausage #" << i << " of size "  <<
 				sausageSize << " is not tiny, but is being ignored." << endl;
-			allSausages[i].is_significant=false;
-		} else if (sausageSize > params::min_sausage_size*num_below_threshold){
-			allSausages[i].is_significant=true;
+			model.allSausages[i].is_significant=false;
+		} else if (sausageSize > params::min_sausage_size*model.threshold_points){
+			model.allSausages[i].is_significant=true;
 			relevant_sausages.push_back(i);
 		}
 	}
@@ -81,20 +81,20 @@ int main(int argc, char *argv[]){
 	// Find endpoints of all relevant sausages
 	info() << "Finding endpoints..."<<endl;
 	for (size_t i=0;i<relevant_sausages.size();i++){
-		allSausages[relevant_sausages[i]].find_endpoints();
+		model.allSausages[relevant_sausages[i]].find_endpoints();
 	}
 
 	// Join the endpoints
 	info() << "Joining small gaps..."<<endl;
-	join_endpoints(allSausages,relevant_sausages);
+	join_endpoints(model.allSausages,relevant_sausages);
 
 	// Plenty of output
-	brief({1}) << "num_sausages	" << allSausages.size() << endl;
+	brief({1}) << "num_sausages	" << model.allSausages.size() << endl;
 
 	debug() << "Post-joining sausage sizes:" << endl;
-	for (size_t i=0; i<allSausages.size(); i++){
-		debug() << "  " << i << " " << allSausages[i].points.size() << endl;
-		brief({1}) << "saus_" << i << "_size	" << allSausages[i].points.size() << endl;
+	for (size_t i=0; i<model.allSausages.size(); i++){
+		debug() << "  " << i << " " << model.allSausages[i].points.size() << endl;
+		brief({1}) << "saus_" << i << "_size	" << model.allSausages[i].points.size() << endl;
 	}
 	debug() << "Relevant sausages (prints index of sausages): " << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
@@ -112,12 +112,12 @@ int main(int argc, char *argv[]){
 		double size [2];
 		double ratio;
 		info() << "Two relevant sausages found." << endl;
-		debug()<<"#points: "<<allSausages[relevant_sausages[0]].points.size()<<" and "<<allSausages[relevant_sausages[1]].points.size()<<endl;
+		debug()<<"#points: "<<model.allSausages[relevant_sausages[0]].points.size()<<" and "<<model.allSausages[relevant_sausages[1]].points.size()<<endl;
 		for (size_t i=0; i<relevant_sausages.size(); i++){
-			size[i] = allSausages[relevant_sausages[i]].points.size();
-			allSausages[relevant_sausages[i]].find_com();
-			allSausages[relevant_sausages[i]].find_pobf();
-			allSausages[relevant_sausages[i]].estimate_sausage_length();
+			size[i] = model.allSausages[relevant_sausages[i]].points.size();
+			model.allSausages[relevant_sausages[i]].find_com();
+			model.allSausages[relevant_sausages[i]].find_pobf();
+			model.allSausages[relevant_sausages[i]].estimate_sausage_length();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
@@ -135,18 +135,18 @@ int main(int argc, char *argv[]){
 	// Analysis for one relevant sausages found 
 	else if ( relevant_sausages.size() == 1) {
 		info() << "One relevant sausage found." << endl;
-		double size = allSausages[relevant_sausages[0]].points.size();
-		allSausages[relevant_sausages[0]].find_com();
-		allSausages[relevant_sausages[0]].find_pobf();
+		double size = model.allSausages[relevant_sausages[0]].points.size();
+		model.allSausages[relevant_sausages[0]].find_com();
+		model.allSausages[relevant_sausages[0]].find_pobf();
 		//allSausages[relevant_sausages[0]].track_sausage();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
-		allSausages[relevant_sausages[0]].flood_fill_classify();
+		model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
 	}
 
 	// Wrap up and exit
-	allSausages.clear();
-	allPoints.clear();
+	model.allSausages.clear();
+	model.allPoints.clear();
 	info() << "Exiting successfully" << endl;
 	return EXIT_SUCCESS;
 }

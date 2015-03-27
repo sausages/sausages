@@ -6,6 +6,7 @@
 #include "cJSON/cJSON.h"
 #include "io.h"
 #include "main.h"
+#include "maths.h"
 #include "params.h"
 
 using namespace params;
@@ -37,7 +38,7 @@ void invalid_colloid_info(void){
 }
 
 
-void set_params(char *filename){
+void set_params(char *filename, std::vector<vector3d>  &colloidPos){
 	if (filename == NULL){
 		// Default initialisation
 		brief_filename=std::string("default.brief");
@@ -126,12 +127,12 @@ void set_params(char *filename){
 			newColloid.x=currColloid->child->valuedouble;
 			newColloid.y=currColloid->child->next->valuedouble;
 			newColloid.z=currColloid->child->next->next->valuedouble;
-			model::colloidPos.push_back(newColloid);
+			colloidPos.push_back(newColloid);
 		}
 
 		debug()<<"Colloid positions:"<<std::endl;
 		for (int i=0; i<2; i++){
-			debug()<<model::colloidPos[i]<<std::endl;
+			debug()<<colloidPos[i]<<std::endl;
 		}
 	}
 

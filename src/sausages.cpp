@@ -18,31 +18,6 @@ Sausage::Sausage(int ID){
 	have_pobf = false;
 }
 
-/** Points are in a sausge if their cl value is < threshold
- */
-int threshold(vector<Point> &allPoints){
-	debug() << "begin threshold" << endl << flush;
-	int num_below_threshold=0;
-	bool writePoints = false;
-	std::ofstream thresholdedFile;
-	if (!params::thresholded_filename.empty()){
-		writePoints = true;
-		thresholdedFile.open(params::thresholded_filename);
-	}
-	vector<Point>::iterator it;
-	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		if (it->cl < params::threshold){
-			if (writePoints){
-				thresholdedFile << it->x << ' ' << it->y << ' ' << it->z << endl;
-			}
-			it->isInASausage=true;
-			num_below_threshold++;
-		}
-	}
-	if (writePoints) thresholdedFile.close();
-
-	return num_below_threshold;
-}
 
 /** Ordinary Flood-fill algorithm
  * 1) Find the first sausage-worthy point not yet sorted into a sausage
@@ -108,7 +83,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
  *  insufficiently resolved.
  *
  */
-void Sausage::flood_fill_classify(void){
+void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
@@ -117,7 +92,7 @@ void Sausage::flood_fill_classify(void){
 	debug() << "begin flood_fill_classify" << endl << flush;
 
 	// AB is vector joining colloids
-	vector3d AB = model::colloidPos[0] - model::colloidPos[1];
+	vector3d AB = colloidPos[0] - colloidPos[1];
 	double norm_AB = sqrt(dot(AB,AB));
 	debug()<<"Vector AB is "<<AB<<" of length "<<norm_AB<<endl;
 	if (norm_AB < params::epsilon){
@@ -152,12 +127,12 @@ void Sausage::flood_fill_classify(void){
 			vector3d p; // xyz of this point
 			p.x=it->x; p.y=it->y; p.z=it->z;
 
-			vector3d u = p - model::colloidPos[iColl]; // Vector from point to colloid
+			vector3d u = p - colloidPos[iColl]; // Vector from point to colloid
 
 			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
-			vector3d first_plane  = model::colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
-			vector3d second_plane = model::colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			vector3d first_plane  = colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			vector3d second_plane = colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
 			double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
 			double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
 
@@ -213,16 +188,16 @@ void Sausage::flood_fill_classify(void){
 		vector<Point*> neighbours;
 		for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
 			Point* it=*iter;
-			double distanceToOtherColl = pow(it->x - model::colloidPos[otherColl].x,2) +
-							pow(it->y - model::colloidPos[otherColl].y,2) +
-							pow(it->z - model::colloidPos[otherColl].z,2) ;
+			double distanceToOtherColl = pow(it->x - colloidPos[otherColl].x,2) +
+							pow(it->y - colloidPos[otherColl].y,2) +
+							pow(it->z - colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
 				//if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
 				if (neigh->isInASausage && !elementOf(region,neigh)){
-					double neighDistanceToOtherColl = pow(neigh->x - model::colloidPos[otherColl].x,2) +
-									pow(neigh->y - model::colloidPos[otherColl].y,2) +
-									pow(neigh->z - model::colloidPos[otherColl].z,2) ;
+					double neighDistanceToOtherColl = pow(neigh->x - colloidPos[otherColl].x,2) +
+									pow(neigh->y - colloidPos[otherColl].y,2) +
+									pow(neigh->z - colloidPos[otherColl].z,2) ;
 					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(it->neighbours[iNeigh]);
 				}
 			}

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "Eigen/Dense"
+#include "maths.h"
 #include "point.h"
 
 // All Eigen-related methods are defined in eigen-bits.cpp
@@ -37,7 +38,7 @@ class Sausage {
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(void); ///<Approximate length of sausage
-	void flood_fill_classify(void);
+	void flood_fill_classify(const std::vector<vector3d> colloidPos);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 };

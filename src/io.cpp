@@ -64,11 +64,11 @@ void initialiseBrief(void){
 /** Decide, based on filename extension, what file type the input is,
  *  and call the relevant function
  */
-int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
+void read_input(std::string inputFileName, Model &model){
 	// If inputFileName ends with ".zip"
 	if (inputFileName.rfind(".zip")==inputFileName.size()-4){
 		debug()<<"Looks like a zip file"<<endl;
-		return read_zipped(inputFileName,allPointsVector);
+		return read_zipped(inputFileName, model);
 	} else {
 		debug()<<"Not a zip file"<<endl;
 		ifstream infile (inputFileName.c_str());
@@ -83,16 +83,17 @@ int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
 				cerr << "Cannot have colloid positions in param file when using .diot format" << endl;
 				exit(EXIT_FAILURE);
 			}
-			return read_diot(inStream,allPointsVector);
+			read_diot(inStream, model);
 		} else {
 			if (!params::colloidsInParamFile){
 				cerr << "Must have colloid positions in param file when not using .diot format" << endl;
 				exit(EXIT_FAILURE);
 			}
-			return read_xyzclcpcs(inStream,allPointsVector);
+			read_xyzclcpcs(inStream, model);
 		}
 	}
 
+	return;
 }
 
 
@@ -101,7 +102,7 @@ int read_input(std::string inputFileName, std::vector<Point> &allPointsVector){
  * "x,y,z,cl,cp,cs", with one point per line.
  * Each point is appended to PointsVector, which is passed in by reference.
  */
-int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
+void read_xyzclcpcs(std::istream &input, Model &model){
 	string line;
 	size_t iPoint=0;
 	while ( getline (input, line) ){
@@ -122,10 +123,10 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 		p.allPointsIndex=iPoint++;
 
 		try{
-			allPoints.push_back(p);
+			model.allPoints.push_back(p);
 		} catch (std::bad_alloc &e){
-			size_t pointsRead=allPoints.size();
-			allPoints.clear();
+			size_t pointsRead=model.allPoints.size();
+			model.allPoints.clear();
 			error()<<"Ran out of memory after reading in "<<pointsRead<<" points."<<std::endl;
 			error()<<"Counting points left..."<<std::flush;
 			size_t pointsLeft=0;
@@ -136,6 +137,7 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 			exit(EXIT_FAILURE);
 		}
 	}
+	model.total_points = model.allPoints.size();
 
 	/* Links each point in allPoints to its 6 nearest-neighbours.
 	 * x:+right/-left ; y:+up/-down ; z:+forward/-back
@@ -143,55 +145,74 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
 	 * @warning   z varies first (increasing), then y, then x.
 	 * @warning Also assumes that grid is cubic, i.e. N=len(x)=len(y)=len(z)
 	 */
-	unsigned int N = round(pow(allPoints.size(),1.0/3.0));///< side-length of cube
+	unsigned int N = round(pow(model.allPoints.size(),1.0/3.0));///< side-length of cube
 	// Don't use iterators, indices are important here
-	for (size_t i=0; i<allPoints.size(); i++){
+	for (size_t i=0; i<model.allPoints.size(); i++){
 		// Pointer to self, pretty sure this is irrelevant, but
 		// I currently need it for the flood-fill (iterators are copies)
-		allPoints[i].self = &(allPoints[i]);
+		model.allPoints[i].self = &(model.allPoints[i]);
 		// If not right-most
 		if (((i/(N*N))+1)%N != 0){
-			allPoints[i].right  = &(allPoints[i+N*N]);
-			allPoints[i+N*N].left = &(allPoints[i]);
+			model.allPoints[i].right  = &(model.allPoints[i+N*N]);
+			model.allPoints[i+N*N].left = &(model.allPoints[i]);
 		}
 		// If not upper-most
 		if (((i/N)+1)%N != 0){
-			allPoints[i].up   = &(allPoints[i+N]);
-			allPoints[i+N].down = &(allPoints[i]);
+			model.allPoints[i].up   = &(model.allPoints[i+N]);
+			model.allPoints[i+N].down = &(model.allPoints[i]);
 		}
 		// If not forward-most
 		if ((i+1)%N != 0){
-			allPoints[i].forward = &(allPoints[i+1]);
-			allPoints[i+1].back   = &(allPoints[i]);
+			model.allPoints[i].forward = &(model.allPoints[i+1]);
+			model.allPoints[i+1].back   = &(model.allPoints[i]);
 		}
 	}
 
 	// Update neighbours array
-	for (size_t i=0; i<allPoints.size(); i++){
-		allPoints[i].neighbours[0]=allPoints[i].left;
-		allPoints[i].neighbours[1]=allPoints[i].right;
-		allPoints[i].neighbours[2]=allPoints[i].up;
-		allPoints[i].neighbours[3]=allPoints[i].down;
-		allPoints[i].neighbours[4]=allPoints[i].forward;
-		allPoints[i].neighbours[5]=allPoints[i].back;
+	for (size_t i=0; i<model.allPoints.size(); i++){
+		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
+		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
+		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
+		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
+		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
+		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
 	}
 
 	// Check Pixel size
-	if (abs(abs(allPoints[0].z-allPoints[1].z)-params::pixel_size)>params::epsilon){
-		warning()<<"WARNING: Pixel size appears to be "<<abs(allPoints[0].z-allPoints[1].z)<<
+	if (abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size)>params::epsilon){
+		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0].z-model.allPoints[1].z)<<
 			" but params file (or default) is set to "<<params::pixel_size<<"."<<endl<<
 			"Overwriting with new pixel size."<<endl;
-		params::pixel_size=abs(abs(allPoints[0].z-allPoints[1].z)-params::pixel_size);
+		params::pixel_size=abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size);
 	}
 
-	info()<<"Read in "<<allPoints.size()<<" points."<<endl;
-	brief({1}) << "total_points	" << allPoints.size() << endl;
-	brief({1}) << "threshold	" << params::threshold << endl;
-	info()<<"Thresholding, cl<"<<params::threshold<<" belong to a sausage"<<endl;
-	int numInASausage = threshold(allPoints);
-	info()<<numInASausage<<" points left after thresholding."<<endl;
-	brief({1}) << "threshold_pts	" << numInASausage << endl;
-	return numInASausage;
+	// Points are in a sausge if their cl value is < threshold
+	debug() << "begin threshold" << endl << flush;
+
+	model.threshold_points = 0;
+
+	bool writePoints = false;
+	std::ofstream thresholdedFile;
+	if (!params::thresholded_filename.empty()){
+		writePoints = true;
+		thresholdedFile.open(params::thresholded_filename);
+	}
+
+	vector<Point>::iterator it;
+	vector<Point> thresholdedPoints;
+	for (it=model.allPoints.begin(); it!=model.allPoints.end(); ++it){
+		if (it->cl < params::threshold){
+			if (writePoints){
+				thresholdedFile << it->x << ' ' << it->y << ' ' << it->z << endl;
+			}
+			it->isInASausage=true;
+			model.threshold_points++;
+		}
+	}
+	if (writePoints) thresholdedFile.close();
+	debug() << "end threshold" << endl << flush;
+
+	return;
 }
 
 
@@ -199,7 +220,7 @@ int read_xyzclcpcs(std::istream &input, std::vector<Point> &allPoints){
  * Reads in data from inputSteam with the .diot format.
  * Each point is appended to PointsVector, which is passed in by reference.
  */
-int read_diot(std::istream &input, std::vector<Point> &allPoints){
+void read_diot(std::istream &input, Model &model){
 	if (params::colloidsInParamFile){
 		error()<<"Cannot have colloid info in the param file when using .diot format"<<std::endl;
 		exit(EXIT_FAILURE);
@@ -246,7 +267,7 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 			ss>>buffer;
 			size_t colloidNum;
 			ss>>colloidNum;
-			if (colloidNum!=model::colloidPos.size()+1){
+			if (colloidNum!=model.colloidPos.size()+1){
 				error()<<"Colloids must be declared in order, aborting"<<endl;
 				exit(EXIT_FAILURE);
 			}
@@ -254,18 +275,18 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 			ss>>newColloid.x;
 			ss>>newColloid.y;
 			ss>>newColloid.z;
-			model::colloidPos.push_back(newColloid);
+			model.colloidPos.push_back(newColloid);
 		} else if (line.find("colloidRad")!=string::npos){
 			ss>>buffer;
 			size_t colloidNum;
 			ss>>colloidNum;
-			if (colloidNum>model::colloidPos.size()){
+			if (colloidNum>model.colloidPos.size()){
 				error()<<"Colloids properties must be declared after its position, aborting"<<endl;
 				exit(EXIT_FAILURE);
 			}
 			double colloidRad;
 			ss>>colloidRad;
-			model::colloidRadii.push_back(colloidRad);
+			model.colloidRadii.push_back(colloidRad);
 		} else if (line.find("beginClCpCs")!=string::npos){
 			bBeginClCpCs=1;
 			ss>>buffer;
@@ -278,13 +299,13 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 		error()<<"Invalid .diot format"<<endl;
 		exit(EXIT_FAILURE);
 	}
-	if (model::colloidPos.size()!=2){
+	if (model.colloidPos.size()!=2){
 		error()<<"Can currently only handle systems with 2 colloids, sorry"<<endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Read in points, only saving threshold-passing ones, linking them properly
-	int points_read=0; // !=allPoints.size();
+	model.total_points=0; // !=allPoints.size();
 	int ix=0,iy=0,iz=0; // Point coordinate in point-space
 	double cl,cp,cs;
 
@@ -303,7 +324,7 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 		thresholdedFile.open(params::thresholded_filename);
 	}
 	while ( getline (input, line) ){
-		points_read++;
+		model.total_points++;
 		// Assuming BeginClCpCs is in zyxInc
 		iz++;
 		if (iz==numVoxels[2]){
@@ -327,7 +348,7 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 			p.z = iz*voxelSize[2] + lowBounds[2];
 			p.allPointsIndex = iPoint++;
 			p.isInASausage=true;
-			allPoints.push_back(p);
+			model.allPoints.push_back(p);
 			pointMap.push_back(p.allPointsIndex);
 			if (writePoints){
 				thresholdedFile << p.x << ' ' << p.y << ' ' << p.z << endl;
@@ -354,48 +375,49 @@ int read_diot(std::istream &input, std::vector<Point> &allPoints){
 
 		// Pointer to self, pretty sure this is irrelevant, but
 		// I currently need it for the flood-fill (iterators are copies)
-		allPoints[iCurr].self = &(allPoints[iCurr]);
+		model.allPoints[iCurr].self = &(model.allPoints[iCurr]);
 
 		// If not right-most
 		if (((i/(Nz*Ny))+1)%Nx != 0){
 			if (pointMap[i+Nz*Ny] != -1){ // If right-of-me passed thresholding
 				int iRight = pointMap[i+Nz*Ny];
-				allPoints[iCurr].right  = &(allPoints[iRight]);
-				allPoints[iRight].left = &(allPoints[iCurr]);
+				model.allPoints[iCurr].right  = &(model.allPoints[iRight]);
+				model.allPoints[iRight].left = &(model.allPoints[iCurr]);
 			}
 		}
 		// If not upper-most
 		if (((i/Nz)+1)%Ny != 0){
 			if (pointMap[i+Nz] != -1){ // If above-me passed thresholding
 				int iUp = pointMap[i+Nz];
-				allPoints[iCurr].up   = &(allPoints[iUp]);
-				allPoints[iUp].down = &(allPoints[iCurr]);
+				model.allPoints[iCurr].up   = &(model.allPoints[iUp]);
+				model.allPoints[iUp].down = &(model.allPoints[iCurr]);
 			}
 		}
 		// If not forward-most
 		if ((i+1)%Nz != 0){
 			if (pointMap[i+1] != -1){ // If forward-of-me passed thresholding
 				int iForward = pointMap[i+1];
-				allPoints[iCurr].forward = &(allPoints[iForward]);
-				allPoints[iForward].back   = &(allPoints[iCurr]);
+				model.allPoints[iCurr].forward = &(model.allPoints[iForward]);
+				model.allPoints[iForward].back   = &(model.allPoints[iCurr]);
 			}
 		}
 	}
 
 	// Update neighbours array
-	for (size_t i=0; i<allPoints.size(); i++){
-		allPoints[i].neighbours[0]=allPoints[i].left;
-		allPoints[i].neighbours[1]=allPoints[i].right;
-		allPoints[i].neighbours[2]=allPoints[i].up;
-		allPoints[i].neighbours[3]=allPoints[i].down;
-		allPoints[i].neighbours[4]=allPoints[i].forward;
-		allPoints[i].neighbours[5]=allPoints[i].back;
+	for (size_t i=0; i<model.allPoints.size(); i++){
+		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
+		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
+		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
+		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
+		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
+		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
 	}
-	return points_read;
+
+	return;
 }
 
 
-int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsVector){
+void read_zipped(std::string inputArchiveFileName, Model &model){
 	// Initialise
 	mz_zip_archive zip_archive;
 	memset(&zip_archive,0,sizeof(zip_archive));
@@ -430,16 +452,15 @@ int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsV
 	istringstream iss;
 	iss.str((char*)p);
 	string filename(file_stat.m_filename);
-	int points_read;
 	if (filename.rfind(".diot")==filename.size()-5){
-		points_read = read_diot(iss,allPointsVector);
+		read_diot(iss, model);
 	} else {
-		points_read = read_xyzclcpcs(iss,allPointsVector);
+		read_xyzclcpcs(iss, model);
 	}
 
 	mz_free(p);
 	mz_zip_reader_end(&zip_archive);
 
-	return points_read;
+	return;
 
 }

@@ -5,11 +5,12 @@
 #include <fstream>
 #include <vector>
 #include "point.h"
+#include "main.h"
 
-int read_input(std::string inputFileName, std::vector<Point> &allPointsVector);
-int read_xyzclcpcs(std::istream& input, std::vector<Point> &allPointsVector);
-int read_zipped(std::string inputArchiveFileName, std::vector<Point> &allPointsVector);
-int read_diot(std::istream &input, std::vector<Point> &allPoints);
+void read_input(std::string inputFileName, Model &model);
+void read_xyzclcpcs(std::istream& input, Model &model);
+void read_zipped(std::string inputArchiveFileName, Model &model);
+void read_diot(std::istream &input, Model &model);
 
 class NullBuffer : public std::streambuf
 {
