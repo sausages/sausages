@@ -12,8 +12,9 @@ class Sausage {
 	double centre_of_mass[3]; ///< Mean x/y/z of all points in the sausage
 
 	double **slice_positions; ///< xyz positions of COM of points within a slice
-	int *slice_counter; ///< Holds # of points in slice
-	int nSlices; ///< # slices
+    double **pos_coms_pobf_slice; ///< xyz positions of COMs found using pobf slice algorithm 
+    double **pos_com_halfsphere_final; ///< xyz positions of COMs using halfsphere algorithm 
+    int nPosHalfspheres; ///< # of COMs used for halfsphere tracking
 	double length; ///< Estimated length of sausage
 
 
@@ -24,6 +25,8 @@ class Sausage {
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
+    void calculate_com_halfsphere(double *centre, double radius, double *com_x, double *com_y, double *com_z); ///< Calculate COM for 10 points nearest to a point com_x,com_y,com_z, used for halfsphere_tracking
+    void calculate_sausage_length_halfsphere(void); ///< Calculate length by connecting all COMs of halfsphere tracking by straight lines
 
 	public:
 
@@ -36,6 +39,7 @@ class Sausage {
 
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
+    void halfsphere_tracking(void); ///< Tracks sausage and saves all coms 
 	void flood_fill_classify(const std::vector<vector3d> colloidPos);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
