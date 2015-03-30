@@ -117,7 +117,7 @@ int main(int argc, char *argv[]){
 			size[i] = model.allSausages[relevant_sausages[i]].points.size();
 			model.allSausages[relevant_sausages[i]].find_com();
 			model.allSausages[relevant_sausages[i]].find_pobf();
-			model.allSausages[relevant_sausages[i]].estimate_sausage_length();
+//			model.allSausages[relevant_sausages[i]].estimate_sausage_length();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));

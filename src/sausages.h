@@ -24,7 +24,6 @@ class Sausage {
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
-	void calculate_sausage_length(double** slice_positions); ///<Calculate the length using COMs of slices
 
 	public:
 
@@ -37,7 +36,6 @@ class Sausage {
 
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
-	void estimate_sausage_length(void); ///<Approximate length of sausage
 	void flood_fill_classify(const std::vector<vector3d> colloidPos);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
