@@ -18,7 +18,7 @@ namespace params{
 	extern double silent_ignore_size; ///< If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	extern double min_sausage_size; ///< A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	extern double pixel_size; ///< Distance between nearest-neighbour points
-	extern int points_per_slice; ///< How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
+	extern int points_per_halfsphere; ///< How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	extern bool colloidsInParamFile; ///< Colloids shouldn't be both in param and input file
 	extern double flood_fill_classify_slice_size; ///< How many pixels wide should the regions in flood_fill_classify be?
 	extern double ratio_two_rings; ///< If ratio of two relevant sausage is below this, it's the two ring structure
