@@ -19,7 +19,7 @@ class Sausage {
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
-    void calculate_com_halfsphere(vector3d center, double radius, vector3d &com); ///< Calculate COM for 10 points nearest to a point com_x,com_y,com_z, used for halfsphere_tracking
+    void calculate_com_sphere(vector3d center, double radius, vector3d &com); ///< Calculate COM for 10 points nearest to a point com_x,com_y,com_z, used for halfsphere_tracking
 //    void calculate_sausage_length_halfsphere(void); ///< Calculate length by connecting all COMs of halfsphere tracking by straight lines
 
 	public:

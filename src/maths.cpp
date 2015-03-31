@@ -58,7 +58,7 @@ double dot(const vector3d& u, const vector3d& v) {
 	return u.x*v.x + u.y*v.y + u.z*v.z;
 }
 
-double dist(const vector3d& u, const vector3d& v) {
+double distance(const vector3d& u, const vector3d& v) {
 	double dist;
     dist = sqrt(pow(u.x-v.x,2) + pow(u.y-v.y,2) + pow(u.z-v.z,2));
     return dist;

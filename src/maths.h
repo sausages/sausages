@@ -29,7 +29,7 @@ vector3d operator/(const vector3d& v, const double& a);
 
 double dot(const vector3d& u, const vector3d& v);
 
-double dist(const vector3d& u, const vector3d& v);
+double distance(const vector3d& u, const vector3d& v);
 
 double magnitude(const vector3d& u);
 
