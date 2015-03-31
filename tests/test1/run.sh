@@ -8,6 +8,8 @@
 
 ./cleanup.sh
 
+unzip short.xyzclcpcs.zip
+
 ../../sausages short.xyzclcpcs test.params > stdout.output || echo "Program exited unsuccessfully"
 
 for f in *expected
