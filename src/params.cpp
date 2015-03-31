@@ -28,7 +28,7 @@ namespace params{
 	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
 	double epsilon=1.0e-10; // Some small number for comparison to zero
 	double max_sausage_gap_size=15; // Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
-	double min_sausage_gap_next_neigh_distance=30; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+	double min_sausage_gap_next_neigh_distance=20; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
     double R_min_sphere = 0.1; // Minimum radius for sphere tracking algorithm
     double dR_sphere = 0.1; // Increament sphere by dR value in sphere tracking algorithm
     double R_gap = 1.0; // Small radius used in sphere tracking to determine our next point, distance between adjacent points ~ R_gap
@@ -83,9 +83,10 @@ void set_params(char *filename, std::vector<vector3d>  &colloidPos){
 			switch(verbosity){
 				case 0: std::cout<<"ERROR"; break;
 				case 1: std::cout<<"WARNING"; break;
-				case 2: std::cout<<"INFO"; break;
-				case 3: std::cout<<"VERBOSE"; break;
-				case 4: std::cout<<"DEBUG"; break;
+				case 2: std::cout<<"BRIEF";break;
+				case 3: std::cout<<"INFO"; break;
+				case 4: std::cout<<"VERBOSE"; break;
+				case 5: std::cout<<"DEBUG"; break;
 			}
 			std::cout<<std::endl;
 	}

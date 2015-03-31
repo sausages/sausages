@@ -281,9 +281,16 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	}
 	if (adjacency[0][2] && adjacency[1][3]){
 		info()<<"System appears to be untwisted (Class 1)"<<endl;
+		brief({1}) << "Figure of omega structure." << endl;
+		brief({1}) << "3" << endl;
 	} else if (adjacency[0][3] && adjacency[1][2]){
 		info()<<"System appears to be twisted (Class 2)"<<endl;
+		brief({1}) << "Figure of eight structure." << endl;
+		brief({1}) << "2" << endl;
+	
 	} else {
+		brief({1}) << "Structure undefined." << endl;
+		brief({1}) << "0" << endl;
 		error()<<"Unexpected system linkage, this should never happen."<<endl;
 		exit(EXIT_FAILURE);
 	}
@@ -662,4 +669,5 @@ void Sausage::calculate_sausage_length_spheres(){
 	info() << "The estimated length of the sausage using spheres is " << length << endl;
 	return;
 }
+
 
