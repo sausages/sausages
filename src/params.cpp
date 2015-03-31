@@ -22,7 +22,6 @@ namespace params{
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	double pixel_size = 0.5; // Distance between nearest-neighbour points
-	int points_per_halfsphere = 10; // How many points are used to calculete COM in halfsphere_tracking
 	bool colloidsInParamFile = false; // Colloids shouldn't be both in param and input file
 	double ratio_two_rings = 0.1; // Threshold ratio for which two relevant sausages are identified as two_rings
 	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
@@ -30,6 +29,9 @@ namespace params{
 	double epsilon=1.0e-10; // Some small number for comparison to zero
 	double max_sausage_gap_size=15; // Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
 	double min_sausage_gap_next_neigh_distance=30; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+    double R_min_sphere = 0.1; // Minimum radius for sphere tracking algorithm
+    double dR_sphere = 0.1; // Increament sphere by dR value in sphere tracking algorithm
+    double R_gap = 1.0; // Small radius used in sphere tracking to determine our next point, distance between adjacent points ~ R_gap
 }
 
 void invalid_colloid_info(void){
@@ -182,12 +184,6 @@ void set_params(char *filename, std::vector<vector3d>  &colloidPos){
 			info()<<"brief_version "<<brief_version<<std::endl;
 	}
 
-	// points_per_halfsphere
-	if (cJSON_GetObjectItem(root,"points_per_halfsphere")){
-			points_per_halfsphere = cJSON_GetObjectItem(root,"points_per_halfsphere")->valuedouble;
-			info()<<"points_per_halfsphere "<<points_per_halfsphere<<std::endl;
-	}
-	
 	// ratio_two_rings
 	if (cJSON_GetObjectItem(root,"ratio_two_rings")){
 			ratio_two_rings = cJSON_GetObjectItem(root,"ratio_two_rings")->valuedouble;

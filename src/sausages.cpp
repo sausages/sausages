@@ -505,17 +505,18 @@ void Sausage::rotate_to_xy_plane(double** pointsArray){
 	return;
 }
 
+// Calculate COM of all points contained within a sphere of radius 'radius' around point center
+// radius is calculate if the input value is below R_min_sphere, radius is chosen so that 10 points lie within 
+// if radius is above the threshold the value itself is used
 void Sausage::calculate_com_sphere(vector3d center, double radius, vector3d &com){
 
-    double R_min = 0.1;
-    double dR = 0.1;
     double R;
     int counter;
     vector3d delta;
 
     //Calculate radius, so that sphere includes 10 points, unless radius is passed into the fn in which case it should be > R_min
-    if (radius < R_min){
-        R = R_min;
+    if (radius < params::R_min_sphere){
+        R = params::R_min_sphere;
 		counter =0;
 		while (counter < 10) { //exit loop once R is sufficiently large to include at least 10 points
 			counter = 0;
@@ -525,14 +526,8 @@ void Sausage::calculate_com_sphere(vector3d center, double radius, vector3d &com
 				delta.y = points[i]->y - center.y;
 				delta.z = points[i]->z - center.z;
 				if ( magnitude(delta) < R) counter++;
-                //dist = sqrt(dx*dx+dy*dy+dz*dz);
-				//dx /= dist; dy /= dist; dz /= dist;
-				//dot = dir_hat[0]*dx + dir_hat[1]*dy + dir_hat[2]*dz; 
-				//if ( dist < R &&  dot >= 0.0 ){
-				//	counter ++;
-				//}
 			}
-			R += dR;    //gradually increase radius
+			R += params::dR_sphere;    //gradually increase radius
 		}
     }
     //set R to radius that was passed into the fn
@@ -562,51 +557,46 @@ void Sausage::calculate_com_sphere(vector3d center, double radius, vector3d &com
 		exit(EXIT_FAILURE);}
 }
 
-void Sausage::halfsphere_tracking(){
+void Sausage::sphere_tracking(){
 
-    info() << "--------> Estimating sausage length using halfspheres... " << endl;
+    info() << "--------> Estimating sausage length using spheres... " << endl;
 
 	vector3d current_pos;                   //current grid position in sausage
     vector3d com;                           //current com calculated      
     vector3d dir,dir_hat;                   //current direction + unit vector direction
     vector3d delta;
 
-    double dist_start = 1.0;                //exit when current point is less than 1.0 from start
-	double dist_max = 10000;
-    double dist;
-    double R_small = 1.0;
+    double dist_max = 10000;
 	int max_index;
 
-    // first point is arbritary pick
+	// first point is arbritary pick
 	current_pos.x = points[0]->x;
 	current_pos.y = points[0]->y;
 	current_pos.z = points[0]->z;
 
-	// calculate COM of sphere with radius R_small around current_pos
-	calculate_com_sphere(current_pos,R_small,com);
-	verbose() << "First COM for halfsphere tracking: " << com << std::endl;
-    halfsphere_COMs.push_back(com);
+	// calculate COM of sphere with radius R_gap around current_pos
+	calculate_com_sphere(current_pos,params::R_gap,com);
+	verbose() << "First COM for sphere tracking: " << com << std::endl;
+    sphere_COMs.push_back(com);
 
-	// pick 2nd point, pick point which is closest to be 2*R_small away from first point
+	// pick 2nd point, pick point which is closest to be 2*R_gap away from first point
 	for(size_t i = 0; i != points.size(); i++){
 		delta.x = points[i]->x - current_pos.x;
 		delta.y = points[i]->y - current_pos.y;
 		delta.z = points[i]->z - current_pos.z;
-		dist = magnitude(delta) - 2.0*R_small;
-		if (fabs(dist) < dist_max) {
-			dist_max = fabs(dist);
+		if ( fabs(magnitude(delta) - 2.0*params::R_gap) < dist_max){
+			dist_max = fabs(magnitude(delta) - 2.0*params::R_gap);
 			max_index = i;
 		}
 	}
     // move to 2nd point in sausage
-	current_pos.x = points[max_index]->x;
+    current_pos.x = points[max_index]->x;
 	current_pos.y = points[max_index]->y;
 	current_pos.z = points[max_index]->z;
-	calculate_com_sphere(current_pos,R_small,com);
-	verbose() << "Second COM for halfsphere tracking: pos " << com << std::endl;
-    halfsphere_COMs.push_back(com);
+	calculate_com_sphere(current_pos,params::R_gap,com);
+	verbose() << "Second COM for sphere tracking: pos " << com << std::endl;
+    sphere_COMs.push_back(com);
 
-	double radius;
 	double distsq_previous, distsq_preprevious;
 	bool reached_start = false;
     int index = 2; //because first two points are already found
@@ -615,37 +605,36 @@ void Sausage::halfsphere_tracking(){
 	while (reached_start == false){
 
 		// work out moving direction from two previous coms
-		dir = halfsphere_COMs[index-1] - halfsphere_COMs[index-2];
+		dir = sphere_COMs[index-1] - sphere_COMs[index-2];
 		dir_hat = norm (dir); 
 		debug() << "Halfsphere tracking direction " << dir_hat <<std::endl;
 
-		radius = R_small;
 		// find new current position in sausage by moving alon the direction dir 
-		current_pos = halfsphere_COMs[index-1] + radius*dir_hat;
+		current_pos = sphere_COMs[index-1] + params::R_gap*dir_hat;
 	
-        //find shere with radius R for current position that is large enough to include 10 points
+        //find sphere with radius R for current position that is large enough to include 10 points
         //then find COM of all included points
 		calculate_com_sphere(current_pos,0.0,com);
 		
-		// check that we aren't reversing on ourselves and if so try again with narrower angle
-		distsq_previous = distance(com,halfsphere_COMs[index-1]);
-		distsq_preprevious = distance(com,halfsphere_COMs[index-2]);
+		// check that we aren't reversing on ourselves, if so exit the program
+		distsq_previous = distance(com,sphere_COMs[index-1]);
+		distsq_preprevious = distance(com,sphere_COMs[index-2]);
         if (distsq_preprevious < distsq_previous){ 
-            cerr << "The next point in halfsphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
+            cerr << "The next point in sphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
         }
-        else{
-            halfsphere_COMs.push_back(com);
-        }
+       
+        //add COM found to final array of COMs
+        sphere_COMs.push_back(com);
 		
 		// check whether we have reached our starting point
-		if ( distance(halfsphere_COMs[index],halfsphere_COMs[0]) < dist_start)
+		if ( distance(sphere_COMs[index],sphere_COMs[0]) < params::R_gap)
 		{
 			info() << "Halfsphere algorithm has successfully reached its starting point. \n" << endl;
 			reached_start = true;
 		}
 		index++;
 
-        // Exit program if halfsphere tracking takes too long.
+        // Exit program if sphere tracking takes too long.
 		if ( index > 1000) {
 			cerr << "Halfsphere algorithm hasn't reached its starting point after 1000 iterations. \n" << endl;
 			exit(EXIT_FAILURE);
@@ -653,28 +642,24 @@ void Sausage::halfsphere_tracking(){
 
 	}//end of while loop over sausage
 
-    //print all COMs of halfsphere
-	verbose()<<"COMS halfsphere tracking:"<<std::endl;
-	for (int k=0; k<halfsphere_COMs.size(); k++){
-    	verbose()<<halfsphere_COMs[k]<<std::endl;}
+    //print all COMs of sphere
+	verbose()<<"COMS sphere tracking:"<<std::endl;
+	for (int k=0; k<sphere_COMs.size(); k++){
+    	verbose()<<sphere_COMs[k]<<std::endl;}
 
     return;
 }
 
-/*void Sausage::calculate_sausage_length_halfsphere(){
+void Sausage::calculate_sausage_length_spheres(){
 
-	// loop over all COM of halfspheres and calculate length
+	// loop over all COMs found by sphere tracking to calculate length
 	length = 0;
-	for(int i = 0; i != nPosHalfspheres-1; i++) { 
-		length += sqrt( pow(pos_com_halfsphere_final[i][0]-pos_com_halfsphere_final[i+1][0],2)+
-				pow(pos_com_halfsphere_final[i][1]-pos_com_halfsphere_final[i+1][1],2)+
-				pow(pos_com_halfsphere_final[i][2]-pos_com_halfsphere_final[i+1][2],2));
-	}
-	length += sqrt( pow(pos_com_halfsphere_final[nPosHalfspheres-1][0]-pos_com_halfsphere_final[0][0],2)+
-			pow(pos_com_halfsphere_final[nPosHalfspheres-1][1]-pos_com_halfsphere_final[0][1],2)+
-			pow(pos_com_halfsphere_final[nPosHalfspheres-1][2]-pos_com_halfsphere_final[0][2],2));
+	for(int i = 0; i < sphere_COMs.size(); i++) { 
+		length += distance(sphere_COMs[i],sphere_COMs[i+1]); 
+    }
+	length += distance(sphere_COMs[sphere_COMs.size()-1],sphere_COMs[0]);
 
-	info() << "The estimated length of the sausage using halfspheres is " << length << endl;
+	info() << "The estimated length of the sausage using spheres is " << length << endl;
 	return;
 }
-*/
+

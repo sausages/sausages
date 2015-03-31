@@ -19,8 +19,7 @@ class Sausage {
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
-    void calculate_com_sphere(vector3d center, double radius, vector3d &com); ///< Calculate COM for 10 points nearest to a point com_x,com_y,com_z, used for halfsphere_tracking
-//    void calculate_sausage_length_halfsphere(void); ///< Calculate length by connecting all COMs of halfsphere tracking by straight lines
+    void calculate_com_sphere(vector3d center, double radius, vector3d &com); ///< Calculate COM for 10 points nearest to a point com_x,com_y,com_z, used for sphere_tracking
 
 	public:
 
@@ -30,11 +29,12 @@ class Sausage {
 	std::vector<Point*> points; ///< pointers to points inside the sausage
 	size_t endpoints[2]; ///< Indices of the points in self.points which correspond to the endpoints of the sausage
 	bool is_significant; ///< Whether the sausage is larger than some minimum size
-	std::vector<vector3d> halfsphere_COMs; ///< COMs produced by halfsphere tracking
+	std::vector<vector3d> sphere_COMs; ///< COMs produced by sphere tracking
 
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
-    void halfsphere_tracking(); ///< Tracks sausage and saves all coms 
+    void sphere_tracking(); ///< Tracks sausage and saves all coms 
+    void calculate_sausage_length_spheres(void); ///< Calculate length by connecting all COMs of sphere tracking by straight lines
 	void flood_fill_classify(const std::vector<vector3d> colloidPos);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
