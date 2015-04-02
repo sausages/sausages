@@ -118,9 +118,11 @@ int main(int argc, char *argv[]){
 			size[i] = model.allSausages[relevant_sausages[i]].points.size();
 			model.allSausages[relevant_sausages[i]].find_com();
 			model.allSausages[relevant_sausages[i]].find_pobf();
-			model.allSausages[relevant_sausages[i]].estimate_sausage_length();
+			model.allSausages[relevant_sausages[i]].sphere_tracking();
+            model.allSausages[relevant_sausages[i]].calculate_sausage_length_spheres();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
+        // Find the ratio in size for the two sausages. 
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
@@ -145,7 +147,8 @@ int main(int argc, char *argv[]){
 		double size = model.allSausages[relevant_sausages[0]].points.size();
 		model.allSausages[relevant_sausages[0]].find_com();
 		model.allSausages[relevant_sausages[0]].find_pobf();
-		//allSausages[relevant_sausages[0]].track_sausage();
+		model.allSausages[relevant_sausages[0]].sphere_tracking();
+        model.allSausages[relevant_sausages[0]].calculate_sausage_length_spheres();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
 		model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
@@ -154,6 +157,7 @@ int main(int argc, char *argv[]){
 	// Wrap up and exit
 	model.allSausages.clear();
 	model.allPoints.clear();
+	
 	info() << "Exiting successfully" << endl;
 	return EXIT_SUCCESS;
 }

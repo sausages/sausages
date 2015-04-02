@@ -6,7 +6,7 @@
 #include "maths.h"
 
 // enums are implicitly assigned to 0,1,2.. so e.g. DEBUG > WARNING
-enum verbosityLevel {ERROR, WARNING, INFO, VERBOSE, DEBUG};
+enum verbosityLevel {ERROR, WARNING, BRIEF, INFO, VERBOSE, DEBUG};
 
 namespace params{
 	extern verbosityLevel verbosity;
@@ -18,7 +18,6 @@ namespace params{
 	extern double silent_ignore_size; ///< If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	extern double min_sausage_size; ///< A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	extern double pixel_size; ///< Distance between nearest-neighbour points
-	extern int points_per_slice; ///< How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	extern bool colloidsInParamFile; ///< Colloids shouldn't be both in param and input file
 	extern double flood_fill_classify_slice_size; ///< How many pixels wide should the regions in flood_fill_classify be?
 	extern double ratio_two_rings; ///< If ratio of two relevant sausage is below this, it's the two ring structure
@@ -26,6 +25,9 @@ namespace params{
 	extern double epsilon; ///< Some small number for comparison to zero
 	extern double max_sausage_gap_size; ///< Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
 	extern double min_sausage_gap_next_neigh_distance; ///< If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+    extern double R_min_sphere; ///< Minimum radius for sphere tracking algorithm
+    extern double dR_sphere; ///< Increament sphere by dR value in sphere tracking algorithm
+    extern double R_gap; ///< Small radius used in sphere tracking to determine our next point, distance between adjacent points ~ R_gap
 }
 
 
