@@ -2,6 +2,7 @@
 #define POINT_H
 
 #include <vector>
+#include "maths.h"
 
 class Point
 {
@@ -13,6 +14,8 @@ class Point
 	double cl; ///< raw cl value of point
 	double cp; ///< raw cp value of point
 	double cs; ///< raw cl value of point
+
+	operator Vector3d(); ///< Cast to Vector3d returns only x,y,z coords
 
 	int sausageID; ///< Which sausage the point is in (-1 is unsorted)
 	bool isInASausage;

@@ -22,6 +22,7 @@ class Sausage {
 	Eigen::Matrix3d rotation_matrix; ///< rotation matrix from initial to new frame
 
 	void rotate_to_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
+	void rotate_to_xy_plane(std::vector<Vector3d> pointsArray); ///< See above
 	void rotate_from_xy_plane(double** points); ///<Rotate coords (rotation matrix*coord)
 	void calculate_rotation_matrix(void); ///<Calculates rotation matrix and its inverse
 	void calculate_sausage_length(double** slice_positions); ///<Calculate the length using COMs of slices
@@ -38,7 +39,9 @@ class Sausage {
 	void find_com(void); ///< Find and set centre_of_mass
 	void find_pobf(void); ///< Find and set plane_of_best_fit
 	void estimate_sausage_length(void); ///<Approximate length of sausage
-	void flood_fill_classify(const std::vector<vector3d> colloidPos);
+	void flood_fill_classify(const std::vector<Vector3d> colloidPos);
+	/// check whether a twist is left-handed (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed
+	int find_twist_handedness(std::vector<Point*> fromBelow0, std::vector<Point*> fromAbove0);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 };

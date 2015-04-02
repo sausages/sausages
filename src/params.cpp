@@ -38,7 +38,7 @@ void invalid_colloid_info(void){
 }
 
 
-void set_params(char *filename, std::vector<vector3d>  &colloidPos){
+void set_params(char *filename, std::vector<Vector3d>  &colloidPos){
 	if (filename == NULL){
 		// Default initialisation
 		brief_filename=std::string("default.brief");
@@ -123,7 +123,7 @@ void set_params(char *filename, std::vector<vector3d>  &colloidPos){
 
 		for (int i=0; i<2; i++){
 			cJSON *currColloid = (i==0) ? first : second ;
-			vector3d newColloid;
+			Vector3d newColloid (0,0,0);
 			newColloid.x=currColloid->child->valuedouble;
 			newColloid.y=currColloid->child->next->valuedouble;
 			newColloid.z=currColloid->child->next->next->valuedouble;

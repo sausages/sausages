@@ -29,6 +29,6 @@ namespace params{
 }
 
 
-void set_params(char *paramFile, std::vector<vector3d> &colloidPos);
+void set_params(char *paramFile, std::vector<Vector3d> &colloidPos);
 
 #endif // PARAMS_H

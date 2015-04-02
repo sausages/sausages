@@ -182,7 +182,7 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 	if (abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size)>params::epsilon){
 		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0].z-model.allPoints[1].z)<<
 			" but params file (or default) is set to "<<params::pixel_size<<"."<<endl<<
-			"Overwriting with new pixel size."<<endl;
+			"WARNING: Overwriting with new pixel size."<<endl;
 		params::pixel_size=abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size);
 	}
 
@@ -271,7 +271,7 @@ void read_diot(std::istream &input, Model &model){
 				error()<<"Colloids must be declared in order, aborting"<<endl;
 				exit(EXIT_FAILURE);
 			}
-			vector3d newColloid;
+			Vector3d newColloid (0,0,0);
 			ss>>newColloid.x;
 			ss>>newColloid.y;
 			ss>>newColloid.z;

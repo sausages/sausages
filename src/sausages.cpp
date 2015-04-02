@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <cmath>
 #include <algorithm>
 #include <stdexcept>
 #include <limits>
@@ -54,7 +55,6 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					Point *neigh=curr->neighbours[iNeigh];
 					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
-					    //find(stack.begin(),stack.end(),neigh->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
 					    !elementOf(stack,neigh->allPointsIndex)){ // Don't add to the stack if it's already there
 						stack.push_back(neigh->allPointsIndex) ;
 					}
@@ -83,7 +83,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
  *  insufficiently resolved.
  *
  */
-void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
+void Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
@@ -92,7 +92,7 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	debug() << "begin flood_fill_classify" << endl << flush;
 
 	// AB is vector joining colloids
-	vector3d AB = colloidPos[0] - colloidPos[1];
+	Vector3d AB = colloidPos[0] - colloidPos[1];
 	double norm_AB = sqrt(dot(AB,AB));
 	debug()<<"Vector AB is "<<AB<<" of length "<<norm_AB<<endl;
 	if (norm_AB < params::epsilon){
@@ -105,7 +105,7 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	double beta=-plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB, we can determine:
-	vector3d v;
+	Vector3d v (0,0,0);
 	if (abs(AB.y+beta*AB.z) > params::epsilon){
 		v.x=1; // No need to normalise
 		v.y=(-alpha-AB.x)/(AB.y+beta*AB.z);
@@ -124,15 +124,14 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
 		Point* it = *iter;
 		for (int iColl=0; iColl<2; iColl++){
-			vector3d p; // xyz of this point
-			p.x=it->x; p.y=it->y; p.z=it->z;
+			Vector3d p (it->x, it->y, it->z); // xyz of this point
 
-			vector3d u = p - colloidPos[iColl]; // Vector from point to colloid
+			Vector3d u = p - colloidPos[iColl]; // Vector from point to colloid
 
 			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
-			vector3d first_plane  = colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
-			vector3d second_plane = colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			Vector3d first_plane  = colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			Vector3d second_plane = colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
 			double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
 			double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
 
@@ -142,10 +141,10 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 				double projection = dot(u,v);
 				if (projection>0){
 					above[iColl].push_back(it);
-					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
+					debug() << p << " added to region above colloid " << iColl << endl;
 				} else {
 					below[iColl].push_back(it);
-					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region below colloid "<<iColl<<endl;
+					debug() << p << " added to region below colloid " << iColl << endl;
 				}
 			}
 		}
@@ -178,8 +177,15 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 	 * i.e. region is number 2*iColl+aboveOrBelow
 	 */
 	int adjacency[4][4] = {}; // initalise to all zero
+
+	/** Set of all points reached in the flood-fills from regions above/below colloid 0.
+	 * We use these to check whether a twist is left-handed (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed
+	 */
+	vector<Point*> fromAbove0;
+	vector<Point*> fromBelow0;
+
 	// For each region
-	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
+	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){ // aboveOrBelow is 0 for below, 1 for above
 		debug()<<"in region: colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
 		vector<Point*> region = aboveOrBelow ? above[iColl] : below[iColl];
 		int otherColl=(iColl+1)%2;
@@ -193,7 +199,6 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 							pow(it->z - colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
-				//if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
 				if (neigh->isInASausage && !elementOf(region,neigh)){
 					double neighDistanceToOtherColl = pow(neigh->x - colloidPos[otherColl].x,2) +
 									pow(neigh->y - colloidPos[otherColl].y,2) +
@@ -227,7 +232,6 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				if (!curr->neighbours[iNeigh]) continue;
 				Point* thisNeigh=curr->neighbours[iNeigh];
-				//if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
 				if (elementOf(visited,thisNeigh)) continue;
 				visited.push_back(thisNeigh);
 				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
@@ -237,7 +241,6 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
 						vector<Point*> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
-						//if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
 						if (elementOf(inner_region,thisNeigh)){
 							in_a_region=true;
 							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
@@ -245,12 +248,18 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 							//debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
 						}
 					}}
-					//if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
 					if (!in_a_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
 				}
 			}
 		}
 		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
+
+		// Save paths for identifying twist handedness
+		if (aboveOrBelow==0 && iColl==0){
+			fromBelow0=visited;
+		} else if (aboveOrBelow==1 && iColl==0){
+			fromAbove0=visited;
+		}
 
 	}} // end of 'for each region'
 
@@ -282,8 +291,76 @@ void Sausage::flood_fill_classify(const std::vector<vector3d> colloidPos){
 		info()<<"System appears to be untwisted (Class 1)"<<endl;
 	} else if (adjacency[0][3] && adjacency[1][2]){
 		info()<<"System appears to be twisted (Class 2)"<<endl;
+		// Work out whether it's a RHS twist or a LHS one
+		int handedness = find_twist_handedness(fromBelow0, fromAbove0);
+		if (handedness==1){
+			info()<<"Looks left-handed"<<endl;
+		} else if (handedness==2) {
+			info()<<"Looks right-handed"<<endl;
+		} else {
+			error()<<"Something went wrong finding handedness of the twist"<<endl;
+			exit(EXIT_FAILURE);
+		}
 	} else {
 		error()<<"Unexpected system linkage, this should never happen."<<endl;
+		exit(EXIT_FAILURE);
+	}
+}
+
+/** Takes two vectors of Points, corresponding to the two sets of all points reached in the flood-fills from regions above/below colloid 0.
+ * We use these to check whether a twist is left-handed (return 0) (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed (return 1)
+ */
+int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vector<Point*> fromAbovePoints){
+
+	// Make vector<vector3d> of the points in each arm.
+	/*
+	 * This would be nice (implicit casting) but I CBA to go back over flood_fill_classify and replace <Point*> with <Point&> or whatever
+	std::vector<Vector3d> fromBelow(fromBelowPoints.begin(), fromBelowPoints.end());
+	std::vector<Vector3d> fromAbove(fromAbovePoints.begin(), fromAbovePoints.end());
+	*/
+	std::vector<Vector3d> fromBelow, fromAbove;
+	for (vector<Point*>::iterator iter=fromBelowPoints.begin(); iter!=fromBelowPoints.end(); iter++){
+		fromBelow.push_back((Vector3d)(**iter));
+	}
+	for (vector<Point*>::iterator iter=fromAbovePoints.begin(); iter!=fromAbovePoints.end(); iter++){
+		fromAbove.push_back((Vector3d)(**iter));
+	}
+
+	rotate_to_xy_plane(fromBelow);
+	rotate_to_xy_plane(fromAbove);
+
+
+	// Points are within a cross-over region if their xy projection is 'close' to one of a point from the other arm
+	// 'Close' is defined as 2*pixel_size
+	double above_minz = numeric_limits<double>::infinity();
+	double above_maxz = -numeric_limits<double>::infinity();
+	double below_minz = numeric_limits<double>::infinity();
+	double below_maxz = -numeric_limits<double>::infinity();
+	bool overlap=false;
+	for (vector<Vector3d>::iterator above=fromAbove.begin(); above!=fromAbove.end(); above++){
+		for (vector<Vector3d>::iterator below=fromBelow.begin(); below!=fromBelow.end(); below++){
+			if ( pow(above->x-below->x, 2) + pow(above->y-below->y, 2) < pow(2*params::pixel_size,2) ){
+				debug() << *below << " and " << *above << " are in the DANGER ZONE! <cough> crossing zone." << endl;
+				overlap=true;
+				above_minz = (above->z < above_minz) ? above->z : above_minz;
+				above_maxz = (above->z > above_maxz) ? above->z : above_maxz;
+				below_minz = (below->z < below_minz) ? below->z : below_minz;
+				below_maxz = (below->z > below_maxz) ? below->z : below_maxz;
+			}
+		}
+	}
+	if (above_minz>above_maxz || below_minz>below_maxz || !overlap){
+		error() << "Something's wrong with the crossing-zone, aborting" << endl;
+		exit(EXIT_FAILURE);
+	}
+	if (above_minz > below_maxz){
+		info()<< "Looks like a left-handed figure-of-eight" << endl;
+		return 1;
+	} else if (above_maxz < below_minz){
+		info()<< "Looks like a right-handed figure-of-eight" << endl;
+		return 0;
+	} else {
+		error() << "Something's wrong with the crossing-zone, aborting" << endl;
 		exit(EXIT_FAILURE);
 	}
 }
@@ -493,13 +570,42 @@ void Sausage::find_com(void){
 
 void Sausage::rotate_to_xy_plane(double** pointsArray){
 
+	calculate_rotation_matrix();
 	debug() << "Rotating to xy-plane" << endl;
 
 	// loop over all coordinate points and rotate
 	for(size_t i = 0; i != points.size(); i++) {
+		double x = rotation_matrix(0)*pointsArray[i][0] + rotation_matrix(1)*pointsArray[i][1] + rotation_matrix(2)*pointsArray[i][2];
+		double y = rotation_matrix(3)*pointsArray[i][0] + rotation_matrix(4)*pointsArray[i][1] + rotation_matrix(5)*pointsArray[i][2];
+		double z = rotation_matrix(6)*pointsArray[i][0] + rotation_matrix(7)*pointsArray[i][1] + rotation_matrix(8)*pointsArray[i][2];
+		pointsArray[i][0] = x;
+		pointsArray[i][1] = y;
+		pointsArray[i][2] = z;
+	}
+	return;
+}
+
+void Sausage::rotate_to_xy_plane(std::vector<Vector3d> pointsArray){
+
+	calculate_rotation_matrix();
+	debug() << "Rotating to xy-plane" << endl;
+
+	// loop over all coordinate points and rotate
+	/*
+	for(size_t i = 0; i != points.size(); i++) {
 		pointsArray[i][0] = rotation_matrix(0)*pointsArray[i][0] + rotation_matrix(1)*pointsArray[i][1] + rotation_matrix(2)*pointsArray[i][2];
 		pointsArray[i][1] = rotation_matrix(3)*pointsArray[i][0] + rotation_matrix(4)*pointsArray[i][1] + rotation_matrix(5)*pointsArray[i][2];
 		pointsArray[i][2] = rotation_matrix(6)*pointsArray[i][0] + rotation_matrix(7)*pointsArray[i][1] + rotation_matrix(8)*pointsArray[i][2];
+	}
+	*/
+	for (vector<Vector3d>::iterator iter=pointsArray.begin(); iter!=pointsArray.end(); ++iter){
+		double x = rotation_matrix(0)*iter->x + rotation_matrix(1)*iter->y + rotation_matrix(2)*iter->z;
+		double y = rotation_matrix(3)*iter->x + rotation_matrix(4)*iter->y + rotation_matrix(5)*iter->z;
+		double z = rotation_matrix(6)*iter->x + rotation_matrix(7)*iter->y + rotation_matrix(8)*iter->z;
+		//iter = Vector3d (x,y,z);
+		iter->x = x;
+		iter->y = y;
+		iter->z = z;
 	}
 	return;
 }
