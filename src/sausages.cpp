@@ -199,7 +199,7 @@ int Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 							pow(it->z - colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
-				if (neigh->isInASausage && !elementOf(region,neigh)){
+				if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
 					double neighDistanceToOtherColl = pow(neigh->x - colloidPos[otherColl].x,2) +
 									pow(neigh->y - colloidPos[otherColl].y,2) +
 									pow(neigh->z - colloidPos[otherColl].z,2) ;

@@ -306,6 +306,7 @@ void read_diot(std::istream &input, Model &model){
 
 	// Read in points, only saving threshold-passing ones, linking them properly
 	model.total_points=0; // !=allPoints.size();
+	model.threshold_points=0;
 	int ix=0,iy=0,iz=0; // Point coordinate in point-space
 	double cl,cp,cs;
 
@@ -326,7 +327,6 @@ void read_diot(std::istream &input, Model &model){
 	while ( getline (input, line) ){
 		model.total_points++;
 		// Assuming BeginClCpCs is in zyxInc
-		iz++;
 		if (iz==numVoxels[2]){
 			iz=0; iy++;
 		}
@@ -341,6 +341,7 @@ void read_diot(std::istream &input, Model &model){
 
 		// Only save points that pass threshold condition
 		if (cl < params::threshold){
+			model.threshold_points++;
 			Point p;
 			p.cl=cl; p.cs=cs; p.cp=cp;
 			p.x = ix*voxelSize[0] + lowBounds[0];
@@ -357,6 +358,9 @@ void read_diot(std::istream &input, Model &model){
 		} else {
 			pointMap.push_back(-1);
 		}
+
+		// Assuming BeginClCpCs is in zyxInc
+		iz++;
 	}
 
 	if (writePoints) thresholdedFile.close();
