@@ -15,7 +15,7 @@ using namespace params;
 namespace params{
 	verbosityLevel verbosity = INFO;
 	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
-	int brief_version = 1 ; // each brief version is standardised
+	int brief_version = 2 ; // each brief version is standardised
 	std::string thresholded_filename = ""; // 'thresholded' file is for output of points below the threshold, in a different file to cout
 	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages, one file per sausage
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)

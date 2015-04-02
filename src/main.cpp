@@ -36,7 +36,8 @@ int main(int argc, char *argv[]){
 		set_params(NULL,model.colloidPos);
 	}
 	brief({1}) << "brief_version	1" << endl;
-	brief({1}) << "input_filename	" << argv[1] << endl;
+	brief({2}) << "brief_version	2" << endl;
+	brief({1,2}) << "input_filename	" << argv[1] << endl;
 
 	debug() << "Colloids in param file: " << params::colloidsInParamFile << endl;
 
@@ -46,9 +47,9 @@ int main(int argc, char *argv[]){
 	info() << "Read "<< model.total_points << " points."<<endl;
 	info() << "Stored "<< model.allPoints.size() << " points."<<endl;
 
-	brief({1}) << "total_points	" << model.total_points << endl;
-	brief({1}) << "threshold	" << params::threshold << endl;
-	brief({1}) << "threshold_pts	" << model.threshold_points << endl;
+	brief({1,2}) << "total_points	" << model.total_points << endl;
+	brief({1,2}) << "threshold	" << params::threshold << endl;
+	brief({1,2}) << "threshold_pts	" << model.threshold_points << endl;
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
@@ -89,12 +90,12 @@ int main(int argc, char *argv[]){
 	join_endpoints(model.allSausages,relevant_sausages);
 
 	// Plenty of output
-	brief({1}) << "num_sausages	" << model.allSausages.size() << endl;
+	brief({1,2}) << "num_sausages	" << model.allSausages.size() << endl;
 
 	debug() << "Post-joining sausage sizes:" << endl;
 	for (size_t i=0; i<model.allSausages.size(); i++){
 		debug() << "  " << i << " " << model.allSausages[i].points.size() << endl;
-		brief({1}) << "saus_" << i << "_size	" << model.allSausages[i].points.size() << endl;
+		brief({1,2}) << "saus_" << i << "_size	" << model.allSausages[i].points.size() << endl;
 	}
 	debug() << "Relevant sausages (prints index of sausages): " << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
@@ -123,17 +124,17 @@ int main(int argc, char *argv[]){
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
-			brief({1}) << "system_class	3" << endl;
-			brief({1}) << "system_str	twoRings" << endl;
+			brief({1,2}) << "system_class	3" << endl;
+			brief({1,2}) << "system_str	twoRings" << endl;
 		} else if (ratio > params::ratio_2nd_loop ) {
 			info() << "The sausages have very different size. Hence it is the 2nd_loop structure." << endl;
-			brief({1}) << "system_class	4" << endl;
-			brief({1}) << "system_str	theta" << endl;
+			brief({1,2}) << "system_class	4" << endl;
+			brief({1,2}) << "system_str	theta" << endl;
 		} else {
 			cerr << "Two relevant sausages were found but the ratio was not distinctive enought to distinguish between Two-ring and 2nd_loop. \
 			Maybe change input parameters." << endl;
-			brief({1}) << "system_class	0" << endl;
-			brief({1}) << "system_str	undefined" << endl;
+			brief({1,2}) << "system_class	0" << endl;
+			brief({1,2}) << "system_str	undefined" << endl;
 			exit(EXIT_FAILURE);
 			}
 	}
