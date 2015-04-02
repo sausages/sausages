@@ -8,9 +8,7 @@
 
 ./cleanup.sh
 
-unzip figure_eight_RH.zip
-
-../../sausages figure_eight_RH test.params > stdout.output || ( echo "Program exited unsuccessfully" ; err=$((err+$?)) )
+../../sausages figure_eight_RH.diot.zip test.params > stdout.output || ( echo "Program exited unsuccessfully" ; err=$((err+$?)) )
 
 for f in *expected
 do

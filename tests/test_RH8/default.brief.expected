@@ -1,5 +1,5 @@
 brief_version	1
-input_filename	figure_eight_RH
+input_filename	figure_eight_RH.diot.zip
 total_points	8000000
 threshold	0.05
 threshold_pts	2894
