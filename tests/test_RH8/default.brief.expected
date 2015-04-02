@@ -1,0 +1,9 @@
+brief_version	1
+input_filename	figure_eight_RH
+total_points	8000000
+threshold	0.05
+threshold_pts	2894
+num_sausages	1
+saus_0_size	2894
+system_class	2
+system_str	figureEightRHS

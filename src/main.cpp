@@ -147,7 +147,14 @@ int main(int argc, char *argv[]){
 		//allSausages[relevant_sausages[0]].track_sausage();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
-		model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
+		int classification = model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
+		brief({1}) << "system_class	" << classification << endl;
+		switch (classification){
+			case 1:	brief({1}) << "system_str	figureEightLHS" << endl; break;
+			case 2:	brief({1}) << "system_str	figureEightRHS" << endl; break;
+			case 5:	brief({1}) << "system_str	omega" << endl; break;
+			default: error() << "Unexpected system classification" << endl; exit(EXIT_FAILURE);
+		}
 	}
 
 	// Wrap up and exit

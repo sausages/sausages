@@ -1,0 +1,4 @@
+Test identification of Right-handed figure-of-eight system
+
+needs cl=0.05 for contiguous sausage, if (since) join-endpoints isn't working properly yet
+Uses xyzclcpcs file-format (original format)

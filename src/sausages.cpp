@@ -72,18 +72,18 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
  * Four points on the sausage are found, two on either side of each colloid.
  * From each point we flood-fill towards the centre, and see which of the other points we reach
  *
- * Class 1: If we reach only the other colloid's point of the same side (i.e. above-1 -> above-2) then we
- *  have a simple ring with no twists, such as a theta configuration.
- *  Also classified as class-1 will be 2nd-loop systems where the 2nd loop is touching the 1st on only one side.
+ * Class 5: If we reach only the other colloid's point of the same side (i.e. above-1 -> above-2) then we
+ *  have a simple ring with no twists, such as an omega configuration.
+ *  Also classified as class-5 will be 2nd-loop systems where the 2nd loop is touching the 1st on only one side.
  *
- * Class 2: If we end up only on the other side of the opposite colloid (above-1 -> below-2)
- *  then we have a figure-of-eight system.
+ * Class 1/2: If we end up only on the other side of the opposite colloid (above-1 -> below-2)
+ *  then we have a figure-of-eight system. 1 is left-handed, 2 is right-handed
  *
- * Class 3: If we reach more than one other point we have junctions on both sides of the sausage, and are
+ * Class 0: If we reach more than one other point we have junctions on both sides of the sausage, and are
  *  insufficiently resolved.
  *
  */
-void Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
+int Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
@@ -288,15 +288,18 @@ void Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 		}
 	}
 	if (adjacency[0][2] && adjacency[1][3]){
-		info()<<"System appears to be untwisted (Class 1)"<<endl;
+		info()<<"System appears to be untwisted (Class 5)"<<endl;
+		return 5;
 	} else if (adjacency[0][3] && adjacency[1][2]){
-		info()<<"System appears to be twisted (Class 2)"<<endl;
+		info()<<"System appears to be twisted (Class 1/2)"<<endl;
 		// Work out whether it's a RHS twist or a LHS one
 		int handedness = find_twist_handedness(fromBelow0, fromAbove0);
 		if (handedness==1){
-			info()<<"Looks left-handed"<<endl;
+			info()<<"Looks left-handed (Class 1)"<<endl;
+			return 1;
 		} else if (handedness==2) {
-			info()<<"Looks right-handed"<<endl;
+			info()<<"Looks right-handed (Class 2)"<<endl;
+			return 2;
 		} else {
 			error()<<"Something went wrong finding handedness of the twist"<<endl;
 			exit(EXIT_FAILURE);
@@ -308,13 +311,13 @@ void Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 }
 
 /** Takes two vectors of Points, corresponding to the two sets of all points reached in the flood-fills from regions above/below colloid 0.
- * We use these to check whether a twist is left-handed (return 0) (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed (return 1)
+ * We use these to check whether a twist is left-handed (return 1) (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed (return 2)
  */
 int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vector<Point*> fromAbovePoints){
 
 	// Make vector<vector3d> of the points in each arm.
 	/*
-	 * This would be nice (implicit casting) but I CBA to go back over flood_fill_classify and replace <Point*> with <Point&> or whatever
+	 * This would be nice (implicit casting) but I CBA to go back over flood_fill_classify and replace <Point*> with <Point&> or whatev2r
 	std::vector<Vector3d> fromBelow(fromBelowPoints.begin(), fromBelowPoints.end());
 	std::vector<Vector3d> fromAbove(fromAbovePoints.begin(), fromAbovePoints.end());
 	*/
@@ -340,7 +343,7 @@ int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vec
 	for (vector<Vector3d>::iterator above=fromAbove.begin(); above!=fromAbove.end(); above++){
 		for (vector<Vector3d>::iterator below=fromBelow.begin(); below!=fromBelow.end(); below++){
 			if ( pow(above->x-below->x, 2) + pow(above->y-below->y, 2) < pow(2*params::pixel_size,2) ){
-				debug() << *below << " and " << *above << " are in the DANGER ZONE! <cough> crossing zone." << endl;
+				//debug() << *below << " and " << *above << " are in the DANGER ZONE! <cough> crossing zone." << endl;
 				overlap=true;
 				above_minz = (above->z < above_minz) ? above->z : above_minz;
 				above_maxz = (above->z > above_maxz) ? above->z : above_maxz;
@@ -358,10 +361,10 @@ int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vec
 		return 1;
 	} else if (above_maxz < below_minz){
 		info()<< "Looks like a right-handed figure-of-eight" << endl;
-		return 0;
+		return 2;
 	} else {
-		error() << "Something's wrong with the crossing-zone, aborting" << endl;
-		exit(EXIT_FAILURE);
+		error() << "Something's wrong with the crossing-zone" << endl;
+		return 0;
 	}
 }
 
