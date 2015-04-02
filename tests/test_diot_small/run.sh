@@ -8,9 +8,7 @@
 
 ./cleanup.sh
 
-unzip short.diot.zip
-
-../../sausages short.diot test.params > stdout.output || echo "Program exited unsuccessfully"
+../../sausages short.diot.zip test.params > stdout.output || echo "Program exited unsuccessfully"
 
 for f in *expected
 do

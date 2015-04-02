@@ -1,5 +1,5 @@
 brief_version	1
-input_filename	short.diot
+input_filename	short.diot.zip
 total_points	512000
 threshold	0.12
 threshold_pts	1463
