@@ -764,45 +764,69 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
     if (region1.size() >= region2.size() ) region = region1;
     verbose()<<region.size()<<" pixels in region chosen (larger region)"<<endl;
 
-//	// For each region
-//	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
-//		debug()<<"in region: colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
-//		vector<Point*> region = aboveOrBelow ? above[iColl] : below[iColl];
-//		int otherColl=(iColl+1)%2;
-//
-//		// find all neighbours of the region which are inside this sausage and closer to the /other/ colloid
-//		vector<Point*> neighbours;
-//		for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
-//			Point* it=*iter;
-//			double distanceToOtherColl = pow(it->x - colloidPos[otherColl].x,2) +
-//							pow(it->y - colloidPos[otherColl].y,2) +
-//							pow(it->z - colloidPos[otherColl].z,2) ;
-//			for (int iNeigh=0;iNeigh<6;iNeigh++){
-//				Point* neigh = it->neighbours[iNeigh];
-//				//if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
-//				if (neigh->isInASausage && !elementOf(region,neigh)){
-//					double neighDistanceToOtherColl = pow(neigh->x - colloidPos[otherColl].x,2) +
-//									pow(neigh->y - colloidPos[otherColl].y,2) +
-//									pow(neigh->z - colloidPos[otherColl].z,2) ;
-//					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(it->neighbours[iNeigh]);
-//				}
-//			}
-//		}
-//		debug()<<"end of region"<<endl<<flush;
-//
-//		// Get rid of duplicate neighbours
-//		debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
-//		sort(neighbours.begin(),neighbours.end());
-//		debug()<<"sorted neighbours"<<endl;
-//		vector<Point*>::iterator it = unique(neighbours.begin(),neighbours.end());
-//		neighbours.resize(distance(neighbours.begin(),it));
-//		debug()<<"Removed duplicates, now "<<neighbours.size()<<" neighbours."<<endl;
-//		debug()<<"Neighbours at:"<<endl;
-//		for (vector<Point*>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
-//			debug()<<(*it)->x<<","<<(*it)->y<<","<<(*it)->z<<endl;
-//		}
-//
-//		// flood-fill from neighbours. If a point is in a region, make a note but don't add it to the flood-filled area.
+    //Find vector u which is parallel to PoBF, perpendicular to v
+	vector3d u;
+	if (abs(v.y+beta*v.z) > params::epsilon){
+		u.x=1; // No need to normalise
+		u.y=(-alpha-v.x)/(v.y+beta*v.z);
+	}else{
+		u.x=(-v.y-beta*v.z)/(v.x+alpha); // = 0, more or less
+		u.y=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
+	}
+	u.z=alpha*u.x+beta*u.y;
+
+	verbose()<<"Vector u (perp. v & || PoBF ) is "<<u<<endl;
+
+
+	//Find com of region selected
+	double x=0,y=0,z=0;
+    vector3d com_vec_reg; //com of region selected
+   	for (vector<Point*>::iterator it=region.begin(); it!=region.end(); it++){
+		x+=(*it)->x;
+		y+=(*it)->y;
+		z+=(*it)->z;
+	}
+	com_vec_reg.x = x/region.size();
+	com_vec_reg.y = y/region.size();
+	com_vec_reg.z = z/region.size();
+	info() <<  "Centre of mass of region " << com_vec_reg << endl;
+   	// Find neighbours of region
+    vector<Point*> neighbours;
+    vector3d p; //Vector from COM of region to point p
+	for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
+		Point* it=*iter;
+		for (int iNeigh=0;iNeigh<6;iNeigh++){
+			Point* neigh = it->neighbours[iNeigh];
+    		if (neigh->isInASausage && !elementOf(region,neigh)){
+                p.x = neigh->x; 
+                p.y = neigh->y; 
+                p.z = neigh->z; 
+                //Only pick neighbour points along u away from com of region
+                debug() << " p  "<<p<< endl;
+                debug() << " p - com_vec_reg "<<p-com_vec_reg<< endl;
+                debug() << "dot(u,p-com_vec_reg) "<<dot(u,p-com_vec_reg)<<endl;
+                if (dot(u,p-com_vec_reg) > 0){
+			        neighbours.push_back(it->neighbours[iNeigh]);
+                }
+			}
+		}
+	}
+	debug()<<"end of region"<<endl<<flush;
+
+	// Get rid of duplicate neighbours
+	debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
+	sort(neighbours.begin(),neighbours.end());
+	debug()<<"sorted neighbours"<<endl;
+	vector<Point*>::iterator it = unique(neighbours.begin(),neighbours.end());
+	neighbours.resize(distance(neighbours.begin(),it));
+	debug()<<"Removed duplicates, now "<<neighbours.size()<<" neighbours."<<endl;
+	debug()<<"Neighbours at:"<<endl;
+	for (vector<Point*>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
+		verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH"<<endl;
+	}
+    verbose()<<neighbours.size()<<" pixels in neighbour region"<<endl;
+
+	// flood-fill from neighbours. If the point is in the region, don't add it to the flood-filled area.
 //		vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
 //		vector<Point*> visited; // Points we've already visited, and so should ignore
 //		while (stack.size()>0){
