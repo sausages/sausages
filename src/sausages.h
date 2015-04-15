@@ -36,6 +36,7 @@ class Sausage {
     void sphere_tracking(); ///< Tracks sausage and saves all coms 
     void calculate_sausage_length_spheres(void); ///< Calculate length by connecting all COMs of sphere tracking by straight lines
 	void flood_fill_classify(const std::vector<vector3d> colloidPos);
+	void flood_fill_closed_loops(const std::vector<vector3d> colloidPos);
 	void find_endpoints(void);
 	double plane_of_best_fit[3]; ///< Unit-vector normal to plane-of-least-squares
 };

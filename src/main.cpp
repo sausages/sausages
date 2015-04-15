@@ -89,6 +89,13 @@ int main(int argc, char *argv[]){
 	info() << "Joining small gaps..."<<endl;
 	join_endpoints(model.allSausages,relevant_sausages);
 
+    // Check that all relevant sausages are closed loops, open loops are unphysical, except along pbc
+	info() << "Checking all relevant sausages are closed loops..." << endl;
+	for (size_t i=0; i<relevant_sausages.size(); i++){
+        model.allSausages[relevant_sausages[i]].flood_fill_closed_loops(model.colloidPos);
+    }
+	info() << "Check successful." << endl;
+
 	// Plenty of output
 	brief({1,2}) << "num_sausages	" << model.allSausages.size() << endl;
 
