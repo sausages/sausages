@@ -675,18 +675,31 @@ void Sausage::calculate_sausage_length_spheres(){
 }
 
 /** Check that all relevant sausages are closed loops
- * Find vector v starting at 1 that is || to pobf and perp to line joining vectors
- * Try colloid 1 first, if empty repeat with colloid 2
- * Add all points within band of v to starting region.
- * Mark neighbours of region closert to other colloid and start FF until we have reached starting region.
+ * Add description
  */
 void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
-//	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
-//	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
-//	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
-//	 */
-//
+
 	debug() << "begin flood_fill_closed_loops" << endl << flush;
+    
+    // find centre of mass of this sausage
+    find_com();
+    vector3d com_vec;
+    com_vec.x = centre_of_mass[0];
+    com_vec.y = centre_of_mass[1];
+    com_vec.z = centre_of_mass[2];
+
+    // check that COM isn't very close to the sausage
+    vector3d delta;
+    for(size_t i = 0; i != points.size(); i++){
+		delta.x = points[i]->x - com_vec.x;
+		delta.y = points[i]->y - com_vec.y;
+		delta.z = points[i]->z - com_vec.z;
+		if ( fabs(magnitude(delta) < 3.0)){
+            cerr << "FF closed loops, shows that COM is very close to sausage point." << endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+    debug() << "Check that COM is at least 3.0 away from any sausge point."<< endl;
 
 	// AB is vector joining colloids
 	vector3d AB = colloidPos[0] - colloidPos[1];
@@ -696,7 +709,7 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
 	double alpha=-plane_of_best_fit[0];
 	double beta=-plane_of_best_fit[1];
 
-	// From being parallel to PoBF, perpendicular to AB, we can determine:
+	// From being parallel to PoBF, perpendicular to AB, we can determine: (This is an arbitrary pick.)
 	vector3d v;
 	if (abs(AB.y+beta*AB.z) > params::epsilon){
 		v.x=1; // No need to normalise
@@ -710,48 +723,47 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
 	double norm_v = sqrt(dot(v,v));
 	verbose()<<"Vector v (perp. AB & || PoBF & unit) is "<<v<<" of length "<<norm_v<<endl;
 
-	// For each point in the sausage, is it between two parallel planes extended from beside a colloid, perpendicular to the line between the colloids?
-	vector<Point*> region;
+	// Loop over all points in sausage and add the ones within tubes around v starting in COM
+	vector<Point*> region1,region2,region;
 	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
 		Point* it = *iter;
-      // Try to find region based on first colloid
-		int iColl=0;
-			vector3d p; // xyz of this point
-			p.x=it->x; p.y=it->y; p.z=it->z;
+		vector3d p; // xyz of this point
+		p.x=it->x; p.y=it->y; p.z=it->z;
 
-            vector3d u = p - colloidPos[iColl]; // Vector from point to colloid
+        vector3d u = p - com_vec; // Vector from point to COM
 
-			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
-			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
-			vector3d first_plane  = colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
-			vector3d second_plane = colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
-			double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
-			double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
+		// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
+		// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
+		vector3d first_plane  = com_vec + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+		vector3d second_plane = com_vec - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+		double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
+		double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
 
-			// Is it between the two planes? If so add to region 
-			if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
-			    second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
-			    double projection = dot(u,v);
-				if (projection>0){
-					region.push_back(it);
-					verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTIN"<<endl;
-                }else{verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTOUT"<<endl;}
-            }else{verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTOUT"<<endl;}
-	}
+		// Is it between the two planes? If so add to region 
+		if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
+		    second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
+		    double projection = dot(u,v);
+			if (projection>0){
+				region1.push_back(it);
+				verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTIN1"<<endl;
+            }else{
+      			region2.push_back(it);
+				verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTIN2"<<endl;
+            }
+         }else{verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTOUT"<<endl;}
+    }
 
-	verbose()<<region.size()<<" pixels in region"<<endl;
-	if (region.size() == 0){
-		cerr << "Region in FF closed loops check is empty, this is bad, exiting." << endl << flush;
+	verbose()<<region1.size()<<" pixels in region 1"<<endl;
+	verbose()<<region2.size()<<" pixels in region 2"<<endl;
+	if (region1.size() == 0 && region2.size() == 0){
+		cerr << "Both regions in FF closed loops check is empty, this is bad, exiting." << endl << flush;
 		exit(EXIT_FAILURE);
 	}
 
-//
-//	/** Adjacency matrix of region
-//	 * 4-by-4 adjacency matrix. Each region is adjacent to itself.
-//	 * Regions are numbered:  0) below-0  1) above-0  2) below-1  3) above-1
-//	 * i.e. region is number 2*iColl+aboveOrBelow
-//	 */
-//	int adjacency[4][4] = {}; // initalise to all zero
+    //Pick larger region
+    if (region1.size() >= region2.size() ) region = region1;
+    verbose()<<region.size()<<" pixels in region chosen (larger region)"<<endl;
+
 //	// For each region
 //	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
 //		debug()<<"in region: colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
