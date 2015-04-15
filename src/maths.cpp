@@ -10,11 +10,11 @@ std::ostream &operator<<( std::ostream &output, const vector3d &v ) {
 // vector+vector
 vector3d norm(const vector3d& u){
 	vector3d result;
-    double length;
-    length = sqrt(u.x*u.x+u.y*u.y+u.z*u.z);
-	result.x = u.x / length;
-	result.y = u.y / length;
-	result.z = u.z / length;
+    double mag;
+    mag = sqrt(u.x*u.x+u.y*u.y+u.z*u.z);
+	result.x = u.x / mag;
+	result.y = u.y / mag;
+	result.z = u.z / mag;
 	return result;
 }
 
@@ -65,8 +65,8 @@ double distance(const vector3d& u, const vector3d& v) {
 }
 
 double magnitude(const vector3d& u) {
-	double length;
-    length = sqrt(u.x*u.x + u.y*u.y + u.z*u.z);
-    return length;
+	double mag;
+    mag = sqrt(u.x*u.x + u.y*u.y + u.z*u.z);
+    return mag;
 }
 

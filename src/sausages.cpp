@@ -630,11 +630,11 @@ void Sausage::sphere_tracking(){
             cerr << "The next point in sphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
         }
        
-        //add COM found to final array of COMs
+        //add COM found to final array of COMs if index > 5, because first few points will be slighly noisy
         sphere_COMs.push_back(com);
 		
-		// check whether we have reached our starting point
-		if ( distance(sphere_COMs[index],sphere_COMs[0]) < params::R_gap)
+		// check whether we have reached our starting point once we have found the first few points
+		if (distance(sphere_COMs[index],sphere_COMs[0]) < params::R_gap)
 		{
 			info() << "Halfsphere algorithm has successfully reached its starting point. \n" << endl;
 			reached_start = true;
@@ -652,7 +652,8 @@ void Sausage::sphere_tracking(){
     //print all COMs of sphere
 	verbose()<<"COMS sphere tracking:"<<std::endl;
 	for (int k=0; k<sphere_COMs.size(); k++){
-    	verbose()<<sphere_COMs[k]<<std::endl;}
+    	brief({2})<<"COM "<<sphere_COMs[k]<<std::endl;
+    	verbose()<<"COM "<<sphere_COMs[k]<<std::endl;}
 
     return;
 }
@@ -661,12 +662,15 @@ void Sausage::calculate_sausage_length_spheres(){
 
 	// loop over all COMs found by sphere tracking to calculate length
 	length = 0;
-	for(int i = 0; i < sphere_COMs.size(); i++) { 
+	for(int i = 0; i < sphere_COMs.size()-1; i++) { 
 		length += distance(sphere_COMs[i],sphere_COMs[i+1]); 
+        debug() << "Length "<<i<<" "<< length << endl;
     }
 	length += distance(sphere_COMs[sphere_COMs.size()-1],sphere_COMs[0]);
+    debug() << "Length last step"<< length << endl;
 
 	info() << "The estimated length of the sausage using spheres is " << length << endl;
+	brief({2}) << "Length "<<sausageID<<" "<< length << endl;
 	return;
 }
 
