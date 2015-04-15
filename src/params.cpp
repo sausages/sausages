@@ -17,7 +17,8 @@ namespace params{
 	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
 	int brief_version = 1 ; // each brief version is standardised
 	std::string thresholded_filename = ""; // 'thresholded' file is for output of points below the threshold, in a different file to cout
-	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages, one file per sausage
+	std::string prejoin_sausage_filename = ""; // file for output of points in sausages before joining, one file per sausage
+	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages after joining endpoints, one file per sausage
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
@@ -106,6 +107,12 @@ void set_params(char *filename, std::vector<Vector3d>  &colloidPos){
 	if (cJSON_GetObjectItem(root,"sausage_filename")){
 			sausage_filename = cJSON_GetObjectItem(root,"sausage_filename")->valuestring;
 			info()<<"sausage_filename "<<sausage_filename<<std::endl;
+	}
+
+	// prejoin_sausage_filename
+	if (cJSON_GetObjectItem(root,"prejoin_sausage_filename")){
+			prejoin_sausage_filename = cJSON_GetObjectItem(root,"prejoin_sausage_filename")->valuestring;
+			info()<<"prejoin_sausage_filename "<<prejoin_sausage_filename<<std::endl;
 	}
 
 

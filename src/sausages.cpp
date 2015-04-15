@@ -37,12 +37,6 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl << flush;
 			Sausage newSausage(newSausageID);
-			bool writePoints = false;
-			std::ofstream sausageFile;
-			if (!params::sausage_filename.empty()){
-				writePoints = true;
-				sausageFile.open(params::sausage_filename+std::to_string(newSausageID));
-			}
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
 				Point *curr = &(allPoints[stack.back()]);
@@ -51,7 +45,6 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				curr->sausageID=newSausageID;
 				newSausage.points.push_back(curr);
 				curr->sausagePointsIndex=newSausage.points.size()-1;
-				if (writePoints) sausageFile << curr->x << ' ' << curr->y << ' ' << curr->z << endl;
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					Point *neigh=curr->neighbours[iNeigh];
 					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
@@ -62,7 +55,6 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 			}
 			allSausages.push_back(newSausage);
 			debug()<<allSausages[newSausageID].points.size()<<" points in the sausages."<<endl<<flush;
-			if (writePoints) sausageFile.close();
 			newSausageID++;
 		}
 	}
@@ -159,17 +151,6 @@ int Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 		cerr << "One of the regions is empty, this is bad, exiting." << endl << flush;
 		exit(EXIT_FAILURE);
 	}
-
-	/* Debug: print out all points in sausage, and points in regions */
-	/*
-	cout << "XXXX" << endl;
-	for (vector<Point>::iterator it=points.begin(); it!=points.end(); it++){ cout << 0 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=above[0].begin(); it!=above[0].end(); it++){ cout << 1 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=below[0].begin(); it!=below[0].end(); it++){ cout << 2 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=above[1].begin(); it!=above[1].end(); it++){ cout << 3 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=below[1].begin(); it!=below[1].end(); it++){ cout << 4 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	cout << "XXXX" << endl;
-	*/
 
 	/** Adjacency matrix of region
 	 * 4-by-4 adjacency matrix. Each region is adjacent to itself.
@@ -370,7 +351,7 @@ int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vec
 
 void Sausage::find_endpoints(void){
 
-	debug() << "begin find_endpoints" << endl << flush;
+	debug() << "begin find_endpoints of sausage " << sausageID << endl << flush;
 
 	// There is no 'infinity' for integers, like there is for doubles.
 	// However, there is a max(), which works out to be something like 2,147,000,000
@@ -387,7 +368,7 @@ void Sausage::find_endpoints(void){
 			dist[i][j]=myInfinity;
 		}
 	}
-	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
+	if (points.size()>15) debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
 
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
@@ -414,6 +395,7 @@ void Sausage::find_endpoints(void){
 
 	// Find maximum minimum-distance
 	int max_min_dist=0;
+	endpoints[0] = endpoints[1] = 0; // In case there's only a single point
 	for (size_t i=0; i<points.size(); i++){
 		for (size_t j=i; j<points.size(); j++){
 			if (dist[i][j]>max_min_dist){
@@ -425,9 +407,9 @@ void Sausage::find_endpoints(void){
 		}
 	}
 
-	debug()<<"Endpoint 0 is #"<<endpoints[0]<<" at: "<<points[endpoints[0]]->x<<","<<points[endpoints[0]]->y<<","<<points[endpoints[0]]->z<<","<<endl;
-	debug()<<"Endpoint 1 is #"<<endpoints[1]<<" at: "<<points[endpoints[1]]->x<<","<<points[endpoints[1]]->y<<","<<points[endpoints[1]]->z<<","<<endl;
-	debug()<<"Minimum distance along the sausage between them is: "<<max_min_dist<<endl;
+	debug() << "Endpoint 0 is #" << endpoints[0] << " at: " << *points[endpoints[0]] << endl;
+	debug() << "Endpoint 1 is #" << endpoints[1] << " at: " << *points[endpoints[1]] << endl;
+	debug() << "Minimum distance along the sausage between them is: " << max_min_dist << endl;
 
 	for (size_t i=0; i<points.size(); i++){
 		delete [] dist[i];
@@ -435,14 +417,14 @@ void Sausage::find_endpoints(void){
 	delete [] dist;
 }
 
-void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages){
+void join_endpoints(Model &model){
 	// Work out distance between endpoints
-	double dist[2*relevantSausages.size()][2*relevantSausages.size()];
-	for (size_t i=0; i<relevantSausages.size(); i++){
-		Sausage si = allSausages[relevantSausages[i]];
+	double dist[2*model.allSausages.size()][2*model.allSausages.size()];
+	for (size_t i=0; i<model.allSausages.size(); i++){
+		Sausage si = model.allSausages[i];
 		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
-			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
-				Sausage sj = allSausages[relevantSausages[j]];
+			for (size_t j=i; j<model.allSausages.size(); j++){ // Only need half, by symmetry
+				Sausage sj = model.allSausages[j];
 				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
 					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
 					float pi[3],pj[3],p2p[3];
@@ -466,19 +448,23 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 
 	// Join endpoints that are 'close' to each other
 	size_t other_endpoint;
-	bool another_endpoint;
-	for (size_t i=0; i<relevantSausages.size(); i++){
+	bool nearby_endpoint;
+	for (size_t i=0; i<model.allSausages.size(); i++){
 		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
-			another_endpoint=false;
+			nearby_endpoint=false;
 			int num_nearby_endpoints=0;
-			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
+			for (size_t j=i; j<model.allSausages.size(); j++){ // Only need half, by symmetry
 				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
 					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
+					// If we've already closed this sausage into a loop, the endpoints will be the same point
+					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::epsilon) continue;
+					// Are there any points close enough to join to?
 					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::max_sausage_gap_size*params::pixel_size){
 						debug()<<"Picked out "<<j<<":"<<jEndpoint<<" and "<<i<<":"<<iEndpoint<<endl;
-						another_endpoint=true;
+						nearby_endpoint=true;
 						other_endpoint=2*j+jEndpoint;
 					}
+					// Are there other points which are also nearby, which make this hard to decide on?
 					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::min_sausage_gap_next_neigh_distance*params::pixel_size){
 						num_nearby_endpoints++;
 					}
@@ -486,10 +472,10 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				}
 			}
 			if (num_nearby_endpoints>1){
-				error()<<"Too many endpoints near endpoint "<<iEndpoint<<" of sausage "<<relevantSausages[i]<<endl;
+				error()<<"Too many endpoints near endpoint "<<iEndpoint<<" of sausage "<<i<<endl;
 				exit(EXIT_FAILURE);
 			}
-			if (another_endpoint){
+			if (nearby_endpoint){
 				// Join endpoints i:iEndpoint and j:jEndpoint
 				// To do this:
 				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
@@ -498,59 +484,224 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 
 				size_t j=other_endpoint/2;
 				size_t jEndpoint=other_endpoint%2;
-				Sausage *sausagei=&allSausages[relevantSausages[i]];
-				Sausage *sausagej=&allSausages[relevantSausages[j]];
+				Sausage &sausagei=model.allSausages[i];
+				Sausage &sausagej=model.allSausages[j];
 
 				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
-				if (sausagej!=sausagei){
-					for (vector<Point*>::iterator iter=sausagej->points.begin(); iter!=sausagej->points.end(); ++iter){
-						(*iter)->sausageID=relevantSausages[i];
-						(*iter)->sausagePointsIndex+=sausagei->points.size();
+				int original_sausagei_size = sausagei.points.size();
+				if (sausagej.sausageID!=sausagei.sausageID){
+					for (vector<Point*>::iterator iter=sausagej.points.begin(); iter!=sausagej.points.end(); ++iter){
+						(*iter)->sausageID=sausagei.sausageID;
+						(*iter)->sausagePointsIndex+=sausagei.points.size();
 					}
-					debug()<<"sausagei size: "<<sausagei->points.size()<<endl;
-					debug()<<"sausagej size: "<<sausagej->points.size()<<endl;
-					sausagei->points.insert(sausagei->points.end(),sausagej->points.begin(),sausagej->points.end());
-					debug()<<"new sausagei size: "<<sausagei->points.size()<<endl;
+					debug()<<"sausagei size: "<<sausagei.points.size()<<endl;
+					debug()<<"sausagej size: "<<sausagej.points.size()<<endl;
+					sausagei.points.insert(sausagei.points.end(),sausagej.points.begin(),sausagej.points.end());
+					debug()<<"new sausagei size: "<<sausagei.points.size()<<endl;
 				}
 
 				// Artificially add points between nearby endpoints
-				Point *curr = sausagei->points[sausagei->endpoints[iEndpoint]];
-				Point *target = sausagej->points[sausagej->endpoints[jEndpoint]];
+				Point *curr = sausagei.points[sausagei.endpoints[iEndpoint]];
+				Point *target = sausagej.points[sausagej.endpoints[jEndpoint]];
+
+				debug() << "Joining, heading from point " << *curr << " to point " << *target << endl;
+
+				// We can't just follow links anymore, since we don't save non-sausage points when using diot.
+				// If a Point is missing, its neighbours will have Null links to it. We have to sort out the links here.
+				// We don't want to have to check all of allPoints at each step, so we'll pre-compute the Points that might
+				// be neighbours of a new Point. In this case it's the small area around the two endpoints.
+				vector<Point*> possNeighs;
+				double border = 2*params::pixel_size;
+				debug() << "Border size: " << border << endl;
+				for (Point &p : model.allPoints){ // Needs to be a reference (not iter) b.c. of our address abuse.
+					if (p.x > min(curr->x, target->x)-border &&
+					    p.x < max(curr->x, target->x)+border &&
+					    p.y > min(curr->y, target->y)-border &&
+					    p.y < max(curr->y, target->y)+border &&
+					    p.z > min(curr->z, target->z)-border &&
+					    p.z < max(curr->z, target->z)+border )
+						possNeighs.push_back(&p); // WARNING This is probably safe, allPoints won't get resized here
+				}
+				debug() << "possNeighs has size: " << possNeighs.size() << endl;
+				for (Point *p : possNeighs){
+					debug() << *p << endl;
+				}
+
+
 
 				// At each step we move along the dimension which takes us fastest to target.
 				while (curr->x!=target->x || curr->y!=target->y || curr->z!=target->z){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
+					debug() << "Joining, now at point " << *curr << endl;
+					if (curr->sausageID != sausagei.sausageID && curr->sausageID != sausagej.sausageID && curr->isInASausage){
 						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
 						exit(EXIT_FAILURE);
 					}
-					if (curr->sausageID!=sausagei->sausageID){
+					// Add it to the sausage if needed
+					if (curr->sausageID!=sausagei.sausageID){
+						debug() << "Adding point to sausage" << endl;
 						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
+						curr->sausageID=sausagei.sausageID;
+						sausagei.points.push_back(curr);
+						curr->sausagePointsIndex=sausagei.points.size()-1;
 					}
 					double dx = abs(curr->x - target->x);
 					double dy = abs(curr->y - target->y);
 					double dz = abs(curr->z - target->z);
 
+					enum direction {L,R,U,D,F,B};
+
+					Point* next;
+					direction dir;
 					if (dx>dy && dx>dz){
-						curr = (curr->x > target->x) ? curr->left : curr->right;
+						next = (curr->x > target->x) ? curr->left : curr->right;
+						dir  = (curr->x > target->x) ? L : R;
 					} else if (dy>dz) {
-						curr = (curr->y > target->y) ? curr->down : curr->up;
+						next = (curr->y > target->y) ? curr->down : curr->up;
+						dir  = (curr->y > target->y) ? D : U;
 					} else {
-						curr = (curr->z > target->z) ? curr->back : curr->forward;
+						next = (curr->z > target->z) ? curr->back : curr->forward;
+						dir  = (curr->z > target->z) ? B : F;
 					}
+					debug() << "next is: " << next << endl;
+
+					// Do we need to create a new point?
+					if (next==NULL){
+						// Create a copy of curr, remove all features, then move it
+						// TODO is a nicer constructor, then change x,y,z, a better approach?
+						Point p = *curr;
+						debug() << "Created point p, address=" << &p << endl;
+						// WARNING cl, cp, cs are unknown, we threw it away when reading
+						p.cl = p.cp = p.cs = -1;
+						p.sausageID = -1; // We'll add it next time around
+						p.isInASausage = false;
+						p.allPointsIndex = -1;
+						p.sausagePointsIndex = -1;
+						p.left = p.right = p.up = p.down = p.forward = p.back = NULL;
+						for (i=0;i<6;i++) {p.neighbours[i]=NULL;}
+						switch (dir){
+							case L: p.x -= params::pixel_size; break;
+							case R: p.x += params::pixel_size; break;
+							case D: p.y -= params::pixel_size; break;
+							case U: p.y += params::pixel_size; break;
+							case B: p.z -= params::pixel_size; break;
+							case F: p.z += params::pixel_size; break;
+						}
+
+						// Look for all 6 neighbours by looking in possNeighs for Points in the right place
+						for (direction d : {L,R,U,D,F,B} ){
+							// Where should we look?
+							Vector3d neighLoc = p;
+							switch (d){
+								case L: neighLoc.x -= params::pixel_size; break;
+								case R: neighLoc.x += params::pixel_size; break;
+								case D: neighLoc.y -= params::pixel_size; break;
+								case U: neighLoc.y += params::pixel_size; break;
+								case B: neighLoc.z -= params::pixel_size; break;
+								case F: neighLoc.z += params::pixel_size; break;
+							}
+							// Which point is there?
+							bool foundNeigh=false;
+							for (Point* candidate : possNeighs){
+								if (mag((Vector3d) *candidate - neighLoc) < (params::epsilon * params::epsilon)){
+									foundNeigh=true;
+									Point* allPointsPtr = &(model.allPoints[candidate->allPointsIndex]) ;
+									switch (d){
+										case L:
+											p.left = allPointsPtr;
+											p.left->right = &p;
+											break;
+										case R:
+											p.right = allPointsPtr;
+											p.right->left = &p;
+											break;
+										case D:
+											p.down = allPointsPtr;
+											p.down->up = &p;
+											break;
+										case U:
+											p.up = allPointsPtr;
+											p.up->down = &p;
+											break;
+										case B:
+											p.back = allPointsPtr;
+											p.back->forward = &p;
+											break;
+										case F:
+											p.forward = allPointsPtr;
+											p.forward->back = &p;
+											break;
+									}
+									break; // We've found the neighbour
+								}
+							}
+							if (!foundNeigh){
+								debug() << "Couldn't find suitable neighbour at " << neighLoc << endl;
+							}
+						}
+
+						// Set neighbours array
+						p.neighbours[0]=p.left;
+						p.neighbours[1]=p.right;
+						p.neighbours[2]=p.up;
+						p.neighbours[3]=p.down;
+						p.neighbours[4]=p.forward;
+						p.neighbours[5]=p.back;
+
+						// Add it to allPoints
+						model.allPoints.push_back(p);
+						debug() << "Added to vector, address is now: " << &p << endl;
+						p.allPointsIndex=model.allPoints.size()-1;
+
+						// Also add it to possNeighs
+						possNeighs.push_back(&p);
+
+
+						debug() << "Made a new point at " << p << endl;
+
+						// And use it!
+						next=&p;
+					};
+
+					// Move to next point and continue
+					curr=next;
 				}
+				debug() << "Sausagei size: " << sausagei.points.size() << endl;
 
-				// Sausage has changed, need to recalculate endpoints
-				sausagei->find_endpoints();
+				debug() << "Before endpoint-swap..." << endl;
+				debug() << "i[0]: " << *(sausagei.points[sausagei.endpoints[0]]) << endl;
+				debug() << "i[1]: " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
+				debug() << "j[0]: " << *(sausagej.points[sausagej.endpoints[0]]) << endl;
+				debug() << "j[1]: " << *(sausagej.points[sausagej.endpoints[1]]) << endl;
+				debug() << "join-point of i: " << sausagei.endpoints[iEndpoint] << endl;
+				debug() << "join-point of i: " << *(sausagei.points[sausagei.endpoints[iEndpoint]]) << endl;
+				debug() << "non-join-point of j: " << sausagej.endpoints[(jEndpoint+1)%2] << endl;
+				debug() << "non-join-point of j: " << *(sausagej.points[sausagej.endpoints[(jEndpoint+1)%2]]) << endl;;
 
-				//  - Remove sausagej from relevantSausages if it's been merged into sausagei,
-				//    but check we haven't just closed a gap in sausagei (i.e. joined i:0 and i:0) 
-				if (sausagei!=sausagej) relevantSausages.erase(relevantSausages.begin()+j); // Awkward, but erase() requires an iterator
+				//  Sort out new endpoints & remove sausagej if it's been merged into sausagei,
+				if (sausagei.sausageID == sausagej.sausageID){
+					// We've closed the sausage into a loop, make distance between endpoints = 0 to stop more joining
+					sausagei.endpoints[1] = sausagei.endpoints[0];
+				} else {
+					// If a->b is longest path in saus i, and c->d is longest in saus j, then a->d will be longest if we link b&c
+					// Need to make joining-endpoint of sausagei now equal to non-joining endpoint of sausagej
+					sausagei.endpoints[iEndpoint] = sausagej.endpoints[(jEndpoint+1)%2] + original_sausagei_size;
+					debug() << "Removing sausage " << j << " from allSausages" << endl;
+					model.allSausages.erase(model.allSausages.begin()+j); // Awkward, but erase() requires an iterator
+				}
+				debug() << "After endpoint-swap..." << endl;
+				debug() << "i[0]: " << *(sausagei.points[sausagei.endpoints[0]]) << endl;
+				debug() << "i[1]: " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
+				debug() << "j[0]: " << *(sausagej.points[sausagej.endpoints[0]]) << endl;
+				debug() << "j[1]: " << *(sausagej.points[sausagej.endpoints[1]]) << endl;
+				debug() << "join-point of i: " << sausagei.endpoints[iEndpoint] << endl;
+				debug() << "join-point of i: " << *(sausagei.points[sausagei.endpoints[iEndpoint]]) << endl;
+				debug() << "non-join-point of j: " << sausagej.endpoints[(jEndpoint+1)%2] << endl;
+				debug() << "non-join-point of j: " << *(sausagej.points[sausagej.endpoints[(jEndpoint+1)%2]]) << endl;;
+				debug() << "Sausagei's endpoints are now at: " << *(sausagei.points[sausagei.endpoints[0]])
+					<< " and " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
 
 				// Recurse, in case more sausages need joining, then exit
-				join_endpoints(allSausages,relevantSausages);
+				join_endpoints(model);
 				return;
 			}
 		}

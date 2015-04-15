@@ -3,13 +3,14 @@
 
 #include <vector>
 #include "maths.h"
-#include "point.h"
-#include "sausages.h"
+
+class Point;
+class Sausage;
 
 class Model {
 	public:
 	int total_points; ///< How many points are in the input file?
-	int threshold_points; ///< How many points are below the threshold?
+	std::vector<int> threshold_points; ///< Which points are below the threshold? Stores their allPointsIndex
 	std::vector<Vector3d> colloidPos; ///< Positions of the colloids
 	std::vector<double> colloidRadii; ///< Radii of the colloids
 	std::vector<Point> allPoints; ///< All points in simulation

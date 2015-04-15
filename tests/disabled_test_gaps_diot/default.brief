@@ -1,0 +1,7 @@
+brief_version	1
+input_filename	short.diot
+total_points	512000
+threshold	0.12
+threshold_pts	1449
+num_sausages	1
+saus_0_size	1454

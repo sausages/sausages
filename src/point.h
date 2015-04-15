@@ -44,18 +44,14 @@ class Point
 	 */
 	Point* neighbours[6];
 
-	// Pointer to self, pretty sure this is irrelevant, but...
-	// I currently need it for the == operator
-	Point* self;
-
-	// Assume if our self-pointer is the same then we are the same
+	// Assume if our allPointsIndex is the same then we are the same
 	// Currently needed for the find algorithm in flood-fill
 	bool operator == (const Point &Ref) const {
-		return(this->self == Ref.self);
+		return(this->allPointsIndex == Ref.allPointsIndex);
 	}
-	// Sort points (for uniqueness) by value of pointer
+	// Sort points (for uniqueness) by value of allPointsIndex
 	bool operator < (const Point &Ref) const {
-		return(this->self < Ref.self);
+		return(this->allPointsIndex < Ref.allPointsIndex);
 	}
 
 	Point(void);

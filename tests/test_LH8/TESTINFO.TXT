@@ -1,3 +1,0 @@
-Test identification of Left-handed figure-of-eight system
-
-Uses xyzclcpcs file-format (original format)

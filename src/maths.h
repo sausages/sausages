@@ -28,5 +28,7 @@ Vector3d operator/(const Vector3d& v, const double& a);
 
 double dot(const Vector3d& u, const Vector3d& v);
 
+double mag(const Vector3d& u);
+
 
 #endif // MATHS_H

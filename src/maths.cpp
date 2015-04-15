@@ -1,4 +1,5 @@
 #include "maths.h"
+#include <cmath>
 #include <iostream>
 
 std::ostream &operator<<( std::ostream &output, const Vector3d &v ) {
@@ -30,4 +31,6 @@ double dot(const Vector3d& u, const Vector3d& v) {
 	return u.x*v.x + u.y*v.y + u.z*v.z;
 }
 
-
+double mag(const Vector3d& u){
+	return sqrt(dot(u,u));
+}

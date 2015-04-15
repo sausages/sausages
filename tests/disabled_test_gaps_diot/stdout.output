@@ -1,0 +1,410 @@
+verbosityLevel: DEBUG
+brief_filename default.brief
+thresholded_filename thresh.dat
+sausage_filename saus.dat
+prejoin_sausage_filename prejoin-saus.dat
+threshold 0.12
+Colloids in param file: 0
+Reading file short.diot
+Not a zip file
+Read 512000 points.
+Stored 1449 points.
+Printing to file thresh.dat
+Distinguishing sausages...
+begin flood_fill_separate
+Starting flood-fill of sausage #0
+672 points in the sausages.
+Starting flood-fill of sausage #1
+777 points in the sausages.
+Sausage sizes:
+  0 672
+  1 777
+Printing pre-joined sausages to files: prejoin-saus.dat
+Printing to file prejoin-saus.dat0
+Printing to file prejoin-saus.dat1
+Finding endpoints...
+begin find_endpoints of sausage 0
+myInf: 1073741822, myInf+myInf: 2147483644
+Arbitrary initial distance: 1073741822
+k=0/672
+k=100/672
+k=200/672
+k=300/672
+k=400/672
+k=500/672
+k=600/672
+Endpoint 0 is #183 at: (-0.5,-17,-1)
+Endpoint 1 is #522 at: (-0.5,19,2)
+Minimum distance along the sausage between them is: 164
+begin find_endpoints of sausage 1
+myInf: 1073741822, myInf+myInf: 2147483644
+Arbitrary initial distance: 1073741822
+k=0/777
+k=100/777
+k=200/777
+k=300/777
+k=400/777
+k=500/777
+k=600/777
+k=700/777
+Endpoint 0 is #8 at: (0.5,-16.5,-2)
+Endpoint 1 is #421 at: (0.5,19,2)
+Minimum distance along the sausage between them is: 175
+We currently have 2 sausages
+Joining small gaps...
+Distance 0:0,0:1,36.1248
+Distance 0:0,1:0,1.5
+Distance 0:0,1:1,36.1386
+Distance 0:1,1:0,35.7386
+Distance 0:1,1:1,1
+Distance 1:0,1:1,35.7246
+Picked out 1:0 and 0:0
+sausagei size: 672
+sausagej size: 777
+new sausagei size: 1449
+Joining, heading from point (-0.5,-17,-1) to point (0.5,-16.5,-2)
+Border size: 1
+possNeighs has size: 25
+(-1,-16.5,-1.5)
+(-1,-16.5,-1)
+(-1,-16,-2)
+(-1,-16,-1.5)
+(-1,-16,-1)
+(-0.5,-17,-1)
+(-0.5,-16.5,-1.5)
+(-0.5,-16.5,-1)
+(-0.5,-16,-2)
+(-0.5,-16,-1.5)
+(-0.5,-16,-1)
+(0.5,-17,-1.5)
+(0.5,-17,-1)
+(0.5,-17,-0.5)
+(0.5,-16.5,-2)
+(0.5,-16.5,-1.5)
+(0.5,-16.5,-1)
+(0.5,-16.5,-0.5)
+(1,-17,-1.5)
+(1,-17,-1)
+(1,-17,-0.5)
+(1,-16.5,-2)
+(1,-16.5,-1.5)
+(1,-16.5,-1)
+(1,-16.5,-0.5)
+Joining, now at point (-0.5,-17,-1)
+next is: 0x0
+Created point p, address=0x7fff5202ab60
+Couldn't find suitable neighbour at (-1,-17,-1.5)
+Couldn't find suitable neighbour at (0,-17,-1.5)
+Couldn't find suitable neighbour at (-0.5,-17.5,-1.5)
+Couldn't find suitable neighbour at (-0.5,-17,-2)
+Added to vector, address is now: 0x7fff5202ab60
+Made a new point at (-0.5,-17,-1.5)
+Joining, now at point (-0.5,-17,-1.5)
+Adding point to sausage
+next is: 0x0
+Created point p, address=0x7fff5202ab60
+Couldn't find suitable neighbour at (-0.5,-17,-1.5)
+Couldn't find suitable neighbour at (0,-16.5,-1.5)
+Couldn't find suitable neighbour at (0,-17.5,-1.5)
+Couldn't find suitable neighbour at (0,-17,-1)
+Couldn't find suitable neighbour at (0,-17,-2)
+Added to vector, address is now: 0x7fff5202ab60
+Made a new point at (0,-17,-1.5)
+Joining, now at point (0,-17,-1.5)
+Adding point to sausage
+next is: 0x0
+Created point p, address=0x7fff5202ab60
+Couldn't find suitable neighbour at (-0.5,-17,-2)
+Couldn't find suitable neighbour at (0.5,-17,-2)
+Couldn't find suitable neighbour at (0,-16.5,-2)
+Couldn't find suitable neighbour at (0,-17.5,-2)
+Couldn't find suitable neighbour at (0,-17,-1.5)
+Couldn't find suitable neighbour at (0,-17,-2.5)
+Added to vector, address is now: 0x7fff5202ab60
+Made a new point at (0,-17,-2)
+Joining, now at point (0,-17,-2)
+Adding point to sausage
+next is: 0x0
+Created point p, address=0x7fff5202ab60
+Couldn't find suitable neighbour at (-0.5,-16.5,-2)
+Couldn't find suitable neighbour at (0,-16,-2)
+Couldn't find suitable neighbour at (0,-17,-2)
+Couldn't find suitable neighbour at (0,-16.5,-1.5)
+Couldn't find suitable neighbour at (0,-16.5,-2.5)
+Added to vector, address is now: 0x7fff5202ab60
+Made a new point at (0,-16.5,-2)
+Joining, now at point (0,-16.5,-2)
+Adding point to sausage
+next is: 0x10de46af8
+Sausagei size: 1453
+Before endpoint-swap...
+i[0]: (-0.5,-17,-1)
+i[1]: (-0.5,19,2)
+j[0]: (0.5,-16.5,-2)
+j[1]: (0.5,19,2)
+join-point of i: 183
+join-point of i: (-0.5,-17,-1)
+non-join-point of j: 421
+non-join-point of j: (0.5,19,2)
+Removing sausage 1 from allSausages
+After endpoint-swap...
+i[0]: (0.5,19,2)
+i[1]: (-0.5,19,2)
+j[0]: (0.5,-16.5,-2)
+j[1]: (0.5,19,2)
+join-point of i: 1093
+join-point of i: (0.5,19,2)
+non-join-point of j: 421
+non-join-point of j: (0.5,19,2)
+Sausagei's endpoints are now at: (0.5,19,2) and (-0.5,19,2)
+Distance 0:0,0:1,1
+Picked out 0:1 and 0:0
+Joining, heading from point (0.5,19,2) to point (-0.5,19,2)
+Border size: 1
+possNeighs has size: 14
+(-1,18.5,1.5)
+(-1,18.5,2)
+(-1,19,1.5)
+(-1,19,2)
+(-0.5,18.5,1.5)
+(-0.5,18.5,2)
+(-0.5,19,1.5)
+(-0.5,19,2)
+(0.5,18.5,1.5)
+(0.5,18.5,2)
+(0.5,19,1.5)
+(0.5,19,2)
+(1,18.5,1.5)
+(1,18.5,2)
+Joining, now at point (0.5,19,2)
+next is: 0x0
+Created point p, address=0x7fff52028be0
+Couldn't find suitable neighbour at (0,19.5,2)
+Couldn't find suitable neighbour at (0,18.5,2)
+Couldn't find suitable neighbour at (0,19,2.5)
+Couldn't find suitable neighbour at (0,19,1.5)
+Added to vector, address is now: 0x7fff52028be0
+Made a new point at (0,19,2)
+Joining, now at point (0,19,2)
+Adding point to sausage
+next is: 0x10de46858
+Sausagei size: 1454
+Before endpoint-swap...
+i[0]: (0.5,19,2)
+i[1]: (-0.5,19,2)
+j[0]: (0.5,19,2)
+j[1]: (-0.5,19,2)
+join-point of i: 1093
+join-point of i: (0.5,19,2)
+non-join-point of j: 1093
+non-join-point of j: (0.5,19,2)
+After endpoint-swap...
+i[0]: (0.5,19,2)
+i[1]: (0.5,19,2)
+j[0]: (0.5,19,2)
+j[1]: (0.5,19,2)
+join-point of i: 1093
+join-point of i: (0.5,19,2)
+non-join-point of j: 1093
+non-join-point of j: (0.5,19,2)
+Sausagei's endpoints are now at: (0.5,19,2) and (0.5,19,2)
+Distance 0:0,0:1,0
+Now we have 1 sausages
+Found 1 sufficiently large sausages.
+Printing joined sausages to files: saus.dat
+Printint out sausage 0
+Printing to file saus.dat0
+Post-joining sausage sizes:
+  0 1454
+Relevant sausages (prints index of sausages): 
+  0 0
+One relevant sausage found.
+Centre of mass 0.373109 0.614856 0.763755
+Least-squares plane is: 0.126355x + 0.135732y = z
+Vector perpendicular to the plane is (-0.126355,-0.135732,1)
+Size of sausage: 1454
+begin flood_fill_classify
+Vector AB is (-22.759,0,0) of length 22.759
+Vector v (perp. AB & || PoBF & unit) is (0,0.990914,0.134499) of length 1
+(-12,-12,-4.5) added to region below colloid 0
+(-12,-12,-4) added to region below colloid 0
+(-12,-12,-3.5) added to region below colloid 0
+(-11.5,-12,-3.5) added to region below colloid 0
+(-11.5,-12.5,-3.5) added to region below colloid 0
+(-11.5,-12.5,-4) added to region below colloid 0
+(-11.5,-12.5,-4.5) added to region below colloid 0
+(-11.5,-13,-4.5) added to region below colloid 0
+(-11,-13,-4.5) added to region below colloid 0
+(-11,-13,-4) added to region below colloid 0
+(-11,-13,-3.5) added to region below colloid 0
+(-10.5,-13,-3.5) added to region below colloid 0
+(-10.5,-13,-3) added to region below colloid 0
+(-10.5,-13.5,-3) added to region below colloid 0
+(-10.5,-13.5,-4) added to region below colloid 0
+(-10.5,-13.5,-3.5) added to region below colloid 0
+(-10.5,-12.5,-3.5) added to region below colloid 0
+(-11,-13.5,-4) added to region below colloid 0
+(-10.5,-13,-4) added to region below colloid 0
+(-11,-12.5,-4.5) added to region below colloid 0
+(-11.5,-13,-4) added to region below colloid 0
+(-11,-12.5,-4) added to region below colloid 0
+(-11,-12,-4) added to region below colloid 0
+(-11,-12.5,-3.5) added to region below colloid 0
+(-11.5,-11.5,-3.5) added to region below colloid 0
+(-11.5,-11.5,-4) added to region below colloid 0
+(-11,-12,-3.5) added to region below colloid 0
+(-11.5,-12,-4) added to region below colloid 0
+(-12,-12.5,-4.5) added to region below colloid 0
+(-11.5,-12,-4.5) added to region below colloid 0
+(-12,-11.5,-4.5) added to region below colloid 0
+(-12,-11.5,-4) added to region below colloid 0
+(-12,-11,-4) added to region below colloid 0
+(-12,-11.5,-3.5) added to region below colloid 0
+(-12,-11,-3.5) added to region below colloid 0
+(-12,13.5,0.5) added to region above colloid 0
+(-12,13.5,1) added to region above colloid 0
+(-12,13.5,1.5) added to region above colloid 0
+(-12,14,1.5) added to region above colloid 0
+(-11.5,14,1.5) added to region above colloid 0
+(-11.5,14,1) added to region above colloid 0
+(-11.5,14,0.5) added to region above colloid 0
+(-11.5,14.5,1) added to region above colloid 0
+(-11,14.5,1) added to region above colloid 0
+(-11,14.5,1.5) added to region above colloid 0
+(-11,14.5,2) added to region above colloid 0
+(-11,15,2) added to region above colloid 0
+(-10.5,15,2) added to region above colloid 0
+(-10.5,15,1.5) added to region above colloid 0
+(-10.5,15,1) added to region above colloid 0
+(-10.5,15.5,1) added to region above colloid 0
+(-10.5,15.5,1.5) added to region above colloid 0
+(-10.5,15,2.5) added to region above colloid 0
+(-10.5,15.5,2) added to region above colloid 0
+(-10.5,14.5,2) added to region above colloid 0
+(-11.5,14.5,2) added to region above colloid 0
+(-11,15,1.5) added to region above colloid 0
+(-10.5,14.5,1.5) added to region above colloid 0
+(-11,15,1) added to region above colloid 0
+(-11,14,1) added to region above colloid 0
+(-11.5,14,2) added to region above colloid 0
+(-11.5,14.5,1.5) added to region above colloid 0
+(-11,14,1.5) added to region above colloid 0
+(-12,14,1) added to region above colloid 0
+(-11.5,13.5,1) added to region above colloid 0
+(-12,14,0.5) added to region above colloid 0
+(10.5,-13.5,-2) added to region below colloid 1
+(10.5,-13.5,-1.5) added to region below colloid 1
+(10.5,-14,-1.5) added to region below colloid 1
+(11,-13.5,-1.5) added to region below colloid 1
+(10.5,-14,-2) added to region below colloid 1
+(11,-13.5,-2) added to region below colloid 1
+(11,-13.5,-2.5) added to region below colloid 1
+(11,-13,-2.5) added to region below colloid 1
+(11.5,-13,-2.5) added to region below colloid 1
+(11.5,-13,-2) added to region below colloid 1
+(11.5,-13,-1.5) added to region below colloid 1
+(12,-13,-1.5) added to region below colloid 1
+(12,-12.5,-1.5) added to region below colloid 1
+(12,-12.5,-2) added to region below colloid 1
+(12,-12.5,-2.5) added to region below colloid 1
+(12,12,4) added to region above colloid 1
+(12,12,4.5) added to region above colloid 1
+(12,12,5) added to region above colloid 1
+(12,11.5,5) added to region above colloid 1
+(11.5,12,5) added to region above colloid 1
+(11.5,12.5,5) added to region above colloid 1
+(11.5,12.5,4.5) added to region above colloid 1
+(11.5,12.5,4) added to region above colloid 1
+(11,12.5,4) added to region above colloid 1
+(11,13,4) added to region above colloid 1
+(11,13,4.5) added to region above colloid 1
+(10.5,13,4.5) added to region above colloid 1
+(10.5,13,5) added to region above colloid 1
+(10.5,12.5,5) added to region above colloid 1
+(10.5,12.5,4.5) added to region above colloid 1
+(10.5,13.5,4.5) added to region above colloid 1
+(10.5,13,4) added to region above colloid 1
+(11,12.5,4.5) added to region above colloid 1
+(11,12,4.5) added to region above colloid 1
+(11,12.5,5) added to region above colloid 1
+(11,12,5) added to region above colloid 1
+(12,12.5,4.5) added to region above colloid 1
+(11.5,12,4.5) added to region above colloid 1
+(12,12.5,4) added to region above colloid 1
+(11.5,12,4) added to region above colloid 1
+(12,11.5,4) added to region above colloid 1
+(12,11.5,4.5) added to region above colloid 1
+(11.5,-12.5,-2) added to region below colloid 1
+(12,-13,-2) added to region below colloid 1
+(11.5,-12.5,-2.5) added to region below colloid 1
+(12,-13,-2.5) added to region below colloid 1
+(11,-13,-2) added to region below colloid 1
+(11.5,-13.5,-2) added to region below colloid 1
+(10.5,-13.5,-2.5) added to region below colloid 1
+31 pixels in region above first colloid
+27 pixels in region above second colloid
+35 pixels in region below first colloid
+22 pixels in region below second colloid
+in region: colloid 0 aboveOrBelow 0
+end of region
+35 points in this region, 4 neighbours inside the sausage.
+sorted neighbours
+Removed duplicates, now 4 neighbours.
+Neighbours at:
+-10,-13.5,-4
+-10,-13.5,-3.5
+-10,-13.5,-3
+-10,-13,-3.5
+Finished flood-fill from region below colloid 0
+in region: colloid 0 aboveOrBelow 1
+end of region
+31 points in this region, 5 neighbours inside the sausage.
+sorted neighbours
+Removed duplicates, now 5 neighbours.
+Neighbours at:
+-10,15,1.5
+-10,15,2
+-10,15.5,1
+-10,15.5,1.5
+-10,15.5,2
+Finished flood-fill from region above colloid 0
+in region: colloid 1 aboveOrBelow 0
+end of region
+22 points in this region, 4 neighbours inside the sausage.
+sorted neighbours
+Removed duplicates, now 4 neighbours.
+Neighbours at:
+10,-14,-2
+10,-14,-1.5
+10,-13.5,-2.5
+10,-13.5,-2
+Finished flood-fill from region below colloid 1
+in region: colloid 1 aboveOrBelow 1
+end of region
+27 points in this region, 4 neighbours inside the sausage.
+sorted neighbours
+Removed duplicates, now 4 neighbours.
+Neighbours at:
+10,13,4
+10,13,4.5
+10,13,5
+10,13.5,4.5
+Finished flood-fill from region above colloid 1
+Adjacency[0][0] = 1
+Adjacency[0][1] = 0
+Adjacency[0][2] = 0
+Adjacency[0][3] = 0
+Adjacency[1][0] = 0
+Adjacency[1][1] = 1
+Adjacency[1][2] = 0
+Adjacency[1][3] = 0
+Adjacency[2][0] = 0
+Adjacency[2][1] = 0
+Adjacency[2][2] = 1
+Adjacency[2][3] = 0
+Adjacency[3][0] = 0
+Adjacency[3][1] = 0
+Adjacency[3][2] = 0
+Adjacency[3][3] = 1
+Adjacency matrix is correctly symmetric.
+Region below colloid 0 doesn't appear to be linked to any others.

@@ -48,7 +48,9 @@ int main(int argc, char *argv[]){
 
 	brief({1}) << "total_points	" << model.total_points << endl;
 	brief({1}) << "threshold	" << params::threshold << endl;
-	brief({1}) << "threshold_pts	" << model.threshold_points << endl;
+	brief({1}) << "threshold_pts	" << model.threshold_points.size() << endl;
+
+	if (!params::thresholded_filename.empty()) write_points(params::thresholded_filename, model.allPoints, model.threshold_points);
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
@@ -59,34 +61,52 @@ int main(int argc, char *argv[]){
 		verbose() << "  " << i << " " << model.allSausages[i].points.size() << endl;
 	}
 
+	if (!params::prejoin_sausage_filename.empty()){
+		debug() << "Printing pre-joined sausages to files: " << params::prejoin_sausage_filename << endl;
+		for (size_t i=0; i<model.allSausages.size(); i++){
+			write_points(params::prejoin_sausage_filename+to_string(i), model.allSausages[i].points);
+		}
+	}
+
+	// Find endpoints of all relevant sausages
+	info() << "Finding endpoints..."<<endl;
+	for (size_t i=0;i<model.allSausages.size();i++){
+		model.allSausages[i].find_endpoints();
+	}
+
+	// Join the endpoints
+	debug() << "We currently have " << model.allSausages.size() << " sausages" << endl;
+	info() << "Joining small gaps..."<<endl;
+	//join_endpoints(model.allSausages,relevant_sausages);
+	join_endpoints(model);
+	debug() << "Now we have " << model.allSausages.size() << " sausages" << endl;
+
+
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
 	for (size_t i=0; i<model.allSausages.size(); i++){
 		int sausageSize=model.allSausages[i].points.size();
-		if (sausageSize < params::silent_ignore_size*model.threshold_points ){
+		if (sausageSize < params::silent_ignore_size*model.threshold_points.size() ){
 			verbose() << "Ignoring sausage #" << i << endl;
 			model.allSausages[i].is_significant=false;
-		} else if (sausageSize > params::silent_ignore_size*model.threshold_points &&
-			sausageSize < params::min_sausage_size*model.threshold_points   ){
+		} else if (sausageSize > params::silent_ignore_size*model.threshold_points.size() &&
+			sausageSize < params::min_sausage_size*model.threshold_points.size()   ){
 			warning() << "Sausage #" << i << " of size "  <<
 				sausageSize << " is not tiny, but is being ignored." << endl;
 			model.allSausages[i].is_significant=false;
-		} else if (sausageSize > params::min_sausage_size*model.threshold_points){
+		} else if (sausageSize > params::min_sausage_size*model.threshold_points.size()){
 			model.allSausages[i].is_significant=true;
 			relevant_sausages.push_back(i);
 		}
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
-	// Find endpoints of all relevant sausages
-	info() << "Finding endpoints..."<<endl;
-	for (size_t i=0;i<relevant_sausages.size();i++){
-		model.allSausages[relevant_sausages[i]].find_endpoints();
+	if (!params::sausage_filename.empty()){
+		debug() << "Printing joined sausages to files: " << params::sausage_filename << endl;
+		for (size_t i=0; i<model.allSausages.size(); i++){
+			write_points(params::sausage_filename+to_string(i), model.allSausages[i].points);
+		}
 	}
-
-	// Join the endpoints
-	info() << "Joining small gaps..."<<endl;
-	join_endpoints(model.allSausages,relevant_sausages);
 
 	// Plenty of output
 	brief({1}) << "num_sausages	" << model.allSausages.size() << endl;

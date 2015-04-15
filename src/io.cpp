@@ -148,9 +148,6 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 	unsigned int N = round(pow(model.allPoints.size(),1.0/3.0));///< side-length of cube
 	// Don't use iterators, indices are important here
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		// Pointer to self, pretty sure this is irrelevant, but
-		// I currently need it for the flood-fill (iterators are copies)
-		model.allPoints[i].self = &(model.allPoints[i]);
 		// If not right-most
 		if (((i/(N*N))+1)%N != 0){
 			model.allPoints[i].right  = &(model.allPoints[i+N*N]);
@@ -189,27 +186,12 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 	// Points are in a sausge if their cl value is < threshold
 	debug() << "begin threshold" << endl << flush;
 
-	model.threshold_points = 0;
-
-	bool writePoints = false;
-	std::ofstream thresholdedFile;
-	if (!params::thresholded_filename.empty()){
-		writePoints = true;
-		thresholdedFile.open(params::thresholded_filename);
-	}
-
-	vector<Point>::iterator it;
-	vector<Point> thresholdedPoints;
-	for (it=model.allPoints.begin(); it!=model.allPoints.end(); ++it){
+	for (vector<Point>::iterator it=model.allPoints.begin(); it!=model.allPoints.end(); ++it){
 		if (it->cl < params::threshold){
-			if (writePoints){
-				thresholdedFile << it->x << ' ' << it->y << ' ' << it->z << endl;
-			}
 			it->isInASausage=true;
-			model.threshold_points++;
+			model.threshold_points.push_back(it->allPointsIndex);
 		}
 	}
-	if (writePoints) thresholdedFile.close();
 	debug() << "end threshold" << endl << flush;
 
 	return;
@@ -306,7 +288,6 @@ void read_diot(std::istream &input, Model &model){
 
 	// Read in points, only saving threshold-passing ones, linking them properly
 	model.total_points=0; // !=allPoints.size();
-	model.threshold_points=0;
 	int ix=0,iy=0,iz=0; // Point coordinate in point-space
 	double cl,cp,cs;
 
@@ -318,12 +299,6 @@ void read_diot(std::istream &input, Model &model){
 
 	int iPoint=0;
 	vector<int> pointMap; // Has a sensible structure, each element point to an allPoints element (or -1 if cl<threshold)
-	bool writePoints = false;
-	std::ofstream thresholdedFile;
-	if (!params::thresholded_filename.empty()){
-		writePoints = true;
-		thresholdedFile.open(params::thresholded_filename);
-	}
 	while ( getline (input, line) ){
 		model.total_points++;
 		// Assuming BeginClCpCs is in zyxInc
@@ -341,7 +316,6 @@ void read_diot(std::istream &input, Model &model){
 
 		// Only save points that pass threshold condition
 		if (cl < params::threshold){
-			model.threshold_points++;
 			Point p;
 			p.cl=cl; p.cs=cs; p.cp=cp;
 			p.x = ix*voxelSize[0] + lowBounds[0];
@@ -350,11 +324,8 @@ void read_diot(std::istream &input, Model &model){
 			p.allPointsIndex = iPoint++;
 			p.isInASausage=true;
 			model.allPoints.push_back(p);
+			model.threshold_points.push_back(p.allPointsIndex);
 			pointMap.push_back(p.allPointsIndex);
-			if (writePoints){
-				thresholdedFile << p.x << ' ' << p.y << ' ' << p.z << endl;
-			}
-
 		} else {
 			pointMap.push_back(-1);
 		}
@@ -362,8 +333,6 @@ void read_diot(std::istream &input, Model &model){
 		// Assuming BeginClCpCs is in zyxInc
 		iz++;
 	}
-
-	if (writePoints) thresholdedFile.close();
 
 	/* Links each point in allPoints to its 6 nearest-neighbours, using pointMap.
 	 * pointMap has an index-structure we can use, and each element point to an allPoints element
@@ -376,10 +345,6 @@ void read_diot(std::istream &input, Model &model){
 
 		int iCurr=pointMap[i]; // allPoint index
 		int Nx = numVoxels[0], Ny = numVoxels[1], Nz = numVoxels[2];
-
-		// Pointer to self, pretty sure this is irrelevant, but
-		// I currently need it for the flood-fill (iterators are copies)
-		model.allPoints[iCurr].self = &(model.allPoints[iCurr]);
 
 		// If not right-most
 		if (((i/(Nz*Ny))+1)%Nx != 0){
@@ -467,4 +432,36 @@ void read_zipped(std::string inputArchiveFileName, Model &model){
 
 	return;
 
+}
+
+
+/** Gnuplot (splot) is the nicest way to view lists of vectors,
+ *  and it prefers 'x y z' per line to Point-stream-overload of '(x,y,z)'
+ */
+void write_points(std::string filename, std::vector<Point> points){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (Point iter: points){
+		outfile << iter.x << ' ' << iter.y << ' ' << iter.z << endl;
+	}
+	outfile.close();
+}
+// Same as above, but with vectors-of-pointers
+void write_points(std::string filename, std::vector<Point*> points){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (Point* iter: points){
+		outfile << iter->x << ' ' << iter->y << ' ' << iter->z << endl;
+	}
+	outfile.close();
+}
+// Same as above, but print only the elements of 'points' whose index is in 'indices'
+void write_points(std::string filename, std::vector<Point> points, std::vector<int> indices){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (int i : indices){
+		Point iter = points[i];
+		outfile << iter.x << ' ' << iter.y << ' ' << iter.z << endl;
+	}
+	outfile.close();
 }
