@@ -117,15 +117,16 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 				<< ", this is unexpected (expect 6 or 10)" <<endl;
 		}
 
-		Point p;
+		Point &p = *(new Point ());
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
 		p.allPointsIndex=iPoint++;
 
 		try{
-			model.allPoints.push_back(p);
+			model.allPoints.push_back(&p);
 		} catch (std::bad_alloc &e){
 			size_t pointsRead=model.allPoints.size();
+			for (Point* pp : model.allPoints) {delete pp;}
 			model.allPoints.clear();
 			error()<<"Ran out of memory after reading in "<<pointsRead<<" points."<<std::endl;
 			error()<<"Counting points left..."<<std::flush;
@@ -150,46 +151,46 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 	for (size_t i=0; i<model.allPoints.size(); i++){
 		// If not right-most
 		if (((i/(N*N))+1)%N != 0){
-			model.allPoints[i].right  = &(model.allPoints[i+N*N]);
-			model.allPoints[i+N*N].left = &(model.allPoints[i]);
+			model.allPoints[i]->right  = model.allPoints[i+N*N];
+			model.allPoints[i+N*N]->left = model.allPoints[i];
 		}
 		// If not upper-most
 		if (((i/N)+1)%N != 0){
-			model.allPoints[i].up   = &(model.allPoints[i+N]);
-			model.allPoints[i+N].down = &(model.allPoints[i]);
+			model.allPoints[i]->up   = model.allPoints[i+N];
+			model.allPoints[i+N]->down = model.allPoints[i];
 		}
 		// If not forward-most
 		if ((i+1)%N != 0){
-			model.allPoints[i].forward = &(model.allPoints[i+1]);
-			model.allPoints[i+1].back   = &(model.allPoints[i]);
+			model.allPoints[i]->forward = model.allPoints[i+1];
+			model.allPoints[i+1]->back   = model.allPoints[i];
 		}
 	}
 
 	// Update neighbours array
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
-		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
-		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
-		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
-		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
-		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
+		model.allPoints[i]->neighbours[0]=model.allPoints[i]->left;
+		model.allPoints[i]->neighbours[1]=model.allPoints[i]->right;
+		model.allPoints[i]->neighbours[2]=model.allPoints[i]->up;
+		model.allPoints[i]->neighbours[3]=model.allPoints[i]->down;
+		model.allPoints[i]->neighbours[4]=model.allPoints[i]->forward;
+		model.allPoints[i]->neighbours[5]=model.allPoints[i]->back;
 	}
 
 	// Check Pixel size
-	if (abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size)>params::epsilon){
-		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0].z-model.allPoints[1].z)<<
+	if (abs(abs(model.allPoints[0]->z-model.allPoints[1]->z)-params::pixel_size)>params::epsilon){
+		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0]->z - model.allPoints[1]->z)<<
 			" but params file (or default) is set to "<<params::pixel_size<<"."<<endl<<
 			"WARNING: Overwriting with new pixel size."<<endl;
-		params::pixel_size=abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size);
+		params::pixel_size=abs(model.allPoints[0]->z - model.allPoints[1]->z);
 	}
 
 	// Points are in a sausge if their cl value is < threshold
 	debug() << "begin threshold" << endl << flush;
 
-	for (vector<Point>::iterator it=model.allPoints.begin(); it!=model.allPoints.end(); ++it){
-		if (it->cl < params::threshold){
-			it->isInASausage=true;
-			model.threshold_points.push_back(it->allPointsIndex);
+	for (Point* p : model.allPoints){
+		if (p->cl < params::threshold){
+			p->isInASausage=true;
+			model.threshold_points.push_back(p->allPointsIndex);
 		}
 	}
 	debug() << "end threshold" << endl << flush;
@@ -316,14 +317,14 @@ void read_diot(std::istream &input, Model &model){
 
 		// Only save points that pass threshold condition
 		if (cl < params::threshold){
-			Point p;
+			Point &p = *(new Point () );
 			p.cl=cl; p.cs=cs; p.cp=cp;
 			p.x = ix*voxelSize[0] + lowBounds[0];
 			p.y = iy*voxelSize[1] + lowBounds[1];
 			p.z = iz*voxelSize[2] + lowBounds[2];
 			p.allPointsIndex = iPoint++;
 			p.isInASausage=true;
-			model.allPoints.push_back(p);
+			model.allPoints.push_back(&p);
 			model.threshold_points.push_back(p.allPointsIndex);
 			pointMap.push_back(p.allPointsIndex);
 		} else {
@@ -350,36 +351,36 @@ void read_diot(std::istream &input, Model &model){
 		if (((i/(Nz*Ny))+1)%Nx != 0){
 			if (pointMap[i+Nz*Ny] != -1){ // If right-of-me passed thresholding
 				int iRight = pointMap[i+Nz*Ny];
-				model.allPoints[iCurr].right  = &(model.allPoints[iRight]);
-				model.allPoints[iRight].left = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->right  = model.allPoints[iRight];
+				model.allPoints[iRight]->left = model.allPoints[iCurr];
 			}
 		}
 		// If not upper-most
 		if (((i/Nz)+1)%Ny != 0){
 			if (pointMap[i+Nz] != -1){ // If above-me passed thresholding
 				int iUp = pointMap[i+Nz];
-				model.allPoints[iCurr].up   = &(model.allPoints[iUp]);
-				model.allPoints[iUp].down = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->up   = model.allPoints[iUp];
+				model.allPoints[iUp]->down = model.allPoints[iCurr];
 			}
 		}
 		// If not forward-most
 		if ((i+1)%Nz != 0){
 			if (pointMap[i+1] != -1){ // If forward-of-me passed thresholding
 				int iForward = pointMap[i+1];
-				model.allPoints[iCurr].forward = &(model.allPoints[iForward]);
-				model.allPoints[iForward].back   = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->forward = model.allPoints[iForward];
+				model.allPoints[iForward]->back   = model.allPoints[iCurr];
 			}
 		}
 	}
 
 	// Update neighbours array
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
-		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
-		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
-		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
-		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
-		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
+		model.allPoints[i]->neighbours[0]=model.allPoints[i]->left;
+		model.allPoints[i]->neighbours[1]=model.allPoints[i]->right;
+		model.allPoints[i]->neighbours[2]=model.allPoints[i]->up;
+		model.allPoints[i]->neighbours[3]=model.allPoints[i]->down;
+		model.allPoints[i]->neighbours[4]=model.allPoints[i]->forward;
+		model.allPoints[i]->neighbours[5]=model.allPoints[i]->back;
 	}
 
 	return;
@@ -456,12 +457,12 @@ void write_points(std::string filename, std::vector<Point*> points){
 	outfile.close();
 }
 // Same as above, but print only the elements of 'points' whose index is in 'indices'
-void write_points(std::string filename, std::vector<Point> points, std::vector<int> indices){
+void write_points(std::string filename, std::vector<Point*> points, std::vector<int> indices){
 	debug() << "Printing to file " << filename << endl;
 	std::ofstream outfile (filename);
 	for (int i : indices){
-		Point iter = points[i];
-		outfile << iter.x << ' ' << iter.y << ' ' << iter.z << endl;
+		Point* iter = points[i];
+		outfile << iter->x << ' ' << iter->y << ' ' << iter->z << endl;
 	}
 	outfile.close();
 }

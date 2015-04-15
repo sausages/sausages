@@ -15,7 +15,7 @@ void read_diot(std::istream &input, Model &model);
 void write_points(std::string filename, std::vector<Point> points);
 void write_points(std::string filename, std::vector<Point*> points);
 // Same as above, but print only the elements of 'points' whose index is in 'indices'
-void write_points(std::string filename, std::vector<Point> points, std::vector<int> indices);
+void write_points(std::string filename, std::vector<Point*> points, std::vector<int> indices);
 
 class NullBuffer : public std::streambuf
 {

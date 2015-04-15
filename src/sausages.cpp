@@ -27,19 +27,19 @@ Sausage::Sausage(int ID){
  *     the sausage and its unsorted neighbours to the stack
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
-void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
+void flood_fill_separate(vector<Point*> allPoints, vector<Sausage> &allSausages){
 	debug() << "begin flood_fill_separate" << endl << flush;
 
 	int newSausageID=0;
 	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
-		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
+		if (allPoints[firstPoint]->isInASausage && allPoints[firstPoint]->sausageID==-1){
 			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl << flush;
 			Sausage newSausage(newSausageID);
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
-				Point *curr = &(allPoints[stack.back()]);
+				Point *curr = allPoints[stack.back()];
 				stack.pop_back();
 
 				curr->sausageID=newSausageID;
@@ -513,14 +513,14 @@ void join_endpoints(Model &model){
 				vector<Point*> possNeighs;
 				double border = 2*params::pixel_size;
 				debug() << "Border size: " << border << endl;
-				for (Point &p : model.allPoints){ // Needs to be a reference (not iter) b.c. of our address abuse.
-					if (p.x > min(curr->x, target->x)-border &&
-					    p.x < max(curr->x, target->x)+border &&
-					    p.y > min(curr->y, target->y)-border &&
-					    p.y < max(curr->y, target->y)+border &&
-					    p.z > min(curr->z, target->z)-border &&
-					    p.z < max(curr->z, target->z)+border )
-						possNeighs.push_back(&p); // WARNING This is probably safe, allPoints won't get resized here
+				for (Point* p : model.allPoints){
+					if (p->x > min(curr->x, target->x)-border &&
+					    p->x < max(curr->x, target->x)+border &&
+					    p->y > min(curr->y, target->y)-border &&
+					    p->y < max(curr->y, target->y)+border &&
+					    p->z > min(curr->z, target->z)-border &&
+					    p->z < max(curr->z, target->z)+border )
+						possNeighs.push_back(p); // WARNING This is probably safe, allPoints won't get resized here
 				}
 				debug() << "possNeighs has size: " << possNeighs.size() << endl;
 				for (Point *p : possNeighs){
@@ -568,16 +568,17 @@ void join_endpoints(Model &model){
 					if (next==NULL){
 						// Create a copy of curr, remove all features, then move it
 						// TODO is a nicer constructor, then change x,y,z, a better approach?
-						Point p = *curr;
-						debug() << "Created point p, address=" << &p << endl;
+						Point &p = *(new Point (*curr));
+						p.x=curr->x; p.y=curr->y; p.z=curr->z;
+
 						// WARNING cl, cp, cs are unknown, we threw it away when reading
 						p.cl = p.cp = p.cs = -1;
-						p.sausageID = -1; // We'll add it next time around
-						p.isInASausage = false;
-						p.allPointsIndex = -1;
-						p.sausagePointsIndex = -1;
-						p.left = p.right = p.up = p.down = p.forward = p.back = NULL;
-						for (i=0;i<6;i++) {p.neighbours[i]=NULL;}
+						//p.sausageID = -1; // We'll add it next time around
+						//p.isInASausage = false;
+						//p.allPointsIndex = -1;
+						//p.sausagePointsIndex = -1;
+						//p.left = p.right = p.up = p.down = p.forward = p.back = NULL;
+						//for (i=0;i<6;i++) {p.neighbours[i]=NULL;}
 						switch (dir){
 							case L: p.x -= params::pixel_size; break;
 							case R: p.x += params::pixel_size; break;
@@ -604,30 +605,29 @@ void join_endpoints(Model &model){
 							for (Point* candidate : possNeighs){
 								if (mag((Vector3d) *candidate - neighLoc) < (params::epsilon * params::epsilon)){
 									foundNeigh=true;
-									Point* allPointsPtr = &(model.allPoints[candidate->allPointsIndex]) ;
 									switch (d){
 										case L:
-											p.left = allPointsPtr;
+											p.left = candidate;
 											p.left->right = &p;
 											break;
 										case R:
-											p.right = allPointsPtr;
+											p.right = candidate;
 											p.right->left = &p;
 											break;
 										case D:
-											p.down = allPointsPtr;
+											p.down = candidate;
 											p.down->up = &p;
 											break;
 										case U:
-											p.up = allPointsPtr;
+											p.up = candidate;
 											p.up->down = &p;
 											break;
 										case B:
-											p.back = allPointsPtr;
+											p.back = candidate;
 											p.back->forward = &p;
 											break;
 										case F:
-											p.forward = allPointsPtr;
+											p.forward = candidate;
 											p.forward->back = &p;
 											break;
 									}
@@ -648,8 +648,7 @@ void join_endpoints(Model &model){
 						p.neighbours[5]=p.back;
 
 						// Add it to allPoints
-						model.allPoints.push_back(p);
-						debug() << "Added to vector, address is now: " << &p << endl;
+						model.allPoints.push_back(&p);
 						p.allPointsIndex=model.allPoints.size()-1;
 
 						// Also add it to possNeighs

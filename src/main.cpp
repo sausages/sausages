@@ -178,6 +178,7 @@ int main(int argc, char *argv[]){
 	}
 
 	// Wrap up and exit
+	for (Point* p : model.allPoints) {delete p;}
 	model.allSausages.clear();
 	model.allPoints.clear();
 	info() << "Exiting successfully" << endl;

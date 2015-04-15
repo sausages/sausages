@@ -13,7 +13,7 @@ class Model {
 	std::vector<int> threshold_points; ///< Which points are below the threshold? Stores their allPointsIndex
 	std::vector<Vector3d> colloidPos; ///< Positions of the colloids
 	std::vector<double> colloidRadii; ///< Radii of the colloids
-	std::vector<Point> allPoints; ///< All points in simulation
+	std::vector<Point*> allPoints; ///< All points in simulation
 	std::vector<Sausage> allSausages; ///< All sausages in simulation
 };
 

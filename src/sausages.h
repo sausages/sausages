@@ -50,7 +50,7 @@ class Sausage {
 
 /* Functions below are not particular to a specific sausage */
 int threshold(std::vector<Point> &allPoints); ///< Pick out all sausages with cl>threshold
-void flood_fill_separate(std::vector<Point> &allPoints, std::vector<Sausage> &allSausages); ///< use flood-fill to distinguish between non-touching sausages
+void flood_fill_separate(std::vector<Point*> allPoints, std::vector<Sausage> &allSausages); ///< use flood-fill to distinguish between non-touching sausages
 void join_endpoints(Model &model); ///< Artificially join gaps between endpoints less than params::max_endpoint_separation
 
 #endif // FIND_SAUSAGES_H
