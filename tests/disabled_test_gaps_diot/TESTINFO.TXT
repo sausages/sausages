@@ -1,7 +1,0 @@
-Basic test to check that one of our original systems works as expected.
-
-short.xyzclcpcs has been zipped with command `zip short.xyzclcpcs.zip short.xyzclcpcs`
-Can be unzipped with command `unzip short.xyzclcpcs.zip`
-
-Uses xyzclcpcs file-format (original format)
-cl cutoff is 0.12, larger than the default

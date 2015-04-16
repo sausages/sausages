@@ -234,6 +234,7 @@ int Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 			}
 		}
 		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
+		//write_points("debug_aboverOrBelow"+to_string(aboveOrBelow)+"_colloid"+to_string(iColl)+".dat", visited);
 
 		// Save paths for identifying twist handedness
 		if (aboveOrBelow==0 && iColl==0){
@@ -601,26 +602,32 @@ void join_endpoints(Model &model){
 										case L:
 											p.left = candidate;
 											p.left->right = &p;
+											p.left->neighbours[1] = &p;
 											break;
 										case R:
 											p.right = candidate;
 											p.right->left = &p;
+											p.right->neighbours[0] = &p;
 											break;
 										case D:
 											p.down = candidate;
 											p.down->up = &p;
+											p.down->neighbours[2] = &p;
 											break;
 										case U:
 											p.up = candidate;
 											p.up->down = &p;
+											p.up->neighbours[3] = &p;
 											break;
 										case B:
 											p.back = candidate;
 											p.back->forward = &p;
+											p.back->neighbours[4] = &p;
 											break;
 										case F:
 											p.forward = candidate;
 											p.forward->back = &p;
+											p.forward->neighbours[5] = &p;
 											break;
 									}
 									break; // We've found the neighbour
