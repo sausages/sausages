@@ -239,6 +239,11 @@ void read_diot(std::istream &input, Model &model){
 			ss>>voxelSize[0];
 			ss>>voxelSize[1];
 			ss>>voxelSize[2];
+			if (voxelSize[0] != voxelSize[1] || voxelSize[0] != voxelSize[2]){
+				error() << "Can't currently deal with non-cubic voxels, aborting." << endl;
+				exit(EXIT_FAILURE);
+			}
+			params::pixel_size = voxelSize[0];
 			bVoxelSize=1;
 		} else if (line.find("lowBounds")!=string::npos){
 			ss>>buffer;
