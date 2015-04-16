@@ -792,6 +792,7 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
 	info() <<  "Centre of mass of region " << com_vec_reg << endl;
    	// Find neighbours of region
     vector<Point*> neighbours;
+    vector<Point*> neighbours_otherside;
     vector3d p; //Vector from COM of region to point p
 	for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
 		Point* it=*iter;
@@ -807,6 +808,8 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
                 debug() << "dot(u,p-com_vec_reg) "<<dot(u,p-com_vec_reg)<<endl;
                 if (dot(u,p-com_vec_reg) > 0){
 			        neighbours.push_back(it->neighbours[iNeigh]);
+                }else{
+                    neighbours_otherside.push_back(it->neighbours[iNeigh]);
                 }
 			}
 		}
@@ -826,82 +829,54 @@ void Sausage::flood_fill_closed_loops(const std::vector<vector3d> colloidPos){
 	}
     verbose()<<neighbours.size()<<" pixels in neighbour region"<<endl;
 
+    // Get rid of duplicate neighbours on the other side of region
+	debug()<<region.size()<<" points in this region, "<<neighbours_otherside.size()<<" neighbours otherside inside the sausage."<<endl;
+	sort(neighbours_otherside.begin(),neighbours_otherside.end());
+	debug()<<"sorted neighbours otherside"<<endl;
+	vector<Point*>::iterator it2 = unique(neighbours_otherside.begin(),neighbours_otherside.end());
+	neighbours_otherside.resize(distance(neighbours_otherside.begin(),it2));
+	debug()<<"Removed duplicates, now "<<neighbours_otherside.size()<<" neighbours otherside."<<endl;
+	debug()<<"Neighbours at:"<<endl;
+	for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
+		verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2"<<endl;
+	}
+    verbose()<<neighbours_otherside.size()<<" pixels in neighbour otherside region"<<endl;
+
+
 	// flood-fill from neighbours. If the point is in the region, don't add it to the flood-filled area.
-//		vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
-//		vector<Point*> visited; // Points we've already visited, and so should ignore
-//		while (stack.size()>0){
-//			//debug()<<"Another pixel on the stack"<<endl;
-//			Point* curr = stack.back();
-//			stack.pop_back();
-//
-//			for (int iNeigh=0;iNeigh<6;iNeigh++){
-//				if (!curr->neighbours[iNeigh]) continue;
-//				Point* thisNeigh=curr->neighbours[iNeigh];
-//				//if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
-//				if (elementOf(visited,thisNeigh)) continue;
-//				visited.push_back(thisNeigh);
-//				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
-//				if (thisNeigh->isInASausage) {
-//					bool in_a_region=false;
-//					// For all of regions...
-//					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
-//						vector<Point*> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
-//						// If the neighbour is in the region, make a note but don't add to stack
-//						//if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
-//						if (elementOf(inner_region,thisNeigh)){
-//							in_a_region=true;
-//							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
-//							//debug()<<"I'm in a region"<<endl;
-//							//debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
-//						}
-//					}}
-//					//if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
-//					if (!in_a_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
-//				}
-//			}
-//		}
-//		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
-//
-//	}} // end of 'for each region'
-//
-//	for (int i=0;i<4;i++){ for (int j=0;j<4;j++){
-//		debug()<<"Adjacency["<<i<<"]["<<j<<"] = "<<adjacency[i][j]<<endl;
-//	}}
-//
-//	for (int i=0;i<4;i++){ for (int j=i;j<4;j++){
-//		if (adjacency[i][j]!=adjacency[j][i]){
-//			error()<<"Adjacency matrix is not symmetric!"<<endl;
-//			exit(EXIT_FAILURE);
-//		}
-//	}}
-//	debug()<<"Adjacency matrix is correctly symmetric."<<endl;
-//	for (int i=0;i<4;i++){
-//		int sum=0;
-//		for (int j=0;j<4;j++){
-//			sum+=adjacency[i][j];
-//		}
-//		if (sum<2){ // Including the region itself (i.e. adjacency[i][i]=1)
-//			error()<<"Region "<<(i%2?"above":"below")<<" colloid "<<(i/2)<<" doesn't appear to be linked to any others."<<endl;
-//			exit(EXIT_FAILURE);
-//		} else if (sum>2){
-//			error()<<"Region "<<(i%2?"above":"below")<<" colloid "<<(i/2)<<" appears to be connected to more than one other region, inspect manually."<<endl;
-//			exit(EXIT_FAILURE);
-//		}
-//	}
-//	if (adjacency[0][2] && adjacency[1][3]){
-//		info()<<"System appears to be untwisted (Class 1)"<<endl;
-//		brief({1}) << "Figure of omega structure." << endl;
-//		brief({1}) << "3" << endl;
-//	} else if (adjacency[0][3] && adjacency[1][2]){
-//		info()<<"System appears to be twisted (Class 2)"<<endl;
-//		brief({1}) << "Figure of eight structure." << endl;
-//		brief({1}) << "2" << endl;
-//	
-//	} else {
-//		brief({1}) << "Structure undefined." << endl;
-//		brief({1}) << "0" << endl;
-//		error()<<"Unexpected system linkage, this should never happen."<<endl;
-//		exit(EXIT_FAILURE);
-//	}
+	vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
+	vector<Point*> visited; // Points we've already visited, and so should ignore
+	while (stack.size()>0){
+		//debug()<<"Another pixel on the stack"<<endl;
+		Point* curr = stack.back();
+        debug()<<"STACK "<< curr->x << " "<<curr->y<<" "<<curr->z<< endl;
+		stack.pop_back();
+		for (int iNeigh=0;iNeigh<6;iNeigh++){
+			if (!curr->neighbours[iNeigh]) continue;
+			Point* thisNeigh=curr->neighbours[iNeigh];
+			if (elementOf(visited,thisNeigh)) continue;
+				visited.push_back(thisNeigh);
+				if (thisNeigh->isInASausage) {
+				    //debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
+                    //check whether current point is inside the region
+				    bool in_region=false;
+				    if (elementOf(neighbours_otherside,thisNeigh)){
+					    in_region=true;
+					    verbose()<<"I'm a neighbour on the other side."<<endl;
+                        //remove from neighbours_otherside list
+                        neighbours_otherside.erase(std::remove(neighbours_otherside.begin(), neighbours_otherside.end(), thisNeigh), neighbours_otherside.end());
+                        verbose()<<"REGION "<< thisNeigh->x << " "<<thisNeigh->y<<" "<<thisNeigh->z<< endl;
+				    }
+                    if (!in_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
+                }
+	    }
+    }
+
+    if (neighbours_otherside.size() != 0){
+        verbose()<<neighbours_otherside.size()<<" pixels in neighbour otherside region that were undetected by FF"<<endl;
+        cerr << "It seems there are open loops in the system. Exit program ...";
+        exit(EXIT_FAILURE);
+    }
+    verbose()<<"Finished flood-fill closed loops."<<endl;
 }
 
