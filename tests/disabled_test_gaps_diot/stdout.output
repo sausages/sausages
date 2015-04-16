@@ -92,50 +92,39 @@ possNeighs has size: 25
 (1,-16.5,-0.5)
 Joining, now at point (-0.5,-17,-1)
 next is: 0x0
-Created point p, address=0x7fff5202ab60
 Couldn't find suitable neighbour at (-1,-17,-1.5)
 Couldn't find suitable neighbour at (0,-17,-1.5)
 Couldn't find suitable neighbour at (-0.5,-17.5,-1.5)
 Couldn't find suitable neighbour at (-0.5,-17,-2)
-Added to vector, address is now: 0x7fff5202ab60
 Made a new point at (-0.5,-17,-1.5)
 Joining, now at point (-0.5,-17,-1.5)
 Adding point to sausage
 next is: 0x0
-Created point p, address=0x7fff5202ab60
-Couldn't find suitable neighbour at (-0.5,-17,-1.5)
 Couldn't find suitable neighbour at (0,-16.5,-1.5)
 Couldn't find suitable neighbour at (0,-17.5,-1.5)
 Couldn't find suitable neighbour at (0,-17,-1)
 Couldn't find suitable neighbour at (0,-17,-2)
-Added to vector, address is now: 0x7fff5202ab60
 Made a new point at (0,-17,-1.5)
 Joining, now at point (0,-17,-1.5)
 Adding point to sausage
 next is: 0x0
-Created point p, address=0x7fff5202ab60
 Couldn't find suitable neighbour at (-0.5,-17,-2)
 Couldn't find suitable neighbour at (0.5,-17,-2)
 Couldn't find suitable neighbour at (0,-16.5,-2)
 Couldn't find suitable neighbour at (0,-17.5,-2)
-Couldn't find suitable neighbour at (0,-17,-1.5)
 Couldn't find suitable neighbour at (0,-17,-2.5)
-Added to vector, address is now: 0x7fff5202ab60
 Made a new point at (0,-17,-2)
 Joining, now at point (0,-17,-2)
 Adding point to sausage
 next is: 0x0
-Created point p, address=0x7fff5202ab60
 Couldn't find suitable neighbour at (-0.5,-16.5,-2)
 Couldn't find suitable neighbour at (0,-16,-2)
-Couldn't find suitable neighbour at (0,-17,-2)
 Couldn't find suitable neighbour at (0,-16.5,-1.5)
 Couldn't find suitable neighbour at (0,-16.5,-2.5)
-Added to vector, address is now: 0x7fff5202ab60
 Made a new point at (0,-16.5,-2)
 Joining, now at point (0,-16.5,-2)
 Adding point to sausage
-next is: 0x10de46af8
+next is: 0x7fdcc9710610
 Sausagei size: 1453
 Before endpoint-swap...
 i[0]: (-0.5,-17,-1)
@@ -178,16 +167,14 @@ possNeighs has size: 14
 (1,18.5,2)
 Joining, now at point (0.5,19,2)
 next is: 0x0
-Created point p, address=0x7fff52028be0
 Couldn't find suitable neighbour at (0,19.5,2)
 Couldn't find suitable neighbour at (0,18.5,2)
 Couldn't find suitable neighbour at (0,19,2.5)
 Couldn't find suitable neighbour at (0,19,1.5)
-Added to vector, address is now: 0x7fff52028be0
 Made a new point at (0,19,2)
 Joining, now at point (0,19,2)
 Adding point to sausage
-next is: 0x10de46858
+next is: 0x7fdcc9710350
 Sausagei size: 1454
 Before endpoint-swap...
 i[0]: (0.5,19,2)
@@ -212,20 +199,19 @@ Distance 0:0,0:1,0
 Now we have 1 sausages
 Found 1 sufficiently large sausages.
 Printing joined sausages to files: saus.dat
-Printint out sausage 0
 Printing to file saus.dat0
 Post-joining sausage sizes:
   0 1454
 Relevant sausages (prints index of sausages): 
   0 0
 One relevant sausage found.
-Centre of mass 0.373109 0.614856 0.763755
-Least-squares plane is: 0.126355x + 0.135732y = z
-Vector perpendicular to the plane is (-0.126355,-0.135732,1)
+Centre of mass 0.372765 0.613824 0.764443
+Least-squares plane is: 0.126352x + 0.135632y = z
+Vector perpendicular to the plane is (-0.126352,-0.135632,1)
 Size of sausage: 1454
 begin flood_fill_classify
 Vector AB is (-22.759,0,0) of length 22.759
-Vector v (perp. AB & || PoBF & unit) is (0,0.990914,0.134499) of length 1
+Vector v (perp. AB & || PoBF & unit) is (0,0.990927,0.134401) of length 1
 (-12,-12,-4.5) added to region below colloid 0
 (-12,-12,-4) added to region below colloid 0
 (-12,-12,-3.5) added to region below colloid 0

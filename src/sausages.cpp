@@ -566,19 +566,11 @@ void join_endpoints(Model &model){
 
 					// Do we need to create a new point?
 					if (next==NULL){
-						// Create a copy of curr, remove all features, then move it
-						// TODO is a nicer constructor, then change x,y,z, a better approach?
-						Point &p = *(new Point (*curr));
+						Point &p = *(new Point ());
 						p.x=curr->x; p.y=curr->y; p.z=curr->z;
-
 						// WARNING cl, cp, cs are unknown, we threw it away when reading
 						p.cl = p.cp = p.cs = -1;
-						//p.sausageID = -1; // We'll add it next time around
-						//p.isInASausage = false;
-						//p.allPointsIndex = -1;
-						//p.sausagePointsIndex = -1;
-						//p.left = p.right = p.up = p.down = p.forward = p.back = NULL;
-						//for (i=0;i<6;i++) {p.neighbours[i]=NULL;}
+
 						switch (dir){
 							case L: p.x -= params::pixel_size; break;
 							case R: p.x += params::pixel_size; break;
