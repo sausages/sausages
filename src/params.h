@@ -13,7 +13,8 @@ namespace params{
 	extern std::string brief_filename; ///< 'brief' file is for standardised output, in a different file to cout
 	extern int brief_version; ///< each brief version is standardised
 	extern std::string thresholded_filename; ///< 'thresholded' file is for output of points below the threshold, in a different file to cout
-	extern std::string sausage_filename; ///< 'sausage' file is for output of points in sausages, one file per sausage
+	extern std::string prejoin_sausage_filename; /// file for output of points in sausages before joining, one file per sausage
+	extern std::string sausage_filename; /// 'sausage' file is for output of points in sausages after joining endpoints, one file per sausage
 	extern double threshold; ///< c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	extern double silent_ignore_size; ///< If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	extern double min_sausage_size; ///< A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
@@ -31,6 +32,6 @@ namespace params{
 }
 
 
-void set_params(char *paramFile, std::vector<vector3d> &colloidPos);
+void set_params(char *paramFile, std::vector<Vector3d> &colloidPos);
 
 #endif // PARAMS_H

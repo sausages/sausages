@@ -49,7 +49,9 @@ int main(int argc, char *argv[]){
 
 	brief({1,2}) << "total_points	" << model.total_points << endl;
 	brief({1,2}) << "threshold	" << params::threshold << endl;
-	brief({1,2}) << "threshold_pts	" << model.threshold_points << endl;
+	//brief({1,2}) << "threshold_pts	" << model.threshold_points << endl;
+
+	if (!params::thresholded_filename.empty()) write_points(params::thresholded_filename, model.allPoints, model.threshold_points);
 
 	// Separate the points into separate, contiguous sausages
 	info() << "Distinguishing sausages..." << endl;
@@ -60,41 +62,59 @@ int main(int argc, char *argv[]){
 		verbose() << "  " << i << " " << model.allSausages[i].points.size() << endl;
 	}
 
+	if (!params::prejoin_sausage_filename.empty()){
+		debug() << "Printing pre-joined sausages to files: " << params::prejoin_sausage_filename << endl;
+		for (size_t i=0; i<model.allSausages.size(); i++){
+			write_points(params::prejoin_sausage_filename+to_string(i), model.allSausages[i].points);
+		}
+	}
+
+	// Find endpoints of all relevant sausages
+	info() << "Finding endpoints..."<<endl;
+	for (size_t i=0;i<model.allSausages.size();i++){
+		model.allSausages[i].find_endpoints();
+	}
+
+	// Join the endpoints
+	debug() << "We currently have " << model.allSausages.size() << " sausages" << endl;
+	info() << "Joining small gaps..."<<endl;
+	//join_endpoints(model.allSausages,relevant_sausages);
+	join_endpoints(model);
+	debug() << "Now we have " << model.allSausages.size() << " sausages" << endl;
+
+
 	// If the sausages are 'too small', ignore them.
 	vector<int> relevant_sausages; ///< A vector of sausageIDs of 'sufficiently large' sausages
 	for (size_t i=0; i<model.allSausages.size(); i++){
 		int sausageSize=model.allSausages[i].points.size();
-		if (sausageSize < params::silent_ignore_size*model.threshold_points ){
+		if (sausageSize < params::silent_ignore_size*model.threshold_points.size() ){
 			verbose() << "Ignoring sausage #" << i << endl;
 			model.allSausages[i].is_significant=false;
-		} else if (sausageSize > params::silent_ignore_size*model.threshold_points &&
-			sausageSize < params::min_sausage_size*model.threshold_points   ){
+		} else if (sausageSize > params::silent_ignore_size*model.threshold_points.size() &&
+			sausageSize < params::min_sausage_size*model.threshold_points.size()   ){
 			warning() << "Sausage #" << i << " of size "  <<
 				sausageSize << " is not tiny, but is being ignored." << endl;
 			model.allSausages[i].is_significant=false;
-		} else if (sausageSize > params::min_sausage_size*model.threshold_points){
+		} else if (sausageSize > params::min_sausage_size*model.threshold_points.size()){
 			model.allSausages[i].is_significant=true;
 			relevant_sausages.push_back(i);
 		}
 	}
 	info() << "Found " << relevant_sausages.size() << " sufficiently large sausages." << endl;
 
-	// Find endpoints of all relevant sausages
-	info() << "Finding endpoints..."<<endl;
-	for (size_t i=0;i<relevant_sausages.size();i++){
-		model.allSausages[relevant_sausages[i]].find_endpoints();
+	if (!params::sausage_filename.empty()){
+		debug() << "Printing joined sausages to files: " << params::sausage_filename << endl;
+		for (size_t i=0; i<model.allSausages.size(); i++){
+			write_points(params::sausage_filename+to_string(i), model.allSausages[i].points);
+		}
 	}
 
-	// Join the endpoints
-	info() << "Joining small gaps..."<<endl;
-	join_endpoints(model.allSausages,relevant_sausages);
-
     // Check that all relevant sausages are closed loops, open loops are unphysical, except along pbc
-	info() << "Checking all relevant sausages are closed loops..." << endl;
+/*	info() << "Checking all relevant sausages are closed loops..." << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
         model.allSausages[relevant_sausages[i]].flood_fill_closed_loops(model.colloidPos);
     }
-	info() << "Check successful." << endl;
+	info() << "Check successful." << endl;*/
 
 	// Plenty of output
 	brief({1,2}) << "num_sausages	" << model.allSausages.size() << endl;
@@ -158,10 +178,18 @@ int main(int argc, char *argv[]){
         model.allSausages[relevant_sausages[0]].calculate_sausage_length_spheres();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
-		model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
+		int classification = model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
+		brief({1}) << "system_class	" << classification << endl;
+		switch (classification){
+			case 1:	brief({1}) << "system_str	figureEightLHS" << endl; break;
+			case 2:	brief({1}) << "system_str	figureEightRHS" << endl; break;
+			case 5:	brief({1}) << "system_str	omega" << endl; break;
+			default: error() << "Unexpected system classification" << endl; exit(EXIT_FAILURE);
+		}
 	}
 
 	// Wrap up and exit
+	for (Point* p : model.allPoints) {delete p;}
 	model.allSausages.clear();
 	model.allPoints.clear();
 	

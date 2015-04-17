@@ -2,7 +2,7 @@
 
 set -e
 
-for directory in $(ls | grep test)
+for directory in test*
 do
 	echo -n 'Cleaning' $directory "... "
 	cd ${directory}

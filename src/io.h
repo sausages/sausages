@@ -12,6 +12,11 @@ void read_xyzclcpcs(std::istream& input, Model &model);
 void read_zipped(std::string inputArchiveFileName, Model &model);
 void read_diot(std::istream &input, Model &model);
 
+void write_points(std::string filename, std::vector<Point> points);
+void write_points(std::string filename, std::vector<Point*> points);
+// Same as above, but print only the elements of 'points' whose index is in 'indices'
+void write_points(std::string filename, std::vector<Point*> points, std::vector<int> indices);
+
 class NullBuffer : public std::streambuf
 {
 	public:
@@ -19,8 +24,6 @@ class NullBuffer : public std::streambuf
 };
 
 extern bool briefIsInitialised;
-//extern std::ofstream &brief(void);
-//extern std::ofstream &brief(std::vector<int> versions);
 extern std::ostream &brief(std::vector<int> versions);
 extern std::ofstream briefFile;
 void initialiseBrief(void);

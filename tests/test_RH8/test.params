@@ -1,0 +1,12 @@
+{
+
+"threshold" : 0.05,
+
+"thresholded_filename" : "thresh.dat",
+"sausage_filename" : "saus.dat",
+
+// ERROR:0, WARNING:1, INFO:2, VERBOSE:3, DEBUG:4
+"verbosity" : 4
+
+
+}

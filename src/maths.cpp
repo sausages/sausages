@@ -1,72 +1,48 @@
 #include "maths.h"
+#include <cmath>
 #include <iostream>
 
-std::ostream &operator<<( std::ostream &output, const vector3d &v ) { 
-//	output << '(' << v.x << ',' << v.y << ',' << v.z << ')';
-	output << v.x << ' ' << v.y << ' ' << v.z ;
+std::ostream &operator<<( std::ostream &output, const Vector3d &v ) {
+	output << '(' << v.x << ',' << v.y << ',' << v.z << ')';
 	return output;            
 }
 
 // vector+vector
-vector3d norm(const vector3d& u){
-	vector3d result;
+Vector3d norm(const Vector3d& u){
     double mag;
     mag = sqrt(u.x*u.x+u.y*u.y+u.z*u.z);
-	result.x = u.x / mag;
-	result.y = u.y / mag;
-	result.z = u.z / mag;
-	return result;
+	return Vector3d (u.x/mag , u.y/mag , u.z/mag);
 }
 
-// vector+vector
-vector3d operator+(const vector3d& u, const vector3d& v){
-	vector3d result;
-	result.x = u.x + v.x;
-	result.y = u.y + v.y;
-	result.z = u.z + v.z;
-	return result;
+Vector3d operator+(const Vector3d& u, const Vector3d& v){
+	return Vector3d (u.x+v.x, u.y+v.y, u.z+v.z);
 }
 
 // vector-vector
-vector3d operator-(const vector3d& u, const vector3d& v){
-	vector3d result;
-	result.x = u.x - v.x;
-	result.y = u.y - v.y;
-	result.z = u.z - v.z;
-	return result;
+Vector3d operator-(const Vector3d& u, const Vector3d& v){
+	return Vector3d (u.x-v.x, u.y-v.y, u.z-v.z);
 }
 
 // scalar*vector
-vector3d operator*(const double& a, const vector3d& v){
-	vector3d result;
-	result.x = a * v.x;
-	result.y = a * v.y;
-	result.z = a * v.z;
-	return result;
+Vector3d operator*(const double& a, const Vector3d& v){
+	return Vector3d (a*v.x, a*v.y, a*v.z);
 }
 
 // vector/scalar
-vector3d operator/(const vector3d& v, const double& a){
-	vector3d result;
-	result.x = v.x / a;
-	result.y = v.y / a;
-	result.z = v.z / a;
-	return result;
+Vector3d operator/(const Vector3d& v, const double& a){
+	return Vector3d (v.x/a, v.y/a, v.z/a);
 }
 
-double dot(const vector3d& u, const vector3d& v) {
+double dot(const Vector3d& u, const Vector3d& v) {
 	return u.x*v.x + u.y*v.y + u.z*v.z;
 }
 
-double distance(const vector3d& u, const vector3d& v) {
+double distance(const Vector3d& u, const Vector3d& v) {
 	double dist;
     dist = sqrt(pow(u.x-v.x,2) + pow(u.y-v.y,2) + pow(u.z-v.z,2));
     return dist;
 }
 
-double magnitude(const vector3d& u) {
-	double mag;
-    mag = sqrt(u.x*u.x + u.y*u.y + u.z*u.z);
-    return mag;
+double mag(const Vector3d& u){
+	return sqrt(dot(u,u));
 }
-

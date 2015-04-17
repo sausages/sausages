@@ -117,15 +117,16 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 				<< ", this is unexpected (expect 6 or 10)" <<endl;
 		}
 
-		Point p;
+		Point &p = *(new Point ());
 		sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf",
 			&p.x,&p.y,&p.z,&p.cl,&p.cp,&p.cs);
 		p.allPointsIndex=iPoint++;
 
 		try{
-			model.allPoints.push_back(p);
+			model.allPoints.push_back(&p);
 		} catch (std::bad_alloc &e){
 			size_t pointsRead=model.allPoints.size();
+			for (Point* pp : model.allPoints) {delete pp;}
 			model.allPoints.clear();
 			error()<<"Ran out of memory after reading in "<<pointsRead<<" points."<<std::endl;
 			error()<<"Counting points left..."<<std::flush;
@@ -148,68 +149,50 @@ void read_xyzclcpcs(std::istream &input, Model &model){
 	unsigned int N = round(pow(model.allPoints.size(),1.0/3.0));///< side-length of cube
 	// Don't use iterators, indices are important here
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		// Pointer to self, pretty sure this is irrelevant, but
-		// I currently need it for the flood-fill (iterators are copies)
-		model.allPoints[i].self = &(model.allPoints[i]);
 		// If not right-most
 		if (((i/(N*N))+1)%N != 0){
-			model.allPoints[i].right  = &(model.allPoints[i+N*N]);
-			model.allPoints[i+N*N].left = &(model.allPoints[i]);
+			model.allPoints[i]->right  = model.allPoints[i+N*N];
+			model.allPoints[i+N*N]->left = model.allPoints[i];
 		}
 		// If not upper-most
 		if (((i/N)+1)%N != 0){
-			model.allPoints[i].up   = &(model.allPoints[i+N]);
-			model.allPoints[i+N].down = &(model.allPoints[i]);
+			model.allPoints[i]->up   = model.allPoints[i+N];
+			model.allPoints[i+N]->down = model.allPoints[i];
 		}
 		// If not forward-most
 		if ((i+1)%N != 0){
-			model.allPoints[i].forward = &(model.allPoints[i+1]);
-			model.allPoints[i+1].back   = &(model.allPoints[i]);
+			model.allPoints[i]->forward = model.allPoints[i+1];
+			model.allPoints[i+1]->back   = model.allPoints[i];
 		}
 	}
 
 	// Update neighbours array
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
-		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
-		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
-		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
-		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
-		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
+		model.allPoints[i]->neighbours[0]=model.allPoints[i]->left;
+		model.allPoints[i]->neighbours[1]=model.allPoints[i]->right;
+		model.allPoints[i]->neighbours[2]=model.allPoints[i]->up;
+		model.allPoints[i]->neighbours[3]=model.allPoints[i]->down;
+		model.allPoints[i]->neighbours[4]=model.allPoints[i]->forward;
+		model.allPoints[i]->neighbours[5]=model.allPoints[i]->back;
 	}
 
 	// Check Pixel size
-	if (abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size)>params::epsilon){
-		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0].z-model.allPoints[1].z)<<
+	if (abs(abs(model.allPoints[0]->z-model.allPoints[1]->z)-params::pixel_size)>params::epsilon){
+		warning()<<"WARNING: Pixel size appears to be "<<abs(model.allPoints[0]->z - model.allPoints[1]->z)<<
 			" but params file (or default) is set to "<<params::pixel_size<<"."<<endl<<
-			"Overwriting with new pixel size."<<endl;
-		params::pixel_size=abs(abs(model.allPoints[0].z-model.allPoints[1].z)-params::pixel_size);
+			"WARNING: Overwriting with new pixel size."<<endl;
+		params::pixel_size=abs(model.allPoints[0]->z - model.allPoints[1]->z);
 	}
 
 	// Points are in a sausge if their cl value is < threshold
 	debug() << "begin threshold" << endl << flush;
 
-	model.threshold_points = 0;
-
-	bool writePoints = false;
-	std::ofstream thresholdedFile;
-	if (!params::thresholded_filename.empty()){
-		writePoints = true;
-		thresholdedFile.open(params::thresholded_filename);
-	}
-
-	vector<Point>::iterator it;
-	vector<Point> thresholdedPoints;
-	for (it=model.allPoints.begin(); it!=model.allPoints.end(); ++it){
-		if (it->cl < params::threshold){
-			if (writePoints){
-				thresholdedFile << it->x << ' ' << it->y << ' ' << it->z << endl;
-			}
-			it->isInASausage=true;
-			model.threshold_points++;
+	for (Point* p : model.allPoints){
+		if (p->cl < params::threshold){
+			p->isInASausage=true;
+			model.threshold_points.push_back(p->allPointsIndex);
 		}
 	}
-	if (writePoints) thresholdedFile.close();
 	debug() << "end threshold" << endl << flush;
 
 	return;
@@ -256,6 +239,11 @@ void read_diot(std::istream &input, Model &model){
 			ss>>voxelSize[0];
 			ss>>voxelSize[1];
 			ss>>voxelSize[2];
+			if (voxelSize[0] != voxelSize[1] || voxelSize[0] != voxelSize[2]){
+				error() << "Can't currently deal with non-cubic voxels, aborting." << endl;
+				exit(EXIT_FAILURE);
+			}
+			params::pixel_size = voxelSize[0];
 			bVoxelSize=1;
 		} else if (line.find("lowBounds")!=string::npos){
 			ss>>buffer;
@@ -271,7 +259,7 @@ void read_diot(std::istream &input, Model &model){
 				error()<<"Colloids must be declared in order, aborting"<<endl;
 				exit(EXIT_FAILURE);
 			}
-			vector3d newColloid;
+			Vector3d newColloid (0,0,0);
 			ss>>newColloid.x;
 			ss>>newColloid.y;
 			ss>>newColloid.z;
@@ -317,16 +305,9 @@ void read_diot(std::istream &input, Model &model){
 
 	int iPoint=0;
 	vector<int> pointMap; // Has a sensible structure, each element point to an allPoints element (or -1 if cl<threshold)
-	bool writePoints = false;
-	std::ofstream thresholdedFile;
-	if (!params::thresholded_filename.empty()){
-		writePoints = true;
-		thresholdedFile.open(params::thresholded_filename);
-	}
 	while ( getline (input, line) ){
 		model.total_points++;
 		// Assuming BeginClCpCs is in zyxInc
-		iz++;
 		if (iz==numVoxels[2]){
 			iz=0; iy++;
 		}
@@ -341,25 +322,23 @@ void read_diot(std::istream &input, Model &model){
 
 		// Only save points that pass threshold condition
 		if (cl < params::threshold){
-			Point p;
+			Point &p = *(new Point () );
 			p.cl=cl; p.cs=cs; p.cp=cp;
 			p.x = ix*voxelSize[0] + lowBounds[0];
 			p.y = iy*voxelSize[1] + lowBounds[1];
 			p.z = iz*voxelSize[2] + lowBounds[2];
 			p.allPointsIndex = iPoint++;
 			p.isInASausage=true;
-			model.allPoints.push_back(p);
+			model.allPoints.push_back(&p);
+			model.threshold_points.push_back(p.allPointsIndex);
 			pointMap.push_back(p.allPointsIndex);
-			if (writePoints){
-				thresholdedFile << p.x << ' ' << p.y << ' ' << p.z << endl;
-			}
-
 		} else {
 			pointMap.push_back(-1);
 		}
-	}
 
-	if (writePoints) thresholdedFile.close();
+		// Assuming BeginClCpCs is in zyxInc
+		iz++;
+	}
 
 	/* Links each point in allPoints to its 6 nearest-neighbours, using pointMap.
 	 * pointMap has an index-structure we can use, and each element point to an allPoints element
@@ -373,44 +352,40 @@ void read_diot(std::istream &input, Model &model){
 		int iCurr=pointMap[i]; // allPoint index
 		int Nx = numVoxels[0], Ny = numVoxels[1], Nz = numVoxels[2];
 
-		// Pointer to self, pretty sure this is irrelevant, but
-		// I currently need it for the flood-fill (iterators are copies)
-		model.allPoints[iCurr].self = &(model.allPoints[iCurr]);
-
 		// If not right-most
 		if (((i/(Nz*Ny))+1)%Nx != 0){
 			if (pointMap[i+Nz*Ny] != -1){ // If right-of-me passed thresholding
 				int iRight = pointMap[i+Nz*Ny];
-				model.allPoints[iCurr].right  = &(model.allPoints[iRight]);
-				model.allPoints[iRight].left = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->right  = model.allPoints[iRight];
+				model.allPoints[iRight]->left = model.allPoints[iCurr];
 			}
 		}
 		// If not upper-most
 		if (((i/Nz)+1)%Ny != 0){
 			if (pointMap[i+Nz] != -1){ // If above-me passed thresholding
 				int iUp = pointMap[i+Nz];
-				model.allPoints[iCurr].up   = &(model.allPoints[iUp]);
-				model.allPoints[iUp].down = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->up   = model.allPoints[iUp];
+				model.allPoints[iUp]->down = model.allPoints[iCurr];
 			}
 		}
 		// If not forward-most
 		if ((i+1)%Nz != 0){
 			if (pointMap[i+1] != -1){ // If forward-of-me passed thresholding
 				int iForward = pointMap[i+1];
-				model.allPoints[iCurr].forward = &(model.allPoints[iForward]);
-				model.allPoints[iForward].back   = &(model.allPoints[iCurr]);
+				model.allPoints[iCurr]->forward = model.allPoints[iForward];
+				model.allPoints[iForward]->back   = model.allPoints[iCurr];
 			}
 		}
 	}
 
 	// Update neighbours array
 	for (size_t i=0; i<model.allPoints.size(); i++){
-		model.allPoints[i].neighbours[0]=model.allPoints[i].left;
-		model.allPoints[i].neighbours[1]=model.allPoints[i].right;
-		model.allPoints[i].neighbours[2]=model.allPoints[i].up;
-		model.allPoints[i].neighbours[3]=model.allPoints[i].down;
-		model.allPoints[i].neighbours[4]=model.allPoints[i].forward;
-		model.allPoints[i].neighbours[5]=model.allPoints[i].back;
+		model.allPoints[i]->neighbours[0]=model.allPoints[i]->left;
+		model.allPoints[i]->neighbours[1]=model.allPoints[i]->right;
+		model.allPoints[i]->neighbours[2]=model.allPoints[i]->up;
+		model.allPoints[i]->neighbours[3]=model.allPoints[i]->down;
+		model.allPoints[i]->neighbours[4]=model.allPoints[i]->forward;
+		model.allPoints[i]->neighbours[5]=model.allPoints[i]->back;
 	}
 
 	return;
@@ -463,4 +438,36 @@ void read_zipped(std::string inputArchiveFileName, Model &model){
 
 	return;
 
+}
+
+
+/** Gnuplot (splot) is the nicest way to view lists of vectors,
+ *  and it prefers 'x y z' per line to Point-stream-overload of '(x,y,z)'
+ */
+void write_points(std::string filename, std::vector<Point> points){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (Point iter: points){
+		outfile << iter.x << ' ' << iter.y << ' ' << iter.z << endl;
+	}
+	outfile.close();
+}
+// Same as above, but with vectors-of-pointers
+void write_points(std::string filename, std::vector<Point*> points){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (Point* iter: points){
+		outfile << iter->x << ' ' << iter->y << ' ' << iter->z << endl;
+	}
+	outfile.close();
+}
+// Same as above, but print only the elements of 'points' whose index is in 'indices'
+void write_points(std::string filename, std::vector<Point*> points, std::vector<int> indices){
+	debug() << "Printing to file " << filename << endl;
+	std::ofstream outfile (filename);
+	for (int i : indices){
+		Point* iter = points[i];
+		outfile << iter->x << ' ' << iter->y << ' ' << iter->z << endl;
+	}
+	outfile.close();
 }
