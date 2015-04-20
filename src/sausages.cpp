@@ -952,7 +952,7 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 			exit(EXIT_FAILURE);
 		}
 	}
-    debug() << "Check that COM is at least 3.0 away from any sausge point."<< endl;
+    debug() << "Checked that COM is at least 3.0 away from any sausge point."<< endl;
 
 	// AB is vector joining colloids
 	Vector3d AB = colloidPos[0] - colloidPos[1];
@@ -1043,7 +1043,7 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 	com_vec_reg.y = y/region.size();
 	com_vec_reg.z = z/region.size();
 	info() <<  "Centre of mass of region " << com_vec_reg << endl;
-   	// Find neighbours of region
+   	// Find neighbours of region on both sides
     vector<Point*> neighbours;
     vector<Point*> neighbours_otherside;
     Vector3d p (0,0,0); //Vector from COM of region to point p
@@ -1051,14 +1051,11 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 		Point* it=*iter;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			Point* neigh = it->neighbours[iNeigh];
-    		if (neigh->isInASausage && !elementOf(region,neigh)){
+    		if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
                 p.x = neigh->x; 
                 p.y = neigh->y; 
                 p.z = neigh->z; 
                 //Only pick neighbour points along u away from com of region
-                debug() << " p  "<<p<< endl;
-                debug() << " p - com_vec_reg "<<p-com_vec_reg<< endl;
-                debug() << "dot(u,p-com_vec_reg) "<<dot(u,p-com_vec_reg)<<endl;
                 if (dot(u,p-com_vec_reg) > 0){
 			        neighbours.push_back(it->neighbours[iNeigh]);
                 }else{
@@ -1068,39 +1065,12 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 		}
 	}
 	debug()<<"end of region"<<endl<<flush;
-
-	// Get rid of duplicate neighbours
-	debug()<<region.size()<<" points in this region, "<<neighbours.size()<<" neighbours inside the sausage."<<endl;
-	sort(neighbours.begin(),neighbours.end());
-	debug()<<"sorted neighbours"<<endl;
-	vector<Point*>::iterator it = unique(neighbours.begin(),neighbours.end());
-	neighbours.resize(distance(neighbours.begin(),it));
-	debug()<<"Removed duplicates, now "<<neighbours.size()<<" neighbours."<<endl;
-	debug()<<"Neighbours at:"<<endl;
-	for (vector<Point*>::iterator it=neighbours.begin(); it!=neighbours.end(); it++){
-		verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH"<<endl;
-	}
-    verbose()<<neighbours.size()<<" pixels in neighbour region"<<endl;
-
-    // Get rid of duplicate neighbours on the other side of region
-	debug()<<region.size()<<" points in this region, "<<neighbours_otherside.size()<<" neighbours otherside inside the sausage."<<endl;
-	sort(neighbours_otherside.begin(),neighbours_otherside.end());
-	debug()<<"sorted neighbours otherside"<<endl;
-	vector<Point*>::iterator it2 = unique(neighbours_otherside.begin(),neighbours_otherside.end());
-	neighbours_otherside.resize(distance(neighbours_otherside.begin(),it2));
-	debug()<<"Removed duplicates, now "<<neighbours_otherside.size()<<" neighbours otherside."<<endl;
-	debug()<<"Neighbours at:"<<endl;
-	for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
-		verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2"<<endl;
-	}
-    verbose()<<neighbours_otherside.size()<<" pixels in neighbour otherside region"<<endl;
-
-
-	// flood-fill from neighbours. If the point is in the region, don't add it to the flood-filled area.
+			
+	// flood-fill from neighbours on one side, exit if we reach on neighbour on the other side
+    // If the point is in the region, don't add it to the flood-filled area.
 	vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
 	vector<Point*> visited; // Points we've already visited, and so should ignore
 	while (stack.size()>0){
-		//debug()<<"Another pixel on the stack"<<endl;
 		Point* curr = stack.back();
         debug()<<"STACK "<< curr->x << " "<<curr->y<<" "<<curr->z<< endl;
 		stack.pop_back();
@@ -1112,24 +1082,25 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 				if (thisNeigh->isInASausage) {
 				    //debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
                     //check whether current point is inside the region
-				    bool in_region=false;
 				    if (elementOf(neighbours_otherside,thisNeigh)){
-					    in_region=true;
 					    verbose()<<"I'm a neighbour on the other side."<<endl;
                         //remove from neighbours_otherside list
                         neighbours_otherside.erase(std::remove(neighbours_otherside.begin(), neighbours_otherside.end(), thisNeigh), neighbours_otherside.end());
                         verbose()<<"REGION "<< thisNeigh->x << " "<<thisNeigh->y<<" "<<thisNeigh->z<< endl;
 				    }
-                    if (!in_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
+                    if (!elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
                 }
 	    }
     }
-
+			
     if (neighbours_otherside.size() != 0){
-        verbose()<<neighbours_otherside.size()<<" pixels in neighbour otherside region that were undetected by FF"<<endl;
+        verbose()<<neighbours_otherside.size()<<"FF closed loop test failed. There is some kind of gap in the saugse."<<endl;
+        for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
+	    	verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2_after"<<endl;
+	    }
         cerr << "It seems there are open loops in the system. Exit program ...";
         exit(EXIT_FAILURE);
     }
-    verbose()<<"Finished flood-fill closed loops."<<endl;
+    verbose()<<"Finished flood-fill closed loops successfully."<<endl;
 }
 

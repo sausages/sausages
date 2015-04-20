@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
 
 	brief({1,2}) << "total_points	" << model.total_points << endl;
 	brief({1,2}) << "threshold	" << params::threshold << endl;
-	//brief({1,2}) << "threshold_pts	" << model.threshold_points << endl;
+    brief({1,2}) << "threshold_pts    " << model.threshold_points.size() << endl;
 
 	if (!params::thresholded_filename.empty()) write_points(params::thresholded_filename, model.allPoints, model.threshold_points);
 
@@ -110,11 +110,11 @@ int main(int argc, char *argv[]){
 	}
 
     // Check that all relevant sausages are closed loops, open loops are unphysical, except along pbc
-/*	info() << "Checking all relevant sausages are closed loops..." << endl;
+	info() << "Checking all relevant sausages are closed loops..." << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
         model.allSausages[relevant_sausages[i]].flood_fill_closed_loops(model.colloidPos);
     }
-	info() << "Check successful." << endl;*/
+	info() << "Check successful." << endl;
 
 	// Plenty of output
 	brief({1,2}) << "num_sausages	" << model.allSausages.size() << endl;
