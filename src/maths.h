@@ -13,7 +13,7 @@ class Vector3d {
 };
 
 
-// <<normalised vector
+// normalised vector
 Vector3d norm(const Vector3d& u);
 
 // <<vector

@@ -819,14 +819,14 @@ void Sausage::calculate_com_sphere(Vector3d center, double radius, Vector3d &com
 
 void Sausage::sphere_tracking(){
 
-    info() << "--------> Estimating sausage length using spheres... " << endl;
+	info() << "--------> Estimating sausage length using spheres... " << endl;
 
 	Vector3d current_pos (0,0,0);                   //current grid position in sausage
-    Vector3d com (0,0,0);                           //current com calculated      
-    Vector3d dir (0,0,0),dir_hat (0,0,0);                   //current direction + unit vector direction
-    Vector3d delta (0,0,0);
+	Vector3d com (0,0,0);                           //current com calculated      
+	Vector3d dir (0,0,0),dir_hat (0,0,0);                   //current direction + unit vector direction
+	Vector3d delta (0,0,0);
 
-    double dist_max = 10000;
+	double dist_max = 10000;
 	int max_index;
 
 	// first point is arbritary pick
@@ -837,7 +837,7 @@ void Sausage::sphere_tracking(){
 	// calculate COM of sphere with radius R_gap around current_pos
 	calculate_com_sphere(current_pos,params::R_gap,com);
 	verbose() << "First COM for sphere tracking: " << com << std::endl;
-    sphere_COMs.push_back(com);
+	sphere_COMs.push_back(com);
 
 	// pick 2nd point, pick point which is closest to be 2*R_gap away from first point
 	for(size_t i = 0; i != points.size(); i++){
@@ -849,19 +849,19 @@ void Sausage::sphere_tracking(){
 			max_index = i;
 		}
 	}
-    // move to 2nd point in sausage
-    current_pos.x = points[max_index]->x;
+	// move to 2nd point in sausage
+	current_pos.x = points[max_index]->x;
 	current_pos.y = points[max_index]->y;
 	current_pos.z = points[max_index]->z;
 	calculate_com_sphere(current_pos,params::R_gap,com);
 	verbose() << "Second COM for sphere tracking: pos " << com << std::endl;
-    sphere_COMs.push_back(com);
+	sphere_COMs.push_back(com);
 
 	double distsq_previous, distsq_preprevious;
 	bool reached_start = false;
-    int index = 2; //because first two points are already found
+	int index = 2; //because first two points are already found
 
-    // move along the disclination line step by step until we reach the start point
+	// move along the disclination line step by step until we reach the start point
 	while (reached_start == false){
 
 		// work out moving direction from two previous coms
@@ -872,20 +872,20 @@ void Sausage::sphere_tracking(){
 		// find new current position in sausage by moving alon the direction dir 
 		current_pos = sphere_COMs[index-1] + params::R_gap*dir_hat;
 	
-        //find sphere with radius R for current position that is large enough to include 10 points
-        //then find COM of all included points
+		//find sphere with radius R for current position that is large enough to include 10 points
+		//then find COM of all included points
 		calculate_com_sphere(current_pos,0.0,com);
 		
 		// check that we aren't reversing on ourselves, if so exit the program
 		distsq_previous = distance(com,sphere_COMs[index-1]);
 		distsq_preprevious = distance(com,sphere_COMs[index-2]);
-        if (distsq_preprevious < distsq_previous){ 
-            cerr << "The next point in sphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
-        }
-       
-        //add COM found to final array of COMs if index > 5, because first few points will be slighly noisy
-        sphere_COMs.push_back(com);
-		
+		if (distsq_preprevious < distsq_previous){ 
+			cerr << "The next point in sphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
+		}
+
+		//add COM found to final array of COMs if index > 5, because first few points will be slighly noisy
+		sphere_COMs.push_back(com);
+
 		// check whether we have reached our starting point once we have found the first few points
 		if (distance(sphere_COMs[index],sphere_COMs[0]) < params::R_gap)
 		{
@@ -894,7 +894,7 @@ void Sausage::sphere_tracking(){
 		}
 		index++;
 
-        // Exit program if sphere tracking takes too long.
+		// Exit program if sphere tracking takes too long.
 		if ( index > 1000) {
 			cerr << "Halfsphere algorithm hasn't reached its starting point after 1000 iterations. \n" << endl;
 			exit(EXIT_FAILURE);
@@ -902,13 +902,13 @@ void Sausage::sphere_tracking(){
 
 	}//end of while loop over sausage
 
-    //print all COMs of sphere
+	//print all COMs of sphere
 	verbose()<<"COMS sphere tracking:"<<std::endl;
 	for (int k=0; k<sphere_COMs.size(); k++){
-    	brief({2})<<"COM "<<sphere_COMs[k]<<std::endl;
-    	verbose()<<"COM "<<sphere_COMs[k]<<std::endl;}
+		brief({2})<<"COM "<<sphere_COMs[k]<<std::endl;
+		verbose()<<"COM "<<sphere_COMs[k]<<std::endl;}
 
-    return;
+	return;
 }
 
 void Sausage::calculate_sausage_length_spheres(){
@@ -917,10 +917,10 @@ void Sausage::calculate_sausage_length_spheres(){
 	length = 0;
 	for(int i = 0; i < sphere_COMs.size()-1; i++) { 
 		length += distance(sphere_COMs[i],sphere_COMs[i+1]); 
-        debug() << "Length "<<i<<" "<< length << endl;
-    }
+		debug() << "Length "<<i<<" "<< length << endl;
+	}
 	length += distance(sphere_COMs[sphere_COMs.size()-1],sphere_COMs[0]);
-    debug() << "Length last step"<< length << endl;
+		debug() << "Length last step"<< length << endl;
 
 	info() << "The estimated length of the sausage using spheres is " << length << endl;
 	brief({2}) << "Length "<<sausageID<<" "<< length << endl;
@@ -933,26 +933,26 @@ void Sausage::calculate_sausage_length_spheres(){
 void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 
 	debug() << "begin flood_fill_closed_loops" << endl << flush;
-    
-    // find centre of mass of this sausage
-    find_com();
-    Vector3d com_vec (0,0,0);
-    com_vec.x = centre_of_mass[0];
-    com_vec.y = centre_of_mass[1];
-    com_vec.z = centre_of_mass[2];
 
-    // check that COM isn't very close to the sausage
-    Vector3d delta (0,0,0);
-    for(size_t i = 0; i != points.size(); i++){
+	// find centre of mass of this sausage
+	find_com();
+	Vector3d com_vec (0,0,0);
+	com_vec.x = centre_of_mass[0];
+	com_vec.y = centre_of_mass[1];
+	com_vec.z = centre_of_mass[2];
+
+	// check that COM isn't very close to the sausage
+	Vector3d delta (0,0,0);
+	for(size_t i = 0; i != points.size(); i++){
 		delta.x = points[i]->x - com_vec.x;
 		delta.y = points[i]->y - com_vec.y;
 		delta.z = points[i]->z - com_vec.z;
 		if ( fabs(mag(delta) < 3.0)){
-            cerr << "FF closed loops, shows that COM is very close to sausage point." << endl;
+			cerr << "FF closed loops, shows that COM is very close to sausage point." << endl;
 			exit(EXIT_FAILURE);
 		}
 	}
-    debug() << "Checked that COM is at least 3.0 away from any sausge point."<< endl;
+	debug() << "Checked that COM is at least 3.0 away from any sausge point."<< endl;
 
 	// AB is vector joining colloids
 	Vector3d AB = colloidPos[0] - colloidPos[1];
@@ -983,7 +983,7 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 		Vector3d p (0,0,0); // xyz of this point
 		p.x=it->x; p.y=it->y; p.z=it->z;
 
-        Vector3d u = p - com_vec; // Vector from point to COM
+		Vector3d u = p - com_vec; // Vector from point to COM
 
 		// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 		// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
@@ -1013,11 +1013,11 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 		exit(EXIT_FAILURE);
 	}
 
-    //Pick larger region
-    if (region1.size() >= region2.size() ) region = region1;
-    verbose()<<region.size()<<" pixels in region chosen (larger region)"<<endl;
+	//Pick larger region
+	if (region1.size() >= region2.size() ) region = region1;
+	verbose()<<region.size()<<" pixels in region chosen (larger region)"<<endl;
 
-    //Find vector u which is parallel to PoBF, perpendicular to v
+	//Find vector u which is parallel to PoBF, perpendicular to v
 	Vector3d u (0,0,0);
 	if (abs(v.y+beta*v.z) > params::epsilon){
 		u.x=1; // No need to normalise
@@ -1033,8 +1033,8 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 
 	//Find com of region selected
 	double x=0,y=0,z=0;
-    Vector3d com_vec_reg (0,0,0); //com of region selected
-   	for (vector<Point*>::iterator it=region.begin(); it!=region.end(); it++){
+	Vector3d com_vec_reg (0,0,0); //com of region selected
+	for (vector<Point*>::iterator it=region.begin(); it!=region.end(); it++){
 		x+=(*it)->x;
 		y+=(*it)->y;
 		z+=(*it)->z;
@@ -1043,36 +1043,36 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 	com_vec_reg.y = y/region.size();
 	com_vec_reg.z = z/region.size();
 	info() <<  "Centre of mass of region " << com_vec_reg << endl;
-   	// Find neighbours of region on both sides
-    vector<Point*> neighbours;
-    vector<Point*> neighbours_otherside;
-    Vector3d p (0,0,0); //Vector from COM of region to point p
+	// Find neighbours of region on both sides
+	vector<Point*> neighbours;
+	vector<Point*> neighbours_otherside;
+	Vector3d p (0,0,0); //Vector from COM of region to point p
 	for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
 		Point* it=*iter;
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			Point* neigh = it->neighbours[iNeigh];
-    		if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
-                p.x = neigh->x; 
-                p.y = neigh->y; 
-                p.z = neigh->z; 
-                //Only pick neighbour points along u away from com of region
-                if (dot(u,p-com_vec_reg) > 0){
-			        neighbours.push_back(it->neighbours[iNeigh]);
-                }else{
-                    neighbours_otherside.push_back(it->neighbours[iNeigh]);
-                }
+			if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
+				p.x = neigh->x; 
+				p.y = neigh->y; 
+				p.z = neigh->z; 
+				//Only pick neighbour points along u away from com of region
+				if (dot(u,p-com_vec_reg) > 0){
+					neighbours.push_back(it->neighbours[iNeigh]);
+				}else{
+					neighbours_otherside.push_back(it->neighbours[iNeigh]);
+				}
 			}
 		}
 	}
 	debug()<<"end of region"<<endl<<flush;
-			
+
 	// flood-fill from neighbours on one side, exit if we reach on neighbour on the other side
-    // If the point is in the region, don't add it to the flood-filled area.
+	// If the point is in the region, don't add it to the flood-filled area.
 	vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
 	vector<Point*> visited; // Points we've already visited, and so should ignore
 	while (stack.size()>0){
 		Point* curr = stack.back();
-        debug()<<"STACK "<< curr->x << " "<<curr->y<<" "<<curr->z<< endl;
+		debug()<<"STACK "<< curr->x << " "<<curr->y<<" "<<curr->z<< endl;
 		stack.pop_back();
 		for (int iNeigh=0;iNeigh<6;iNeigh++){
 			if (!curr->neighbours[iNeigh]) continue;
@@ -1080,27 +1080,27 @@ void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
 			if (elementOf(visited,thisNeigh)) continue;
 				visited.push_back(thisNeigh);
 				if (thisNeigh->isInASausage) {
-				    //debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
-                    //check whether current point is inside the region
-				    if (elementOf(neighbours_otherside,thisNeigh)){
-					    verbose()<<"I'm a neighbour on the other side."<<endl;
-                        //remove from neighbours_otherside list
-                        neighbours_otherside.erase(std::remove(neighbours_otherside.begin(), neighbours_otherside.end(), thisNeigh), neighbours_otherside.end());
-                        verbose()<<"REGION "<< thisNeigh->x << " "<<thisNeigh->y<<" "<<thisNeigh->z<< endl;
-				    }
-                    if (!elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
-                }
-	    }
-    }
-			
-    if (neighbours_otherside.size() != 0){
-        verbose()<<neighbours_otherside.size()<<"FF closed loop test failed. There is some kind of gap in the saugse."<<endl;
-        for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
-	    	verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2_after"<<endl;
-	    }
-        cerr << "It seems there are open loops in the system. Exit program ...";
-        exit(EXIT_FAILURE);
-    }
-    verbose()<<"Finished flood-fill closed loops successfully."<<endl;
+					//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
+					//check whether current point is inside the region
+					if (elementOf(neighbours_otherside,thisNeigh)){
+						verbose()<<"I'm a neighbour on the other side."<<endl;
+						//remove from neighbours_otherside list
+						neighbours_otherside.erase(std::remove(neighbours_otherside.begin(), neighbours_otherside.end(), thisNeigh), neighbours_otherside.end());
+						verbose()<<"REGION "<< thisNeigh->x << " "<<thisNeigh->y<<" "<<thisNeigh->z<< endl;
+					}
+					if (!elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
+				}
+			}
+		}
+
+		if (neighbours_otherside.size() != 0){
+			verbose()<<neighbours_otherside.size()<<"FF closed loop test failed. There is some kind of gap in the saugse."<<endl;
+			for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
+				verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2_after"<<endl;
+			}
+			cerr << "It seems there are open loops in the system. Exit program ...";
+			exit(EXIT_FAILURE);
+		}
+	verbose()<<"Finished flood-fill closed loops successfully."<<endl;
 }
 

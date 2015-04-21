@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
 
 	brief({1,2}) << "total_points	" << model.total_points << endl;
 	brief({1,2}) << "threshold	" << params::threshold << endl;
-    brief({1,2}) << "threshold_pts    " << model.threshold_points.size() << endl;
+	brief({1,2}) << "threshold_pts	" << model.threshold_points.size() << endl;
 
 	if (!params::thresholded_filename.empty()) write_points(params::thresholded_filename, model.allPoints, model.threshold_points);
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
 		} else if (sausageSize > params::silent_ignore_size*model.threshold_points.size() &&
 			sausageSize < params::min_sausage_size*model.threshold_points.size()   ){
 			warning() << "Sausage #" << i << " of size "  <<
-				sausageSize << " is not tiny, but is being ignored." << endl;
+			sausageSize << " is not tiny, but is being ignored." << endl;
 			model.allSausages[i].is_significant=false;
 		} else if (sausageSize > params::min_sausage_size*model.threshold_points.size()){
 			model.allSausages[i].is_significant=true;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-    // Check that all relevant sausages are closed loops, open loops are unphysical, except along pbc
+	// Check that all relevant sausages are closed loops, open loops are unphysical, except along pbc
 	info() << "Checking all relevant sausages are closed loops..." << endl;
 	for (size_t i=0; i<relevant_sausages.size(); i++){
         model.allSausages[relevant_sausages[i]].flood_fill_closed_loops(model.colloidPos);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]){
             model.allSausages[relevant_sausages[i]].calculate_sausage_length_spheres();
 			info() << "Size of i th sausage: " << i << " " << size[i] << endl;
 		}
-        // Find the ratio in size for the two sausages. 
+	// Find the ratio in size for the two sausages. 
 		ratio = fabs(2*(size[0]-size[1])/(size[0]+size[1]));
 		if (ratio < params::ratio_two_rings ){
 			info() << "The sausages have very similar size. Hence it is the Two-ring structure." << endl;
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]){
 			exit(EXIT_FAILURE);
 			}
 	}
-	
+
 	// Analysis for one relevant sausages found 
 	else if ( relevant_sausages.size() == 1) {
 		info() << "One relevant sausage found." << endl;
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]){
 		model.allSausages[relevant_sausages[0]].find_com();
 		model.allSausages[relevant_sausages[0]].find_pobf();
 		model.allSausages[relevant_sausages[0]].sphere_tracking();
-        model.allSausages[relevant_sausages[0]].calculate_sausage_length_spheres();
+		model.allSausages[relevant_sausages[0]].calculate_sausage_length_spheres();
 		info() << "Size of sausage: " << size << endl;
 		//Do FF to distinguish between figure of eight and figure of omega 
 		int classification = model.allSausages[relevant_sausages[0]].flood_fill_classify(model.colloidPos);
@@ -192,9 +192,8 @@ int main(int argc, char *argv[]){
 	for (Point* p : model.allPoints) {delete p;}
 	model.allSausages.clear();
 	model.allPoints.clear();
-	
+
 	info() << "Exiting successfully" << endl;
 	return EXIT_SUCCESS;
 }
-
 
