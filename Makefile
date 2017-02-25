@@ -23,6 +23,15 @@ $(BUILDDIR)/cJSON.o : $(SRCDIR)/cJSON/cJSON.c
 	$(CC) $(CXXFLAGS) -c -o $@ $<
 
 
+DOXYGEN_EXISTS  := $(shell command -v doxygen  2> /dev/null)
+
+docs:
+ifndef DOXYGEN_EXISTS
+	$(error "Please install doxygen")
+endif
+	doxygen
+
+
 .PHONY:
 clean:
-	rm -f build/* sausages
+	rm -rf build sausages docs
