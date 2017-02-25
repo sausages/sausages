@@ -26,11 +26,16 @@ $(BUILDDIR)/cJSON.o : $(SRCDIR)/cJSON/cJSON.c
 
 DOXYGEN_EXISTS  := $(shell command -v doxygen  2> /dev/null)
 
-docs:
+docs: mainpage.dox $(SRC)
 ifndef DOXYGEN_EXISTS
 	$(error "Please install doxygen")
 endif
 	doxygen
+
+manual.pdf: docs
+	(cd docs/latex && $(MAKE))
+	cp docs/latex/refman.pdf manual.pdf
+
 
 
 .PHONY:
