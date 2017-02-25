@@ -1,0 +1,8 @@
+Test reading of zip files
+
+Same file as short.xyzclcpcs from test1, but zipped with command: zip short.xyzclcpcs.zip short.xyzclcpcs
+Should give identical results to test1, except for input_filename line in brief file.
+75% compression, 28MB -> 7MB
+
+Uses xyzclcpcs file-format (original format)
+cl cutoff is 0.12, larger than the default

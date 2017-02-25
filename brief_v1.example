@@ -1,0 +1,10 @@
+brief_version	1
+input_filename	someFile.inputFormat
+total_points	31337
+threshold	0.12
+threshold_pts	1337
+num_sausages	2
+saus_1_size	337
+saus_2_size	1000
+system_class	3
+system_str	figure8

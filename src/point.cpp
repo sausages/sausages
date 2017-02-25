@@ -11,6 +11,10 @@ Point::Point(void){
 	isInASausage=false;
 }
 
+Point::operator Vector3d(){
+	Vector3d v (x,y,z);
+	return v;
+}
 
 void printAllNeighs(const vector<Point> &allPoints){
 	Point p;

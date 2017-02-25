@@ -6,6 +6,7 @@
 #include "cJSON/cJSON.h"
 #include "io.h"
 #include "main.h"
+#include "maths.h"
 #include "params.h"
 
 using namespace params;
@@ -14,18 +15,24 @@ using namespace params;
 namespace params{
 	verbosityLevel verbosity = INFO;
 	std::string brief_filename = ""; // 'brief' file is for standardised output, in a different file to cout
+	int brief_version = 1 ; // each brief version is standardised
+	std::string thresholded_filename = ""; // 'thresholded' file is for output of points below the threshold, in a different file to cout
+	std::string prejoin_sausage_filename = ""; // file for output of points in sausages before joining, one file per sausage
+	std::string sausage_filename = ""; // 'sausage' file is for output of points in sausages after joining endpoints, one file per sausage
 	double threshold = 0.04; // c_l threshold for includion into a sausage. All different defect structures should be distinguishable (i.e. no ambigious blobs)
 	double silent_ignore_size = 0.01; // If a sausage is smaller than this fraction of all points below the threshold, silently ignore it
 	double min_sausage_size = 0.1; // A sausage is only 'significant' if it is larger than this fraction of all points below the threshold
 	double pixel_size = 0.5; // Distance between nearest-neighbour points
-	int points_per_slice = 100; // How many points (on average) are in each slice of the 'pearl-necklace' sausage-length measurer
 	bool colloidsInParamFile = false; // Colloids shouldn't be both in param and input file
 	double ratio_two_rings = 0.1; // Threshold ratio for which two relevant sausages are identified as two_rings
 	double ratio_2nd_loop = 0.5; // Threshold ratio for which two relevant sausages are identified as 2nd_loop
 	double flood_fill_classify_slice_size=4; // How many pixels wide should the regions in flood_fill_classify be?
 	double epsilon=1.0e-10; // Some small number for comparison to zero
 	double max_sausage_gap_size=15; // Maximum distance (in units of pixel-length) between endpoints that will be joined by join_endpoints()
-	double min_sausage_gap_next_neigh_distance=30; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+	double min_sausage_gap_next_neigh_distance=20; // If there are multiple neighbouring endpoints within this radius (in units of pixels), we throw an error as it's too close to call between candidates
+	double R_min_sphere = 0.1; // Minimum radius for sphere tracking algorithm
+	double dR_sphere = 0.1; // Increament sphere by dR value in sphere tracking algorithm
+	double R_gap = 1.0; // Small radius used in sphere tracking to determine our next point, distance between adjacent points ~ R_gap
 }
 
 void invalid_colloid_info(void){
@@ -34,7 +41,7 @@ void invalid_colloid_info(void){
 }
 
 
-void set_params(char *filename){
+void set_params(char *filename, std::vector<Vector3d>  &colloidPos){
 	if (filename == NULL){
 		// Default initialisation
 		brief_filename=std::string("default.brief");
@@ -90,6 +97,25 @@ void set_params(char *filename){
 	} else {
 		brief_filename=std::string("default.brief");
 	}
+	info()<<"brief_filename "<<brief_filename<<std::endl;
+
+	// points_filename
+	if (cJSON_GetObjectItem(root,"thresholded_filename")){
+			thresholded_filename = cJSON_GetObjectItem(root,"thresholded_filename")->valuestring;
+			info()<<"thresholded_filename "<<thresholded_filename<<std::endl;
+	}
+
+	// sausage_filename
+	if (cJSON_GetObjectItem(root,"sausage_filename")){
+			sausage_filename = cJSON_GetObjectItem(root,"sausage_filename")->valuestring;
+			info()<<"sausage_filename "<<sausage_filename<<std::endl;
+	}
+
+	// prejoin_sausage_filename
+	if (cJSON_GetObjectItem(root,"prejoin_sausage_filename")){
+			prejoin_sausage_filename = cJSON_GetObjectItem(root,"prejoin_sausage_filename")->valuestring;
+			info()<<"prejoin_sausage_filename "<<prejoin_sausage_filename<<std::endl;
+	}
 
 
 	// Colloids, we can only deal with two in a param file (this is deprecated, pre-DIOT)
@@ -105,16 +131,17 @@ void set_params(char *filename){
 			invalid_colloid_info();
 
 		for (int i=0; i<2; i++){
-			vector3d newColloid;
-			newColloid.x=first->child->valuedouble;
-			newColloid.y=first->child->next->valuedouble;
-			newColloid.z=first->child->next->next->valuedouble;
-			model::colloidPos.push_back(newColloid);
+			cJSON *currColloid = (i==0) ? first : second ;
+			Vector3d newColloid (0,0,0);
+			newColloid.x=currColloid->child->valuedouble;
+			newColloid.y=currColloid->child->next->valuedouble;
+			newColloid.z=currColloid->child->next->next->valuedouble;
+			colloidPos.push_back(newColloid);
 		}
 
 		debug()<<"Colloid positions:"<<std::endl;
 		for (int i=0; i<2; i++){
-			debug()<<model::colloidPos[i]<<std::endl;
+			debug()<<colloidPos[i]<<std::endl;
 		}
 	}
 
@@ -124,7 +151,7 @@ void set_params(char *filename){
 	// threshold
 	if (cJSON_GetObjectItem(root,"threshold")){
 			params::threshold= cJSON_GetObjectItem(root,"threshold")->valuedouble;	// Need to specify threshold to avoid conflict
-			info()<<"threshold"<<params::threshold<<std::endl;			// with function in sausages.h, via main.h
+			info()<<"threshold "<<params::threshold<<std::endl;			// with function in sausages.h, via main.h
 	}
 
 	// silent_ignore_size
@@ -159,12 +186,11 @@ void set_params(char *filename){
 
 
 	/* Integers */
-	// points_per_slice
-	if (cJSON_GetObjectItem(root,"points_per_slice")){
-			points_per_slice = cJSON_GetObjectItem(root,"points_per_slice")->valuedouble;
-			info()<<"points_per_slice "<<points_per_slice<<std::endl;
+	if (cJSON_GetObjectItem(root,"brief_version")){
+			brief_version = cJSON_GetObjectItem(root,"brief_version")->valuedouble;
+			info()<<"brief_version "<<brief_version<<std::endl;
 	}
-	
+
 	// ratio_two_rings
 	if (cJSON_GetObjectItem(root,"ratio_two_rings")){
 			ratio_two_rings = cJSON_GetObjectItem(root,"ratio_two_rings")->valuedouble;

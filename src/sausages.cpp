@@ -1,11 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <cmath>
 #include <algorithm>
 #include <stdexcept>
 #include <limits>
 #include "io.h"
 #include "main.h"
+#include "maths.h"
 #include "params.h"
 #include "point.h"
 #include "sausages.h"
@@ -14,21 +16,10 @@ using namespace std;
 
 Sausage::Sausage(int ID){
 	sausageID=ID;
+	have_rotation_matrix = false;
+	have_pobf = false;
 }
 
-/** Points are in a sausge if their cl value is < threshold
- */
-int threshold(vector<Point> &allPoints){
-	int num_below_threshold=0;
-	vector<Point>::iterator it;
-	for (it=allPoints.begin(); it!=allPoints.end(); ++it){
-		if (it->cl < params::threshold){
-			it->isInASausage=true;
-			num_below_threshold++;
-		}
-	}
-	return num_below_threshold;
-}
 
 /** Ordinary Flood-fill algorithm
  * 1) Find the first sausage-worthy point not yet sorted into a sausage
@@ -37,18 +28,19 @@ int threshold(vector<Point> &allPoints){
  *     the sausage and its unsorted neighbours to the stack
  * 4) Eventually you'll have a continuous sausage, start with the next one.
  */
-void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages){
+void flood_fill_separate(vector<Point*> allPoints, vector<Sausage> &allSausages){
+	debug() << "begin flood_fill_separate" << endl << flush;
 
 	int newSausageID=0;
 	vector<size_t> stack; // Empty FILO stack, filled with indices of points to be coloured
 	for (size_t firstPoint=0; firstPoint<allPoints.size(); firstPoint++){
 		// Pick the first sausage not yet coloured
-		if (allPoints[firstPoint].isInASausage && allPoints[firstPoint].sausageID==-1){
-			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl;
+		if (allPoints[firstPoint]->isInASausage && allPoints[firstPoint]->sausageID==-1){
+			verbose() << "Starting flood-fill of sausage #" << newSausageID << endl << flush;
 			Sausage newSausage(newSausageID);
 			stack.push_back(firstPoint);
 			while (stack.size()>0){
-				Point *curr = &(allPoints[stack.back()]);
+				Point *curr = allPoints[stack.back()];
 				stack.pop_back();
 
 				curr->sausageID=newSausageID;
@@ -57,7 +49,7 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
 				for (int iNeigh=0;iNeigh<6;iNeigh++){
 					Point *neigh=curr->neighbours[iNeigh];
 					if (neigh  && neigh->isInASausage && neigh->sausageID==-1 && // neigh is sausage-worthy but not yet sorted
-					    find(stack.begin(),stack.end(),neigh->allPointsIndex)==stack.end()){ // Don't add to the stack if it's already there
+					    !elementOf(stack,neigh->allPointsIndex)){ // Don't add to the stack if it's already there
 						stack.push_back(neigh->allPointsIndex) ;
 					}
 				}
@@ -73,34 +65,40 @@ void flood_fill_separate(vector<Point> &allPoints, vector<Sausage> &allSausages)
  * Four points on the sausage are found, two on either side of each colloid.
  * From each point we flood-fill towards the centre, and see which of the other points we reach
  *
- * Class 1: If we reach only the other colloid's point of the same side (i.e. above-1 -> above-2) then we
- *  have a simple ring with no twists, such as a theta configuration.
- *  Also classified as class-1 will be 2nd-loop systems where the 2nd loop is touching the 1st on only one side.
+ * Class 5: If we reach only the other colloid's point of the same side (i.e. above-1 -> above-2) then we
+ *  have a simple ring with no twists, such as an omega configuration.
+ *  Also classified as class-5 will be 2nd-loop systems where the 2nd loop is touching the 1st on only one side.
  *
- * Class 2: If we end up only on the other side of the opposite colloid (above-1 -> below-2)
- *  then we have a figure-of-eight system.
+ * Class 1/2: If we end up only on the other side of the opposite colloid (above-1 -> below-2)
+ *  then we have a figure-of-eight system. 1 is left-handed, 2 is right-handed
  *
- * Class 3: If we reach more than one other point we have junctions on both sides of the sausage, and are
+ * Class 0: If we reach more than one other point we have junctions on both sides of the sausage, and are
  *  insufficiently resolved.
  *
  */
-void Sausage::flood_fill_classify(void){
+int Sausage::flood_fill_classify(const std::vector<Vector3d> colloidPos){
 	/* We need to find the vector parallel to the sausage's PoBF which is perpendicular to the line joining the two colloids.
 	 * Then we follow this vector out from a colloid to find suitable points on the sausage.
 	 * If we arbitrarity set the vector to be length 1 we can determine it from the colloid positions and the PoBF.
 	 */
 
+	debug() << "begin flood_fill_classify" << endl << flush;
+
 	// AB is vector joining colloids
-	vector3d AB = model::colloidPos[0] - model::colloidPos[1];
+	Vector3d AB = colloidPos[0] - colloidPos[1];
 	double norm_AB = sqrt(dot(AB,AB));
 	debug()<<"Vector AB is "<<AB<<" of length "<<norm_AB<<endl;
+	if (norm_AB < params::epsilon){
+		cerr << "Vector between colloids is very small, check inputs! Aborting." << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	// Plane of best fit is of form alpha*x+beta*y=z
 	double alpha=-plane_of_best_fit[0];
 	double beta=-plane_of_best_fit[1];
 
 	// From being parallel to PoBF, perpendicular to AB, we can determine:
-	vector3d v;
+	Vector3d v (0,0,0);
 	if (abs(AB.y+beta*AB.z) > params::epsilon){
 		v.x=1; // No need to normalise
 		v.y=(-alpha-AB.x)/(AB.y+beta*AB.z);
@@ -119,15 +117,14 @@ void Sausage::flood_fill_classify(void){
 	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
 		Point* it = *iter;
 		for (int iColl=0; iColl<2; iColl++){
-			vector3d p; // xyz of this point
-			p.x=it->x; p.y=it->y; p.z=it->z;
+			Vector3d p (it->x, it->y, it->z); // xyz of this point
 
-			vector3d u = p - model::colloidPos[iColl]; // Vector from point to colloid
+			Vector3d u = p - colloidPos[iColl]; // Vector from point to colloid
 
 			// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
 			// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
-			vector3d first_plane  = model::colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
-			vector3d second_plane = model::colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			Vector3d first_plane  = colloidPos[iColl] + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+			Vector3d second_plane = colloidPos[iColl] - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
 			double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
 			double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
 
@@ -137,10 +134,10 @@ void Sausage::flood_fill_classify(void){
 				double projection = dot(u,v);
 				if (projection>0){
 					above[iColl].push_back(it);
-					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region above colloid "<<iColl<<endl;
+					debug() << p << " added to region above colloid " << iColl << endl;
 				} else {
 					below[iColl].push_back(it);
-					debug()<<it->x<<","<<it->y<<","<<it->z<<" added to region below colloid "<<iColl<<endl;
+					debug() << p << " added to region below colloid " << iColl << endl;
 				}
 			}
 		}
@@ -151,16 +148,10 @@ void Sausage::flood_fill_classify(void){
 	verbose()<<below[0].size()<<" pixels in region below first colloid"<<endl;
 	verbose()<<below[1].size()<<" pixels in region below second colloid"<<endl;
 
-	/* Debug: print out all points in sausage, and points in regions */
-	/*
-	cout << "XXXX" << endl;
-	for (vector<Point>::iterator it=points.begin(); it!=points.end(); it++){ cout << 0 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=above[0].begin(); it!=above[0].end(); it++){ cout << 1 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=below[0].begin(); it!=below[0].end(); it++){ cout << 2 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=above[1].begin(); it!=above[1].end(); it++){ cout << 3 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	for (vector<Point>::iterator it=below[1].begin(); it!=below[1].end(); it++){ cout << 4 <<","<<it->x<<","<<it->y<<","<<it->z<<endl; }
-	cout << "XXXX" << endl;
-	*/
+	if (below[0].size() * below[1].size() * above[0].size() * above[1].size() == 0){
+		cerr << "One of the regions is empty, this is bad, exiting." << endl << flush;
+		exit(EXIT_FAILURE);
+	}
 
 	/** Adjacency matrix of region
 	 * 4-by-4 adjacency matrix. Each region is adjacent to itself.
@@ -168,9 +159,16 @@ void Sausage::flood_fill_classify(void){
 	 * i.e. region is number 2*iColl+aboveOrBelow
 	 */
 	int adjacency[4][4] = {}; // initalise to all zero
+
+	/** Set of all points reached in the flood-fills from regions above/below colloid 0.
+	 * We use these to check whether a twist is left-handed (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed
+	 */
+	vector<Point*> fromAbove0;
+	vector<Point*> fromBelow0;
+
 	// For each region
-	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){
-		debug()<<"in region, colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
+	for (int iColl=0;iColl<2;iColl++){ for (int aboveOrBelow=0;aboveOrBelow<2;aboveOrBelow++){ // aboveOrBelow is 0 for below, 1 for above
+		debug()<<"in region: colloid "<<iColl<<" aboveOrBelow "<<aboveOrBelow<<endl<<flush;
 		vector<Point*> region = aboveOrBelow ? above[iColl] : below[iColl];
 		int otherColl=(iColl+1)%2;
 
@@ -178,15 +176,15 @@ void Sausage::flood_fill_classify(void){
 		vector<Point*> neighbours;
 		for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
 			Point* it=*iter;
-			double distanceToOtherColl = pow(it->x - model::colloidPos[otherColl].x,2) +
-							pow(it->y - model::colloidPos[otherColl].y,2) +
-							pow(it->z - model::colloidPos[otherColl].z,2) ;
+			double distanceToOtherColl = pow(it->x - colloidPos[otherColl].x,2) +
+							pow(it->y - colloidPos[otherColl].y,2) +
+							pow(it->z - colloidPos[otherColl].z,2) ;
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				Point* neigh = it->neighbours[iNeigh];
-				if (neigh->isInASausage && find(region.begin(),region.end(),neigh)==region.end()){
-					double neighDistanceToOtherColl = pow(neigh->x - model::colloidPos[otherColl].x,2) +
-									pow(neigh->y - model::colloidPos[otherColl].y,2) +
-									pow(neigh->z - model::colloidPos[otherColl].z,2) ;
+				if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
+					double neighDistanceToOtherColl = pow(neigh->x - colloidPos[otherColl].x,2) +
+									pow(neigh->y - colloidPos[otherColl].y,2) +
+									pow(neigh->z - colloidPos[otherColl].z,2) ;
 					if (neighDistanceToOtherColl < distanceToOtherColl) neighbours.push_back(it->neighbours[iNeigh]);
 				}
 			}
@@ -216,7 +214,7 @@ void Sausage::flood_fill_classify(void){
 			for (int iNeigh=0;iNeigh<6;iNeigh++){
 				if (!curr->neighbours[iNeigh]) continue;
 				Point* thisNeigh=curr->neighbours[iNeigh];
-				if (find(visited.begin(),visited.end(),thisNeigh)!=visited.end()) continue;
+				if (elementOf(visited,thisNeigh)) continue;
 				visited.push_back(thisNeigh);
 				//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
 				if (thisNeigh->isInASausage) {
@@ -225,18 +223,26 @@ void Sausage::flood_fill_classify(void){
 					for (int jColl=0;jColl<2;jColl++){ for (int inner_aboveOrBelow=0;inner_aboveOrBelow<2;inner_aboveOrBelow++){
 						vector<Point*> inner_region = inner_aboveOrBelow ? above[jColl] : below[jColl];
 						// If the neighbour is in the region, make a note but don't add to stack
-						if (find(inner_region.begin(),inner_region.end(),thisNeigh)!=inner_region.end()){
+						if (elementOf(inner_region,thisNeigh)){
 							in_a_region=true;
 							adjacency[2*iColl+aboveOrBelow][2*jColl+inner_aboveOrBelow]=1;
 							//debug()<<"I'm in a region"<<endl;
 							//debug()<<"From "<<2*iColl+aboveOrBelow<<" to "<<2*jColl+inner_aboveOrBelow<<endl;
 						}
 					}}
-					if (!in_a_region && find(stack.begin(),stack.end(),thisNeigh)==stack.end()) stack.push_back(thisNeigh);
+					if (!in_a_region && !elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
 				}
 			}
 		}
 		verbose()<<"Finished flood-fill from region "<<(aboveOrBelow?"above":"below")<<" colloid "<<iColl<<endl;
+		//write_points("debug_aboverOrBelow"+to_string(aboveOrBelow)+"_colloid"+to_string(iColl)+".dat", visited);
+
+		// Save paths for identifying twist handedness
+		if (aboveOrBelow==0 && iColl==0){
+			fromBelow0=visited;
+		} else if (aboveOrBelow==1 && iColl==0){
+			fromAbove0=visited;
+		}
 
 	}} // end of 'for each region'
 
@@ -265,16 +271,92 @@ void Sausage::flood_fill_classify(void){
 		}
 	}
 	if (adjacency[0][2] && adjacency[1][3]){
-		info()<<"System appears to be untwisted (Class 1)"<<endl;
+		info()<<"System appears to be untwisted (Class 5)"<<endl;
+		return 5;
 	} else if (adjacency[0][3] && adjacency[1][2]){
-		info()<<"System appears to be twisted (Class 2)"<<endl;
+		info()<<"System appears to be twisted (Class 1/2)"<<endl;
+		// Work out whether it's a RHS twist or a LHS one
+		int handedness = find_twist_handedness(fromBelow0, fromAbove0);
+		if (handedness==1){
+			info()<<"Looks left-handed (Class 1)"<<endl;
+			return 1;
+		} else if (handedness==2) {
+			info()<<"Looks right-handed (Class 2)"<<endl;
+			return 2;
+		} else {
+			error()<<"Something went wrong finding handedness of the twist"<<endl;
+			exit(EXIT_FAILURE);
+		}
 	} else {
+		brief({1}) << "Structure undefined." << endl;
+		brief({1}) << "0" << endl;
 		error()<<"Unexpected system linkage, this should never happen."<<endl;
 		exit(EXIT_FAILURE);
 	}
 }
 
+/** Takes two vectors of Points, corresponding to the two sets of all points reached in the flood-fills from regions above/below colloid 0.
+ * We use these to check whether a twist is left-handed (return 1) (above-0 -> below-1 has higher z than above-1 -> below-0) or right-handed (return 2)
+ */
+int Sausage::find_twist_handedness(std::vector<Point*> fromBelowPoints, std::vector<Point*> fromAbovePoints){
+
+	// Make vector<Vector3d> of the points in each arm.
+	/*
+	 * This would be nice (implicit casting) but I CBA to go back over flood_fill_classify and replace <Point*> with <Point&> or whatev2r
+	std::vector<Vector3d> fromBelow(fromBelowPoints.begin(), fromBelowPoints.end());
+	std::vector<Vector3d> fromAbove(fromAbovePoints.begin(), fromAbovePoints.end());
+	*/
+	std::vector<Vector3d> fromBelow, fromAbove;
+	for (vector<Point*>::iterator iter=fromBelowPoints.begin(); iter!=fromBelowPoints.end(); iter++){
+		fromBelow.push_back((Vector3d)(**iter));
+	}
+	for (vector<Point*>::iterator iter=fromAbovePoints.begin(); iter!=fromAbovePoints.end(); iter++){
+		fromAbove.push_back((Vector3d)(**iter));
+	}
+
+	rotate_to_xy_plane(fromBelow);
+	rotate_to_xy_plane(fromAbove);
+
+
+	// Points are within a cross-over region if their xy projection is 'close' to one of a point from the other arm
+	// 'Close' is defined as 2*pixel_size
+	double above_minz = numeric_limits<double>::infinity();
+	double above_maxz = -numeric_limits<double>::infinity();
+	double below_minz = numeric_limits<double>::infinity();
+	double below_maxz = -numeric_limits<double>::infinity();
+	bool overlap=false;
+	for (vector<Vector3d>::iterator above=fromAbove.begin(); above!=fromAbove.end(); above++){
+		for (vector<Vector3d>::iterator below=fromBelow.begin(); below!=fromBelow.end(); below++){
+			if ( pow(above->x-below->x, 2) + pow(above->y-below->y, 2) < pow(2*params::pixel_size,2) ){
+				//debug() << *below << " and " << *above << " are in the DANGER ZONE! <cough> crossing zone." << endl;
+				overlap=true;
+				above_minz = (above->z < above_minz) ? above->z : above_minz;
+				above_maxz = (above->z > above_maxz) ? above->z : above_maxz;
+				below_minz = (below->z < below_minz) ? below->z : below_minz;
+				below_maxz = (below->z > below_maxz) ? below->z : below_maxz;
+			}
+		}
+	}
+	if (above_minz>above_maxz || below_minz>below_maxz || !overlap){
+		error() << "Something's wrong with the crossing-zone, aborting" << endl;
+		exit(EXIT_FAILURE);
+	}
+	if (above_minz > below_maxz){
+		info()<< "Looks like a left-handed figure-of-eight" << endl;
+		return 1;
+	} else if (above_maxz < below_minz){
+		info()<< "Looks like a right-handed figure-of-eight" << endl;
+		return 2;
+	} else {
+		error() << "Something's wrong with the crossing-zone" << endl;
+		return 0;
+	}
+}
+
 void Sausage::find_endpoints(void){
+
+	debug() << "begin find_endpoints of sausage " << sausageID << endl << flush;
+
 	// There is no 'infinity' for integers, like there is for doubles.
 	// However, there is a max(), which works out to be something like 2,147,000,000
 	// This is (hopefully) much larger than any actual distance across the network
@@ -290,7 +372,7 @@ void Sausage::find_endpoints(void){
 			dist[i][j]=myInfinity;
 		}
 	}
-	debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
+	if (points.size()>15) debug()<<"Arbitrary initial distance: "<<dist[10][15]<<endl;
 
 	// For each vertex v, dist[v][v]=0
 	// For each edge (u,v), dist[u][v]=w(u,v)=1 in this case
@@ -317,6 +399,7 @@ void Sausage::find_endpoints(void){
 
 	// Find maximum minimum-distance
 	int max_min_dist=0;
+	endpoints[0] = endpoints[1] = 0; // In case there's only a single point
 	for (size_t i=0; i<points.size(); i++){
 		for (size_t j=i; j<points.size(); j++){
 			if (dist[i][j]>max_min_dist){
@@ -328,9 +411,9 @@ void Sausage::find_endpoints(void){
 		}
 	}
 
-	debug()<<"Endpoint 0 is #"<<endpoints[0]<<" at: "<<points[endpoints[0]]->x<<","<<points[endpoints[0]]->y<<","<<points[endpoints[0]]->z<<","<<endl;
-	debug()<<"Endpoint 1 is #"<<endpoints[1]<<" at: "<<points[endpoints[1]]->x<<","<<points[endpoints[1]]->y<<","<<points[endpoints[1]]->z<<","<<endl;
-	debug()<<"Minimum distance along the sausage between them is: "<<max_min_dist<<endl;
+	debug() << "Endpoint 0 is #" << endpoints[0] << " at: " << *points[endpoints[0]] << endl;
+	debug() << "Endpoint 1 is #" << endpoints[1] << " at: " << *points[endpoints[1]] << endl;
+	debug() << "Minimum distance along the sausage between them is: " << max_min_dist << endl;
 
 	for (size_t i=0; i<points.size(); i++){
 		delete [] dist[i];
@@ -338,14 +421,14 @@ void Sausage::find_endpoints(void){
 	delete [] dist;
 }
 
-void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages){
+void join_endpoints(Model &model){
 	// Work out distance between endpoints
-	double dist[2*relevantSausages.size()][2*relevantSausages.size()];
-	for (size_t i=0; i<relevantSausages.size(); i++){
-		Sausage si = allSausages[relevantSausages[i]];
+	double dist[2*model.allSausages.size()][2*model.allSausages.size()];
+	for (size_t i=0; i<model.allSausages.size(); i++){
+		Sausage si = model.allSausages[i];
 		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
-			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
-				Sausage sj = allSausages[relevantSausages[j]];
+			for (size_t j=i; j<model.allSausages.size(); j++){ // Only need half, by symmetry
+				Sausage sj = model.allSausages[j];
 				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
 					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
 					float pi[3],pj[3],p2p[3];
@@ -369,19 +452,23 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 
 	// Join endpoints that are 'close' to each other
 	size_t other_endpoint;
-	bool another_endpoint;
-	for (size_t i=0; i<relevantSausages.size(); i++){
+	bool nearby_endpoint;
+	for (size_t i=0; i<model.allSausages.size(); i++){
 		for (size_t iEndpoint=0; iEndpoint<2; iEndpoint++){
-			another_endpoint=false;
+			nearby_endpoint=false;
 			int num_nearby_endpoints=0;
-			for (size_t j=i; j<relevantSausages.size(); j++){ // Only need half, by symmetry
+			for (size_t j=i; j<model.allSausages.size(); j++){ // Only need half, by symmetry
 				for (size_t jEndpoint=0; jEndpoint<2; jEndpoint++){
 					if (i==j && iEndpoint>=jEndpoint) continue; // More symmetry
+					// If we've already closed this sausage into a loop, the endpoints will be the same point
+					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::epsilon) continue;
+					// Are there any points close enough to join to?
 					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::max_sausage_gap_size*params::pixel_size){
 						debug()<<"Picked out "<<j<<":"<<jEndpoint<<" and "<<i<<":"<<iEndpoint<<endl;
-						another_endpoint=true;
+						nearby_endpoint=true;
 						other_endpoint=2*j+jEndpoint;
 					}
+					// Are there other points which are also nearby, which make this hard to decide on?
 					if (dist[2*i+iEndpoint][2*j+jEndpoint]<params::min_sausage_gap_next_neigh_distance*params::pixel_size){
 						num_nearby_endpoints++;
 					}
@@ -389,10 +476,10 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 				}
 			}
 			if (num_nearby_endpoints>1){
-				error()<<"Too many endpoints near endpoint "<<iEndpoint<<" of sausage "<<relevantSausages[i]<<endl;
+				error()<<"Too many endpoints near endpoint "<<iEndpoint<<" of sausage "<<i<<endl;
 				exit(EXIT_FAILURE);
 			}
-			if (another_endpoint){
+			if (nearby_endpoint){
 				// Join endpoints i:iEndpoint and j:jEndpoint
 				// To do this:
 				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
@@ -401,88 +488,221 @@ void join_endpoints(vector<Sausage> &allSausages, vector<int> &relevantSausages)
 
 				size_t j=other_endpoint/2;
 				size_t jEndpoint=other_endpoint%2;
-				Sausage *sausagei=&allSausages[relevantSausages[i]];
-				Sausage *sausagej=&allSausages[relevantSausages[j]];
+				Sausage &sausagei=model.allSausages[i];
+				Sausage &sausagej=model.allSausages[j];
 
 				//  - Add sausagej.points to sausagei, changing their sausageID and sausagePointsIndex (unless sausagej==sausagei)
-				if (sausagej!=sausagei){
-					for (vector<Point*>::iterator iter=sausagej->points.begin(); iter!=sausagej->points.end(); ++iter){
-						(*iter)->sausageID=relevantSausages[i];
-						(*iter)->sausagePointsIndex+=sausagei->points.size();
+				int original_sausagei_size = sausagei.points.size();
+				if (sausagej.sausageID!=sausagei.sausageID){
+					for (vector<Point*>::iterator iter=sausagej.points.begin(); iter!=sausagej.points.end(); ++iter){
+						(*iter)->sausageID=sausagei.sausageID;
+						(*iter)->sausagePointsIndex+=sausagei.points.size();
 					}
-					debug()<<"sausagei size: "<<sausagei->points.size()<<endl;
-					debug()<<"sausagej size: "<<sausagej->points.size()<<endl;
-					sausagei->points.insert(sausagei->points.end(),sausagej->points.begin(),sausagej->points.end());
-					debug()<<"new sausagei size: "<<sausagei->points.size()<<endl;
+					debug()<<"sausagei size: "<<sausagei.points.size()<<endl;
+					debug()<<"sausagej size: "<<sausagej.points.size()<<endl;
+					sausagei.points.insert(sausagei.points.end(),sausagej.points.begin(),sausagej.points.end());
+					debug()<<"new sausagei size: "<<sausagei.points.size()<<endl;
 				}
 
 				// Artificially add points between nearby endpoints
-				Point *curr = sausagei->points[sausagei->endpoints[iEndpoint]];
-				Point *target = sausagej->points[sausagej->endpoints[jEndpoint]];
-				// Draw line along x
-				while (curr->x!=target->x){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
-						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
-						exit(EXIT_FAILURE);
-					}
-					if (curr->sausageID!=sausagei->sausageID){
-						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
-					}
-					if (curr->x > target->x){
-						curr=curr->left;
-					} else {
-						curr=curr->right;
-					}
+				Point *curr = sausagei.points[sausagei.endpoints[iEndpoint]];
+				Point *target = sausagej.points[sausagej.endpoints[jEndpoint]];
+
+				debug() << "Joining, heading from point " << *curr << " to point " << *target << endl;
+
+				// We can't just follow links anymore, since we don't save non-sausage points when using diot.
+				// If a Point is missing, its neighbours will have Null links to it. We have to sort out the links here.
+				// We don't want to have to check all of allPoints at each step, so we'll pre-compute the Points that might
+				// be neighbours of a new Point. In this case it's the small area around the two endpoints.
+				vector<Point*> possNeighs;
+				double border = 2*params::pixel_size;
+				debug() << "Border size: " << border << endl;
+				for (Point* p : model.allPoints){
+					if (p->x > min(curr->x, target->x)-border &&
+					    p->x < max(curr->x, target->x)+border &&
+					    p->y > min(curr->y, target->y)-border &&
+					    p->y < max(curr->y, target->y)+border &&
+					    p->z > min(curr->z, target->z)-border &&
+					    p->z < max(curr->z, target->z)+border )
+						possNeighs.push_back(p); // WARNING This is probably safe, allPoints won't get resized here
 				}
-				// Draw line along y
-				while (curr->y!=target->y){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
-						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
-						exit(EXIT_FAILURE);
-					}
-					if (curr->sausageID!=sausagei->sausageID){
-						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
-					}
-					if (curr->y > target->y){
-						curr=curr->down;
-					} else {
-						curr=curr->up;
-					}
-				}
-				// Draw line along z
-				while (curr->z!=target->z){
-					if (curr->sausageID != sausagei->sausageID && curr->sausageID != sausagej->sausageID && curr->isInASausage){
-						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
-						exit(EXIT_FAILURE);
-					}
-					if (curr->sausageID!=sausagei->sausageID){
-						curr->isInASausage=true;
-						curr->sausageID=sausagei->sausageID;
-						sausagei->points.push_back(curr);
-						curr->sausagePointsIndex=sausagei->points.size()-1;
-					}
-					if (curr->z > target->z){
-						curr=curr->back;
-					} else {
-						curr=curr->forward;
-					}
+				debug() << "possNeighs has size: " << possNeighs.size() << endl;
+				for (Point *p : possNeighs){
+					debug() << *p << endl;
 				}
 
-				// Sausage has changed, need to recalculate endpoints
-				sausagei->find_endpoints();
 
-				//  - Remove sausagej from relevantSausages if it's been merged into sausagei,
-				//    but check we haven't just closed a gap in sausagei (i.e. joined i:0 and i:0) 
-				if (sausagei!=sausagej) relevantSausages.erase(relevantSausages.begin()+j); // Awkward, but erase() requires an iterator
+
+				// At each step we move along the dimension which takes us fastest to target.
+				while (curr->x!=target->x || curr->y!=target->y || curr->z!=target->z){
+					debug() << "Joining, now at point " << *curr << endl;
+					if (curr->sausageID != sausagei.sausageID && curr->sausageID != sausagej.sausageID && curr->isInASausage){
+						error()<<"Looks like the gap spans a third sausage, this is not good, aborting."<<endl;
+						exit(EXIT_FAILURE);
+					}
+					// Add it to the sausage if needed
+					if (curr->sausageID!=sausagei.sausageID){
+						debug() << "Adding point to sausage" << endl;
+						curr->isInASausage=true;
+						curr->sausageID=sausagei.sausageID;
+						sausagei.points.push_back(curr);
+						curr->sausagePointsIndex=sausagei.points.size()-1;
+					}
+					double dx = abs(curr->x - target->x);
+					double dy = abs(curr->y - target->y);
+					double dz = abs(curr->z - target->z);
+
+					enum direction {L,R,U,D,F,B};
+
+					Point* next;
+					direction dir;
+					if (dx>dy && dx>dz){
+						next = (curr->x > target->x) ? curr->left : curr->right;
+						dir  = (curr->x > target->x) ? L : R;
+					} else if (dy>dz) {
+						next = (curr->y > target->y) ? curr->down : curr->up;
+						dir  = (curr->y > target->y) ? D : U;
+					} else {
+						next = (curr->z > target->z) ? curr->back : curr->forward;
+						dir  = (curr->z > target->z) ? B : F;
+					}
+					debug() << "next is: " << next << endl;
+
+					// Do we need to create a new point?
+					if (next==NULL){
+						Point &p = *(new Point ());
+						p.x=curr->x; p.y=curr->y; p.z=curr->z;
+						// WARNING cl, cp, cs are unknown, we threw it away when reading
+						p.cl = p.cp = p.cs = -1;
+
+						switch (dir){
+							case L: p.x -= params::pixel_size; break;
+							case R: p.x += params::pixel_size; break;
+							case D: p.y -= params::pixel_size; break;
+							case U: p.y += params::pixel_size; break;
+							case B: p.z -= params::pixel_size; break;
+							case F: p.z += params::pixel_size; break;
+						}
+
+						// Look for all 6 neighbours by looking in possNeighs for Points in the right place
+						for (direction d : {L,R,U,D,F,B} ){
+							// Where should we look?
+							Vector3d neighLoc = p;
+							switch (d){
+								case L: neighLoc.x -= params::pixel_size; break;
+								case R: neighLoc.x += params::pixel_size; break;
+								case D: neighLoc.y -= params::pixel_size; break;
+								case U: neighLoc.y += params::pixel_size; break;
+								case B: neighLoc.z -= params::pixel_size; break;
+								case F: neighLoc.z += params::pixel_size; break;
+							}
+							// Which point is there?
+							bool foundNeigh=false;
+							for (Point* candidate : possNeighs){
+								if (mag((Vector3d) *candidate - neighLoc) < (params::epsilon * params::epsilon)){
+									foundNeigh=true;
+									switch (d){
+										case L:
+											p.left = candidate;
+											p.left->right = &p;
+											p.left->neighbours[1] = &p;
+											break;
+										case R:
+											p.right = candidate;
+											p.right->left = &p;
+											p.right->neighbours[0] = &p;
+											break;
+										case D:
+											p.down = candidate;
+											p.down->up = &p;
+											p.down->neighbours[2] = &p;
+											break;
+										case U:
+											p.up = candidate;
+											p.up->down = &p;
+											p.up->neighbours[3] = &p;
+											break;
+										case B:
+											p.back = candidate;
+											p.back->forward = &p;
+											p.back->neighbours[4] = &p;
+											break;
+										case F:
+											p.forward = candidate;
+											p.forward->back = &p;
+											p.forward->neighbours[5] = &p;
+											break;
+									}
+									break; // We've found the neighbour
+								}
+							}
+							if (!foundNeigh){
+								debug() << "Couldn't find suitable neighbour at " << neighLoc << endl;
+							}
+						}
+
+						// Set neighbours array
+						p.neighbours[0]=p.left;
+						p.neighbours[1]=p.right;
+						p.neighbours[2]=p.up;
+						p.neighbours[3]=p.down;
+						p.neighbours[4]=p.forward;
+						p.neighbours[5]=p.back;
+
+						// Add it to allPoints
+						model.allPoints.push_back(&p);
+						p.allPointsIndex=model.allPoints.size()-1;
+
+						// Also add it to possNeighs
+						possNeighs.push_back(&p);
+
+
+						debug() << "Made a new point at " << p << endl;
+
+						// And use it!
+						next=&p;
+					};
+
+					// Move to next point and continue
+					curr=next;
+				}
+				debug() << "Sausagei size: " << sausagei.points.size() << endl;
+
+				debug() << "Before endpoint-swap..." << endl;
+				debug() << "i[0]: " << *(sausagei.points[sausagei.endpoints[0]]) << endl;
+				debug() << "i[1]: " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
+				debug() << "j[0]: " << *(sausagej.points[sausagej.endpoints[0]]) << endl;
+				debug() << "j[1]: " << *(sausagej.points[sausagej.endpoints[1]]) << endl;
+				debug() << "join-point of i: " << sausagei.endpoints[iEndpoint] << endl;
+				debug() << "join-point of i: " << *(sausagei.points[sausagei.endpoints[iEndpoint]]) << endl;
+				debug() << "non-join-point of j: " << sausagej.endpoints[(jEndpoint+1)%2] << endl;
+				debug() << "non-join-point of j: " << *(sausagej.points[sausagej.endpoints[(jEndpoint+1)%2]]) << endl;;
+
+				//  Sort out new endpoints & remove sausagej if it's been merged into sausagei,
+				if (sausagei.sausageID == sausagej.sausageID){
+					// We've closed the sausage into a loop, make distance between endpoints = 0 to stop more joining
+					sausagei.endpoints[1] = sausagei.endpoints[0];
+				} else {
+					// If a->b is longest path in saus i, and c->d is longest in saus j, then a->d will be longest if we link b&c
+					// Need to make joining-endpoint of sausagei now equal to non-joining endpoint of sausagej
+					sausagei.endpoints[iEndpoint] = sausagej.endpoints[(jEndpoint+1)%2] + original_sausagei_size;
+					debug() << "Removing sausage " << j << " from allSausages" << endl;
+					model.allSausages.erase(model.allSausages.begin()+j); // Awkward, but erase() requires an iterator
+				}
+				debug() << "After endpoint-swap..." << endl;
+				debug() << "i[0]: " << *(sausagei.points[sausagei.endpoints[0]]) << endl;
+				debug() << "i[1]: " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
+				debug() << "j[0]: " << *(sausagej.points[sausagej.endpoints[0]]) << endl;
+				debug() << "j[1]: " << *(sausagej.points[sausagej.endpoints[1]]) << endl;
+				debug() << "join-point of i: " << sausagei.endpoints[iEndpoint] << endl;
+				debug() << "join-point of i: " << *(sausagei.points[sausagei.endpoints[iEndpoint]]) << endl;
+				debug() << "non-join-point of j: " << sausagej.endpoints[(jEndpoint+1)%2] << endl;
+				debug() << "non-join-point of j: " << *(sausagej.points[sausagej.endpoints[(jEndpoint+1)%2]]) << endl;;
+				debug() << "Sausagei's endpoints are now at: " << *(sausagei.points[sausagei.endpoints[0]])
+					<< " and " << *(sausagei.points[sausagei.endpoints[1]]) << endl;
 
 				// Recurse, in case more sausages need joining, then exit
-				join_endpoints(allSausages,relevantSausages);
+				join_endpoints(model);
 				return;
 			}
 		}
@@ -505,114 +725,382 @@ void Sausage::find_com(void){
 
 void Sausage::rotate_to_xy_plane(double** pointsArray){
 
+	calculate_rotation_matrix();
 	debug() << "Rotating to xy-plane" << endl;
 
 	// loop over all coordinate points and rotate
+	for(size_t i = 0; i != points.size(); i++) {
+		double x = rotation_matrix(0)*pointsArray[i][0] + rotation_matrix(1)*pointsArray[i][1] + rotation_matrix(2)*pointsArray[i][2];
+		double y = rotation_matrix(3)*pointsArray[i][0] + rotation_matrix(4)*pointsArray[i][1] + rotation_matrix(5)*pointsArray[i][2];
+		double z = rotation_matrix(6)*pointsArray[i][0] + rotation_matrix(7)*pointsArray[i][1] + rotation_matrix(8)*pointsArray[i][2];
+		pointsArray[i][0] = x;
+		pointsArray[i][1] = y;
+		pointsArray[i][2] = z;
+	}
+	return;
+}
+
+void Sausage::rotate_to_xy_plane(std::vector<Vector3d> pointsArray){
+
+	calculate_rotation_matrix();
+	debug() << "Rotating to xy-plane" << endl;
+
+	// loop over all coordinate points and rotate
+	/*
 	for(size_t i = 0; i != points.size(); i++) {
 		pointsArray[i][0] = rotation_matrix(0)*pointsArray[i][0] + rotation_matrix(1)*pointsArray[i][1] + rotation_matrix(2)*pointsArray[i][2];
 		pointsArray[i][1] = rotation_matrix(3)*pointsArray[i][0] + rotation_matrix(4)*pointsArray[i][1] + rotation_matrix(5)*pointsArray[i][2];
 		pointsArray[i][2] = rotation_matrix(6)*pointsArray[i][0] + rotation_matrix(7)*pointsArray[i][1] + rotation_matrix(8)*pointsArray[i][2];
 	}
+	*/
+	for (vector<Vector3d>::iterator iter=pointsArray.begin(); iter!=pointsArray.end(); ++iter){
+		double x = rotation_matrix(0)*iter->x + rotation_matrix(1)*iter->y + rotation_matrix(2)*iter->z;
+		double y = rotation_matrix(3)*iter->x + rotation_matrix(4)*iter->y + rotation_matrix(5)*iter->z;
+		double z = rotation_matrix(6)*iter->x + rotation_matrix(7)*iter->y + rotation_matrix(8)*iter->z;
+		//iter = Vector3d (x,y,z);
+		iter->x = x;
+		iter->y = y;
+		iter->z = z;
+	}
 	return;
 }
 
-void Sausage::calculate_sausage_length(double **slice_positions){
+// Calculate COM of all points contained within a sphere of radius 'radius' around point center
+// radius is calculate if the input value is below R_min_sphere, radius is chosen so that 10 points lie within 
+// if radius is above the threshold the value itself is used
+void Sausage::calculate_com_sphere(Vector3d center, double radius, Vector3d &com){
 
-	// loop over all COM of slices and calculate length
-	length = 0;
-	for(int i = 0; i != nSlices-1; i++) {
-		length += sqrt( pow(slice_positions[i][0]-slice_positions[i+1][0],2)+
-				pow(slice_positions[i][1]-slice_positions[i+1][1],2)+
-				pow(slice_positions[i][2]-slice_positions[i+1][2],2));
+    double R;
+    int counter;
+    Vector3d delta (0,0,0);
+
+    //Calculate radius, so that sphere includes 10 points, unless radius is passed into the fn in which case it should be > R_min
+    if (radius < params::R_min_sphere){
+        R = params::R_min_sphere;
+		counter =0;
+		while (counter < 10) { //exit loop once R is sufficiently large to include at least 10 points
+			counter = 0;
+			// loop over all points
+			for(size_t i = 0; i != points.size(); i++){
+				delta.x = points[i]->x - center.x;
+				delta.y = points[i]->y - center.y;
+				delta.z = points[i]->z - center.z;
+				if ( mag(delta) < R) counter++;
+			}
+			R += params::dR_sphere;    //gradually increase radius
+		}
+    }
+    //set R to radius that was passed into the fn
+    else{ R = radius;}
+
+    // calcualte COM for all points within distance R of center point
+    counter = 0;
+	com.x= 0.0;
+	com.y= 0.0;
+	com.z= 0.0;
+	for(size_t i = 0; i != points.size(); i++){
+		delta.x = points[i]->x - center.x;
+		delta.y = points[i]->y - center.y;
+		delta.z = points[i]->z - center.z;
+		// add all points within radius to work out com 
+		if (mag(delta) < R) {
+			com.x += points[i]->x;
+			com.y += points[i]->y;
+			com.z += points[i]->z;
+			counter ++;
+		}
 	}
-	length += sqrt( pow(slice_positions[nSlices-1][0]-slice_positions[0][0],2)+
-			pow(slice_positions[nSlices-1][1]-slice_positions[0][1],2)+
-			pow(slice_positions[nSlices-1][2]-slice_positions[0][2],2));
-
-	info() << "The estimated length of the sausage is " << length << endl;
-	return;
+	if (counter != 0){
+		com.x /= counter; com.y /= counter; com.z /= counter;}
+	else {
+		cerr << " Halfsphere algorithm failed. Sphere to calculate COM is empty! " << endl;
+		exit(EXIT_FAILURE);}
 }
 
-void Sausage::estimate_sausage_length(){
+void Sausage::sphere_tracking(){
 
-	info() << "--------> Estimating sausage length... " << endl;
+	info() << "--------> Estimating sausage length using spheres... " << endl;
 
-	// Make array of points, shifted so that COM is in origin
-	double **rotatedPoints = new double*[points.size()];
-	for (size_t i=0; i<points.size(); i++){
-		rotatedPoints[i] = new double[3];
-		rotatedPoints[i][0]=points[i]->x - centre_of_mass[0];
-		rotatedPoints[i][1]=points[i]->y - centre_of_mass[1];
-		rotatedPoints[i][2]=points[i]->z - centre_of_mass[2];
+	Vector3d current_pos (0,0,0);                   //current grid position in sausage
+	Vector3d com (0,0,0);                           //current com calculated      
+	Vector3d dir (0,0,0),dir_hat (0,0,0);                   //current direction + unit vector direction
+	Vector3d delta (0,0,0);
+
+	double dist_max = 10000;
+	int max_index;
+
+	// first point is arbritary pick
+	current_pos.x = points[0]->x;
+	current_pos.y = points[0]->y;
+	current_pos.z = points[0]->z;
+
+	// calculate COM of sphere with radius R_gap around current_pos
+	calculate_com_sphere(current_pos,params::R_gap,com);
+	verbose() << "First COM for sphere tracking: " << com << std::endl;
+	sphere_COMs.push_back(com);
+
+	// pick 2nd point, pick point which is closest to be 2*R_gap away from first point
+	for(size_t i = 0; i != points.size(); i++){
+		delta.x = points[i]->x - current_pos.x;
+		delta.y = points[i]->y - current_pos.y;
+		delta.z = points[i]->z - current_pos.z;
+		if ( fabs(mag(delta) - 2.0*params::R_gap) < dist_max){
+			dist_max = fabs(mag(delta) - 2.0*params::R_gap);
+			max_index = i;
+		}
 	}
+	// move to 2nd point in sausage
+	current_pos.x = points[max_index]->x;
+	current_pos.y = points[max_index]->y;
+	current_pos.z = points[max_index]->z;
+	calculate_com_sphere(current_pos,params::R_gap,com);
+	verbose() << "Second COM for sphere tracking: pos " << com << std::endl;
+	sphere_COMs.push_back(com);
 
-	// calculate rotation matrix and its inverse, so that plane of best fit projects onto xy-plane
-	calculate_rotation_matrix();
-	rotate_to_xy_plane(rotatedPoints);
+	double distsq_previous, distsq_preprevious;
+	bool reached_start = false;
+	int index = 2; //because first two points are already found
 
-	// Find number of slices
-	nSlices = points.size()/params::points_per_slice;
-	info() << "Sausage was divided in " << nSlices << " slices." << endl;
+	// move along the disclination line step by step until we reach the start point
+	while (reached_start == false){
 
-	double **slice_positions = new double*[nSlices];
-	for (int i=0; i<nSlices; i++){
-		slice_positions[i] = new double[3]();
-	}
-	double *slice_counter = new double[nSlices]();
+		// work out moving direction from two previous coms
+		dir = sphere_COMs[index-1] - sphere_COMs[index-2];
+		dir_hat = norm (dir); 
+		debug() << "Halfsphere tracking direction " << dir_hat <<std::endl;
 
+		// find new current position in sausage by moving alon the direction dir 
+		current_pos = sphere_COMs[index-1] + params::R_gap*dir_hat;
+	
+		//find sphere with radius R for current position that is large enough to include 10 points
+		//then find COM of all included points
+		calculate_com_sphere(current_pos,0.0,com);
+		
+		// check that we aren't reversing on ourselves, if so exit the program
+		distsq_previous = distance(com,sphere_COMs[index-1]);
+		distsq_preprevious = distance(com,sphere_COMs[index-2]);
+		if (distsq_preprevious < distsq_previous){ 
+			cerr << "The next point in sphere sausage tracking was closer to the preprevious point than the previous one. We are reversing back on ourselves." << endl;
+		}
 
-	// find what slice we are in (loop over all points)
-	double theta;
-	int sliceId;
-	for(size_t i = 0; i != points.size(); i++) {
+		//add COM found to final array of COMs if index > 5, because first few points will be slighly noisy
+		sphere_COMs.push_back(com);
 
-		theta=atan2(rotatedPoints[i][1],rotatedPoints[i][0])+M_PI;
-		sliceId = (int) nSlices*theta/(2.0*M_PI);
-		if (sliceId < 0 || sliceId >= nSlices ) {
-			cerr << "SliceId is out of bound" << endl;
+		// check whether we have reached our starting point once we have found the first few points
+		if (distance(sphere_COMs[index],sphere_COMs[0]) < params::R_gap)
+		{
+			info() << "Halfsphere algorithm has successfully reached its starting point. \n" << endl;
+			reached_start = true;
+		}
+		index++;
+
+		// Exit program if sphere tracking takes too long.
+		if ( index > 1000) {
+			cerr << "Halfsphere algorithm hasn't reached its starting point after 1000 iterations. \n" << endl;
 			exit(EXIT_FAILURE);
 		}
 
-		//add x,y,z coordinates to that slice
-		slice_positions[sliceId][0]+=rotatedPoints[i][0];
-		slice_positions[sliceId][1]+=rotatedPoints[i][1];
-		slice_positions[sliceId][2]+=rotatedPoints[i][2];
-		slice_counter[sliceId]++;
-	}
+	}//end of while loop over sausage
 
-	// work out centre of mass for each slice
-	for(int k = 0; k != nSlices; k++) {
-		if (slice_counter[k] == 0) {
-			cerr << "Slice is empty!!" << endl;
-			exit(EXIT_FAILURE);}
-		else{
-			slice_positions[k][0] = slice_positions[k][0]/slice_counter[k];
-			slice_positions[k][1] = slice_positions[k][1]/slice_counter[k];
-			slice_positions[k][2] = slice_positions[k][2]/slice_counter[k];
-
-			debug() << slice_counter[k] << " COM " << slice_positions[k][0] << " " << slice_positions[k][1] << " " << slice_positions[k][2] << endl;}
-	}
-
-	// convert COM's of slice back to initial frame
-	//rotate_from_xy_plane(slice_positions);
-
-	// calculate length
-	calculate_sausage_length(slice_positions);
-
-	// clean up
-	debug() << "deleting rotated_points" << endl;
-	for (size_t i=0; i<points.size(); i++){
-		delete[] rotatedPoints[i];
-	}
-	delete[] rotatedPoints;
-
-	debug() << "deleting slice_positions" << endl;
-	for (int i=0; i<nSlices; i++){
-		delete[] slice_positions[i];
-	}
-	delete[] slice_positions;
-
-	delete[] slice_counter;
+	//print all COMs of sphere
+	verbose()<<"COMS sphere tracking:"<<std::endl;
+	for (int k=0; k<sphere_COMs.size(); k++){
+		brief({2})<<"COM "<<sphere_COMs[k]<<std::endl;
+		verbose()<<"COM "<<sphere_COMs[k]<<std::endl;}
 
 	return;
 }
+
+void Sausage::calculate_sausage_length_spheres(){
+
+	// loop over all COMs found by sphere tracking to calculate length
+	length = 0;
+	for(int i = 0; i < sphere_COMs.size()-1; i++) { 
+		length += distance(sphere_COMs[i],sphere_COMs[i+1]); 
+		debug() << "Length "<<i<<" "<< length << endl;
+	}
+	length += distance(sphere_COMs[sphere_COMs.size()-1],sphere_COMs[0]);
+		debug() << "Length last step"<< length << endl;
+
+	info() << "The estimated length of the sausage using spheres is " << length << endl;
+	brief({2}) << "Length "<<sausageID<<" "<< length << endl;
+	return;
+}
+
+/** Check that all relevant sausages are closed loops
+ * Add description
+ */
+void Sausage::flood_fill_closed_loops(const std::vector<Vector3d> colloidPos){
+
+	debug() << "begin flood_fill_closed_loops" << endl << flush;
+
+	// find centre of mass of this sausage
+	find_com();
+	Vector3d com_vec (0,0,0);
+	com_vec.x = centre_of_mass[0];
+	com_vec.y = centre_of_mass[1];
+	com_vec.z = centre_of_mass[2];
+
+	// check that COM isn't very close to the sausage
+	Vector3d delta (0,0,0);
+	for(size_t i = 0; i != points.size(); i++){
+		delta.x = points[i]->x - com_vec.x;
+		delta.y = points[i]->y - com_vec.y;
+		delta.z = points[i]->z - com_vec.z;
+		if ( fabs(mag(delta) < 3.0)){
+			cerr << "FF closed loops, shows that COM is very close to sausage point." << endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	debug() << "Checked that COM is at least 3.0 away from any sausge point."<< endl;
+
+	// AB is vector joining colloids
+	Vector3d AB = colloidPos[0] - colloidPos[1];
+	double norm_AB = sqrt(dot(AB,AB));
+
+	// Plane of best fit is of form alpha*x+beta*y=z
+	double alpha=-plane_of_best_fit[0];
+	double beta=-plane_of_best_fit[1];
+
+	// From being parallel to PoBF, perpendicular to AB, we can determine: (This is an arbitrary pick.)
+	Vector3d v (0,0,0);
+	if (abs(AB.y+beta*AB.z) > params::epsilon){
+		v.x=1; // No need to normalise
+		v.y=(-alpha-AB.x)/(AB.y+beta*AB.z);
+	}else{
+		v.x=(-AB.y-beta*AB.z)/(AB.x+alpha); // = 0, more or less
+		v.y=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
+	}
+	v.z=alpha*v.x+beta*v.y;
+
+	double norm_v = sqrt(dot(v,v));
+	verbose()<<"Vector v (perp. AB & || PoBF & unit) is "<<v<<" of length "<<norm_v<<endl;
+
+	// Loop over all points in sausage and add the ones within tubes around v starting in COM
+	vector<Point*> region1,region2,region;
+	for (vector<Point*>::iterator iter=points.begin(); iter!=points.end(); iter++){
+		Point* it = *iter;
+		Vector3d p (0,0,0); // xyz of this point
+		p.x=it->x; p.y=it->y; p.z=it->z;
+
+		Vector3d u = p - com_vec; // Vector from point to COM
+
+		// Eq. of plane perpendicular to AB going through point p is (x,y,z).AB - p.AB
+		// Distance from point q to this plane P is |Px*qx + Py*qy + Pz*qz + P0|/norm(Px,Py,Pz)
+		Vector3d first_plane  = com_vec + 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+		Vector3d second_plane = com_vec - 0.5*params::flood_fill_classify_slice_size*params::pixel_size*(AB/norm_AB);
+		double first_distance  = abs( dot(AB, p) - dot(first_plane,  AB) ) / norm_AB;
+		double second_distance = abs( dot(AB, p) - dot(second_plane, AB) ) / norm_AB;
+
+		// Is it between the two planes? If so add to region 
+		if (first_distance < params::flood_fill_classify_slice_size*params::pixel_size &&
+		    second_distance < params::flood_fill_classify_slice_size*params::pixel_size ){
+		    double projection = dot(u,v);
+			if (projection>0){
+				region1.push_back(it);
+				verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTIN1"<<endl;
+            }else{
+      			region2.push_back(it);
+				verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTIN2"<<endl;
+            }
+         }else{verbose()<<it->x<<" "<<it->y<<" "<<it->z<<"TESTOUT"<<endl;}
+    }
+
+	verbose()<<region1.size()<<" pixels in region 1"<<endl;
+	verbose()<<region2.size()<<" pixels in region 2"<<endl;
+	if (region1.size() == 0 && region2.size() == 0){
+		cerr << "Both regions in FF closed loops check is empty, this is bad, exiting." << endl << flush;
+		exit(EXIT_FAILURE);
+	}
+
+	//Pick larger region
+	if (region1.size() >= region2.size() ) region = region1;
+	verbose()<<region.size()<<" pixels in region chosen (larger region)"<<endl;
+
+	//Find vector u which is parallel to PoBF, perpendicular to v
+	Vector3d u (0,0,0);
+	if (abs(v.y+beta*v.z) > params::epsilon){
+		u.x=1; // No need to normalise
+		u.y=(-alpha-v.x)/(v.y+beta*v.z);
+	}else{
+		u.x=(-v.y-beta*v.z)/(v.x+alpha); // = 0, more or less
+		u.y=1.0/sqrt(1+beta*beta); // This pretty much normalises for free
+	}
+	u.z=alpha*u.x+beta*u.y;
+
+	verbose()<<"Vector u (perp. v & || PoBF ) is "<<u<<endl;
+
+
+	//Find com of region selected
+	double x=0,y=0,z=0;
+	Vector3d com_vec_reg (0,0,0); //com of region selected
+	for (vector<Point*>::iterator it=region.begin(); it!=region.end(); it++){
+		x+=(*it)->x;
+		y+=(*it)->y;
+		z+=(*it)->z;
+	}
+	com_vec_reg.x = x/region.size();
+	com_vec_reg.y = y/region.size();
+	com_vec_reg.z = z/region.size();
+	info() <<  "Centre of mass of region " << com_vec_reg << endl;
+	// Find neighbours of region on both sides
+	vector<Point*> neighbours;
+	vector<Point*> neighbours_otherside;
+	Vector3d p (0,0,0); //Vector from COM of region to point p
+	for (vector<Point*>::iterator iter=region.begin(); iter!=region.end(); iter++){
+		Point* it=*iter;
+		for (int iNeigh=0;iNeigh<6;iNeigh++){
+			Point* neigh = it->neighbours[iNeigh];
+			if (neigh && neigh->isInASausage && !elementOf(region,neigh)){
+				p.x = neigh->x; 
+				p.y = neigh->y; 
+				p.z = neigh->z; 
+				//Only pick neighbour points along u away from com of region
+				if (dot(u,p-com_vec_reg) > 0){
+					neighbours.push_back(it->neighbours[iNeigh]);
+				}else{
+					neighbours_otherside.push_back(it->neighbours[iNeigh]);
+				}
+			}
+		}
+	}
+	debug()<<"end of region"<<endl<<flush;
+
+	// flood-fill from neighbours on one side, exit if we reach on neighbour on the other side
+	// If the point is in the region, don't add it to the flood-filled area.
+	vector<Point*> stack=neighbours; // FILO stack, to be filled with contiguous points
+	vector<Point*> visited; // Points we've already visited, and so should ignore
+	while (stack.size()>0){
+		Point* curr = stack.back();
+		debug()<<"STACK "<< curr->x << " "<<curr->y<<" "<<curr->z<< endl;
+		stack.pop_back();
+		for (int iNeigh=0;iNeigh<6;iNeigh++){
+			if (!curr->neighbours[iNeigh]) continue;
+			Point* thisNeigh=curr->neighbours[iNeigh];
+			if (elementOf(visited,thisNeigh)) continue;
+				visited.push_back(thisNeigh);
+				if (thisNeigh->isInASausage) {
+					//debug()<<"neigh: "<<iNeigh<<" address: "<<curr.neighbours[iNeigh]<<" sID: "<<curr.neighbours[iNeigh]->sausageID<<endl;
+					//check whether current point is inside the region
+					if (elementOf(neighbours_otherside,thisNeigh)){
+						verbose()<<"I'm a neighbour on the other side."<<endl;
+						//remove from neighbours_otherside list
+						neighbours_otherside.erase(std::remove(neighbours_otherside.begin(), neighbours_otherside.end(), thisNeigh), neighbours_otherside.end());
+						verbose()<<"REGION "<< thisNeigh->x << " "<<thisNeigh->y<<" "<<thisNeigh->z<< endl;
+					}
+					if (!elementOf(stack,thisNeigh)) stack.push_back(thisNeigh);
+				}
+			}
+		}
+
+		if (neighbours_otherside.size() != 0){
+			verbose()<<neighbours_otherside.size()<<"FF closed loop test failed. There is some kind of gap in the saugse."<<endl;
+			for (vector<Point*>::iterator it=neighbours_otherside.begin(); it!=neighbours_otherside.end(); it++){
+				verbose()<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->z<<"NEIGH2_after"<<endl;
+			}
+			cerr << "It seems there are open loops in the system. Exit program ...";
+			exit(EXIT_FAILURE);
+		}
+	verbose()<<"Finished flood-fill closed loops successfully."<<endl;
+}
+

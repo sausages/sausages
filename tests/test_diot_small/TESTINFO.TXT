@@ -1,0 +1,5 @@
+Test that diot functionality works as expected
+
+Uses diot file-format of same system as test1
+short.diot is produced from cfg2diot.py short.xyz
+cl cutoff is 0.12, larger than the default

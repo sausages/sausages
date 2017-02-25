@@ -1,0 +1,5 @@
+Check that we can successfully join gaps using the xyzclcpcs format
+
+Uses zipped xyzclcpcs format
+cl cutoff is 0.12, larger than the default
+The system is that of test1, but with all points at x=0 removed

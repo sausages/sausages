@@ -2,6 +2,7 @@
 #define POINT_H
 
 #include <vector>
+#include "maths.h"
 
 class Point
 {
@@ -13,6 +14,8 @@ class Point
 	double cl; ///< raw cl value of point
 	double cp; ///< raw cp value of point
 	double cs; ///< raw cl value of point
+
+	operator Vector3d(); ///< Cast to Vector3d returns only x,y,z coords
 
 	int sausageID; ///< Which sausage the point is in (-1 is unsorted)
 	bool isInASausage;
@@ -41,18 +44,14 @@ class Point
 	 */
 	Point* neighbours[6];
 
-	// Pointer to self, pretty sure this is irrelevant, but...
-	// I currently need it for the == operator
-	Point* self;
-
-	// Assume if our self-pointer is the same then we are the same
+	// Assume if our allPointsIndex is the same then we are the same
 	// Currently needed for the find algorithm in flood-fill
 	bool operator == (const Point &Ref) const {
-		return(this->self == Ref.self);
+		return(this->allPointsIndex == Ref.allPointsIndex);
 	}
-	// Sort points (for uniqueness) by value of pointer
+	// Sort points (for uniqueness) by value of allPointsIndex
 	bool operator < (const Point &Ref) const {
-		return(this->self < Ref.self);
+		return(this->allPointsIndex < Ref.allPointsIndex);
 	}
 
 	Point(void);

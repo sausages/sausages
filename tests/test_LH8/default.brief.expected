@@ -1,0 +1,10 @@
+brief_version	1
+input_filename	figure_eight_LH.diot.zip
+total_points	8000000
+threshold	0.04
+threshold_pts	2056
+num_sausages	2
+saus_0_size	2055
+saus_1_size	1
+system_class	1
+system_str	figureEightLHS

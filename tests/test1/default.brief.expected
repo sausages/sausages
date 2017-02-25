@@ -1,0 +1,9 @@
+brief_version	1
+input_filename	short.xyzclcpcs
+total_points	512000
+threshold	0.12
+threshold_pts	1463
+num_sausages	1
+saus_0_size	1463
+system_class	5
+system_str	omega
