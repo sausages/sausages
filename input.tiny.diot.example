@@ -1,0 +1,36 @@
+version	0.1
+# total numVoxels: 512000
+# Assuming cubic
+numVoxels 3 3 3
+voxelSize 0.5 0.5 0.5
+lowBounds -20.000000 -20.000000 -20.000000
+colloidPos 1 -11.3795 0 0 0 # First number is index
+colloidPos 2 11.3795 0 0 0 # First number is index
+beginClCpCs zyxInc
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1 # 9th, so far have one plane
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.01 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1 # 18th, so far have two planes
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1
+0.25 1 1 # 27th, so far have 3 planes
