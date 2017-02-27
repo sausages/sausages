@@ -98,7 +98,7 @@ In the `read_diot()` function the direct neighbours of each point are identified
 
 ### Identify contiguous regions using flood-fill ###
 In the next step we use the flood-fill algorithm to find neighbouring points.
-The `sausage` class corresponds to distinct (separate, non-contiguous) groups of points.
+The `sausage` class corresponds to distinct (separate, non-contiguous) groups of contiguous points, together with connectivity information in the form of an irregular 3D multiply linked list.
 In our calculation we ignore sausages that contain less than 1% of the total data points.
 This minimum, as well as many other values, can be specified by the user in `test.params`, otherwise the default is used.
 
@@ -107,12 +107,12 @@ This minimum, as well as many other values, can be specified by the user in `tes
 In liquid crystals defect sausages can only exist as loops across periodic boundaries.
 For each sausage the program checks whether it forms a closed loop.
 If they are already closed the next step is skipped.
-Otherwise the program calculates the endpoints of all unclosed sausages by calculated the longest shortest-path distance between all points within the sausage.
-Endpoints that are in close proximity with no third endpoint nearby are joined, and their sausages merged.
+Otherwise the program calculates the endpoints of all unclosed sausages by calculating the longest shortest-path distance between all points within the sausage.
+Endpoints that are in close proximity with no third endpoint nearby are joined, and their sausages are merged.
 The test for closed loops is repeated and only if all sausages are closed does the program proceed.
 
-### Distinguishing between different defect structures ###
-In order to distinguish the different defect structures shown in the four pictures above, a flood-fill algorithm is used.
+### Distinguishing twisted defect structures ###
+In order to distinguish the different defect structures shown in the four pictures above, a flood-fill algorithm is used to determine the connectivity of four regions.
 For each colloid we find a plane perpendicular to the line connecting the two colloids, centred on the colloid.
 Points within a certain distance of these planes are added to regions depending on their location, seen below.
 
@@ -122,8 +122,7 @@ Once again the flood-fill algorithm - restricted to move only towards the centre
 Depending on the connections between regions the different structures can be successfully distinguished.
 
 ### Estimating the length of the defect line ###
-Finally the program estimates the length of the sausage.
-Two methods are available here.
+Two methods are available to estimate the length of the sausage.
 
 The first uses the all-pairs shortest-path Floyd-Warshall algorithm to find the two points separated by the longest path.
 Assuming a well-formed sausage, the path separating these two points is half the sausage length.
@@ -136,3 +135,7 @@ The red points in the figure below show the averaged points that were used for t
 The blue data points are the original data.
 
 ![Sphere-tracking length estimation](images/sphere-tracking.png)
+
+### Classification ###
+Finally, based on both the number of defect structures, their twist and their relative length, the four classes of entanglement can be distinguished.
+Additionally, the handedness of the figure-of-eight twist can be found by examining projection onto the plane-of-best-fit of the loop.
