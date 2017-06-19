@@ -904,7 +904,7 @@ void Sausage::sphere_tracking(){
 
 	//print all COMs of sphere
 	verbose()<<"COMS sphere tracking:"<<std::endl;
-	for (int k=0; k<sphere_COMs.size(); k++){
+	for (size_t k=0; k<sphere_COMs.size(); k++){
 		brief({2})<<"COM "<<sphere_COMs[k]<<std::endl;
 		verbose()<<"COM "<<sphere_COMs[k]<<std::endl;}
 
@@ -915,7 +915,7 @@ void Sausage::calculate_sausage_length_spheres(){
 
 	// loop over all COMs found by sphere tracking to calculate length
 	length = 0;
-	for(int i = 0; i < sphere_COMs.size()-1; i++) { 
+	for(size_t i = 0; i < sphere_COMs.size()-1; i++) {
 		length += distance(sphere_COMs[i],sphere_COMs[i+1]); 
 		debug() << "Length "<<i<<" "<< length << endl;
 	}
